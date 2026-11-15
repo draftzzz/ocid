@@ -871,6 +871,6 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Ruta no encontrada' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor OCID funcionando en el puerto ${PORT}`);
 });
