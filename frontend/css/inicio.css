@@ -17,9 +17,8 @@ body {
     background-color: #f1f5f9;
     color: #0f172a;
     display: flex;
-    height: 100vh;
-    overflow: hidden;
-    /* Mantiene fijo el body para que el scroll inicie debajo del nav azul */
+    min-height: 100vh;
+    overflow-x: hidden;
 }
 
 a {
@@ -197,33 +196,8 @@ textarea {
     flex-direction: column;
     min-width: 0px;
     height: 100vh;
-    overflow-y: auto;
-    /* Scroll exclusivo del contenido a partir de la barra superior */
+    overflow: hidden;
     background-color: #f1f5f9;
-
-    scrollbar-width: thin;
-    scrollbar-color: #cccccc #2f2f2f;
-}
-
-.area_principal::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.area_principal::-webkit-scrollbar-track {
-    background: #2f2f2f;
-    border-radius: 1px;
-}
-
-.area_principal::-webkit-scrollbar-thumb {
-    background: #cccccc;
-    border-radius: 1px;
-}
-
-@supports not selector(::-webkit-scrollbar) {
-    .area_principal {
-        scrollbar-color: #93c5fd #2f2f2f;
-    }
 }
 
 .barra_superior {
@@ -244,7 +218,7 @@ textarea {
 .seccion_superior_izquierda {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     flex: 1;
     max-width: 620px;
 }
@@ -322,6 +296,7 @@ textarea {
     padding: 6px;
     border-radius: 8px;
     cursor: pointer;
+    margin-left: 30px;
 }
 
 .punto_notificacion {

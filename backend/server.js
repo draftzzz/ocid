@@ -53,6 +53,28 @@ app.use(cors({
 
 app.use(express.json({ limit: '15mb' }));
 
+// ==========================================
+// MIDDLEWARE DE AUTENTICACIÓN JWT
+// Protege todas las rutas excepto login, registro y salud
+// ==========================================
+function autenticarJWT(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Token de acceso requerido' });
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, JWT_SECRET, (err, usuario) => {
+    if (err) {
+      return res.status(403).json({ success: false, error: 'Token inválido o expirado' });
+    }
+    req.usuario = usuario;
+    next();
+  });
+}
+
+// Rutas públicas (no requieren token)
+app.post('/login', authLimiter, async (req, res) => {
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -373,6 +395,11 @@ app.post('/registro', authLimiter, async (req, res) => {
     });
   }
 });
+
+// ==========================================
+// PROTECCIÓN JWT PARA TODAS LAS RUTAS RESTANTES
+// ==========================================
+app.use(autenticarJWT);
 
 // ELIMINAR USUARIO
 app.delete('/login/:id', async (req, res) => {
@@ -863,6 +890,110 @@ app.get('/docentes', async (req, res) => {
     res.json(resultado.rows);
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error al cargar docentes' });
+  }
+});
+
+// ==========================================
+// NOTIFICACIONES DEL USUARIO
+// ==========================================
+// OBTENER NOTIFICACIONES (anuncios + tareas pendientes del departamento/usuario)
+app.get('/notificaciones', async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+
+    // Obtener nombre de departamento del usuario
+    const usuarioResult = await pool.query(
+      `SELECT u.departamento_id, d.nombre AS departamento_nombre
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       WHERE u.id = $1`,
+      [usuarioId]
+    );
+    if (usuarioResult.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+    }
+    const departamentoNombre = usuarioResult.rows[0].departamento_nombre || null;
+    const correoUsuario = req.usuario.correo || '';
+
+    // Notificaciones de anuncios
+    const anunciosResult = await pool.query(
+      `SELECT n.id, n.fecha, n.leida,
+              'anuncio' AS tipo,
+              a.titulo AS titulo,
+              a.contenido AS contenido,
+              a.departamento_id
+       FROM notificaciones n
+       LEFT JOIN anuncios a ON a.id = n.anuncio_id
+       WHERE n.usuario_id = $1
+       ORDER BY n.fecha DESC`,
+      [usuarioId]
+    );
+
+    // Tareas pendientes del departamento del usuario o asignadas a él
+    const tareasResult = await pool.query(
+      `SELECT t.id, t.fecha_creacion AS fecha, FALSE AS leida,
+              'tarea' AS tipo,
+              t.titulo AS titulo,
+              t.descripcion AS contenido,
+              t.departamento AS departamento_nombre
+       FROM tareas t
+       WHERE t.estado = 'Pendiente'
+         AND (($1 IS NOT NULL AND t.departamento = $1) OR t.asignado ILIKE $2)
+       ORDER BY t.fecha_creacion DESC`,
+      [departamentoNombre, `%${correoUsuario}%`]
+    );
+
+    const notificaciones = [
+      ...anunciosResult.rows.map(n => ({ ...n, leida: Boolean(n.leida) })),
+      ...tareasResult.rows
+    ].sort((a, b) => new Date(b.fecha || b.fecha_creacion) - new Date(a.fecha || a.fecha_creacion));
+
+    res.json({ success: true, notificaciones });
+  } catch (error) {
+    console.error('Error al cargar notificaciones:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudieron cargar las notificaciones' });
+  }
+});
+
+// MARCAR NOTIFICACIÓN COMO LEÍDA
+app.put('/notificaciones/:id/leer', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
+
+    const resultado = await pool.query(
+      'UPDATE notificaciones SET leida = TRUE WHERE id = $1 AND usuario_id = $2 RETURNING id',
+      [id, usuarioId]
+    );
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo marcar como leída' });
+  }
+});
+
+// ELIMINAR NOTIFICACIÓN
+app.delete('/notificaciones/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
+
+    const resultado = await pool.query(
+      'DELETE FROM notificaciones WHERE id = $1 AND usuario_id = $2 RETURNING id',
+      [id, usuarioId]
+    );
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo eliminar la notificación' });
   }
 });
 

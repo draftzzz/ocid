@@ -350,3 +350,197 @@ textarea {
     font-size: 11px;
     margin-left: 4px;
 }
+
+/* ==========================================================================
+   11. Notificaciones (página de notificaciones)
+   ========================================================================== */
+.fila_estadisticas_notificaciones {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.tarjeta_metrica {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.etiqueta_metrica {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cifra_metrica {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.seccion_notificaciones {
+    margin-top: 20px;
+}
+
+.titulo_seccion_notificaciones {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lista_notificaciones {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item_notificacion {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 10px;
+    background-color: #ffffff;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+}
+
+.item_notificacion.no_leido {
+    border-left: 4px solid #2563eb;
+    background-color: #f8fafc;
+}
+
+.item_notificacion.leido {
+    opacity: 0.9;
+    border-color: #e2e8f0;
+}
+
+.item_notificacion:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.icono_item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background-color: #eff6ff;
+    color: #2563eb;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.item_notificacion.no_leido .icono_item {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.contenido_item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.titulo_item {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.descripcion_item {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.meta_item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 6px;
+}
+
+.tipo_item {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.depto_item, .fecha_item {
+    opacity: 0.8;
+}
+
+.acciones_item {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.boton_marcar_leido, .boton_borrar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background-color: #f1f5f9;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.boton_marcar_leido:hover {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.boton_borrar:hover {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+@media (max-width: 900px) {
+    .fila_estadisticas_notificaciones {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .fila_estadisticas_notificaciones {
+        grid-template-columns: 1fr;
+    }
+    .item_notificacion {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .acciones_item {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+}

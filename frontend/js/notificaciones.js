@@ -1,239 +1,205 @@
-/* L?gica propia de notificaciones.html */
-(function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
+"use strict";
 
-  function iniciarInterfaz() {
-    const barraSuperior = document.querySelector('.barra_superior');
-    const barraLateral = document.querySelector('.barra_lateral');
+const $ = (id) => document.getElementById(id);
+const API = "https://ocid.onrender.com";
 
-    if (!barraSuperior || !barraLateral) return;
-
-    let usuario = null;
+function obtenerToken() {
     try {
-      usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
+        const u = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
+        return u && u.token ? u.token : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function fetchConAuth(url, opciones = {}) {
+    const token = obtenerToken();
+    const headers = { ...(opciones.headers || {}) };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return fetch(url, { ...opciones, headers });
+}
+
+async function leerRespuesta(respuesta) {
+    const tipo = respuesta.headers.get("content-type") || "";
+    let datos = {};
+    if (tipo.includes("application/json")) datos = await respuesta.json();
+    else {
+        const texto = await respuesta.text();
+        datos = texto ? { message: texto } : {};
+    }
+    if (!respuesta.ok) throw new Error(datos.error || datos.message || `Error HTTP ${respuesta.status}`);
+    return datos;
+}
+
+function mostrarMensaje(texto, esError = false) {
+    const caja = $("aviso_notificacion");
+    const textoCaja = $("texto_aviso_notificacion");
+    const icono = $("icono_aviso_notificacion");
+    if (!caja || !textoCaja) { (esError ? console.error : console.log)(texto); return; }
+    textoCaja.textContent = texto;
+    if (icono) {
+        icono.className = esError ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-check";
+        icono.style.color = esError ? "#ef4444" : "#22c55e";
+    }
+    caja.classList.add("visible");
+    setTimeout(() => caja.classList.remove("visible"), 3500);
+}
+
+function inicializarSesion() {
+    try {
+        const u = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
+        if (u && u.id) {
+            const nombre = u.nombre || u.correo || "Usuario";
+            if ($("nombreUsuario")) $("nombreUsuario").textContent = nombre;
+            if ($("etiqueta_rol_usuario")) $("etiqueta_rol_usuario").textContent = u.rol || "";
+            if ($("avatar_usuario_circulo")) {
+                $("avatar_usuario_circulo").innerHTML = `<i class="fa-solid fa-user"></i>`;
+                const inicial = (nombre.charAt(0) || "U").toUpperCase();
+                $("avatar_usuario_circulo").textContent = inicial;
+            }
+        }
+    } catch (e) {}
+}
+
+function cerrarSesion() {
+    localStorage.removeItem("usuario_ocid");
+    inicializarSesion();
+    mostrarMensaje("Sesión cerrada.");
+    setTimeout(() => { location.href = "inicio.html"; }, 1000);
+}
+
+function cerrarModal(id) { $(id)?.classList.remove("visible"); }
+
+function escaparHTML(texto) {
+    return String(texto ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+async function cargarNotificaciones() {
+    const contenedor = $("contenedor_notificaciones");
+    const vacio = $("vacio_notificaciones");
+    const totalEl = $("conteo_total_notificaciones");
+    const sinLeerEl = $("conteo_sin_leer");
+    const anunciosEl = $("conteo_anuncios");
+    const tareasEl = $("conteo_tareas_pendientes");
+    const badgeEl = $("badge_notificaciones");
+
+    if (contenedor) contenedor.innerHTML = '<p style="text-align:center; color:#64748b;">Cargando notificaciones...</p>';
+    if (vacio) vacio.style.display = "none";
+
+    try {
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones`));
+        const notificaciones = datos.notificaciones || [];
+
+        const total = notificaciones.length;
+        const sinLeer = notificaciones.filter(n => !n.leida).length;
+        const anuncios = notificaciones.filter(n => n.tipo === "anuncio").length;
+        const tareas = notificaciones.filter(n => n.tipo === "tarea").length;
+
+        if (totalEl) totalEl.textContent = total;
+        if (sinLeerEl) sinLeerEl.textContent = sinLeer;
+        if (anunciosEl) anunciosEl.textContent = anuncios;
+        if (tareasEl) tareasEl.textContent = tareas;
+        if (badgeEl) badgeEl.textContent = sinLeer > 0 ? String(sinLeer) : "0";
+
+        if (contenedor) {
+            if (!notificaciones.length) {
+                contenedor.innerHTML = "";
+                if (vacio) vacio.style.display = "block";
+            } else {
+                contenedor.innerHTML = notificaciones.map(n => `
+                    <article class="item_notificacion ${n.leida ? "leido" : "no_leido"}" data-id="${n.id}" data-tipo="${n.tipo}">
+                        <div class="icono_item">
+                            <i class="${n.tipo === "tarea" ? "fa-solid fa-list-check" : "fa-solid fa-bullhorn"}"></i>
+                        </div>
+                        <div class="contenido_item">
+                            <div class="titulo_item">${escaparHTML(n.titulo)}</div>
+                            <div class="descripcion_item">${escaparHTML(n.contenido || "")}</div>
+                            <div class="meta_item">
+                                <span class="tipo_item">${n.tipo === "tarea" ? "Tarea pendiente" : "Anuncio"}</span>
+                                ${n.departamento_nombre ? `<span class="depto_item">${escaparHTML(n.departamento_nombre)}</span>` : ""}
+                                <span class="fecha_item">${n.fecha ? new Date(n.fecha).toLocaleDateString("es-MX") : ""}</span>
+                            </div>
+                        </div>
+                        <div class="acciones_item">
+                            ${!n.leida ? `<button class="boton_marcar_leido" onclick="marcarLeida(${n.id}, this)" title="Marcar como leída"><i class="fa-regular fa-circle-check"></i></button>` : ""}
+                            <button class="boton_borrar" onclick="borrarNotificacion(${n.id}, this)" title="Borrar"><i class="fa-regular fa-trash-can"></i></button>
+                        </div>
+                    </article>
+                `).join("");
+            }
+        }
     } catch (error) {
-      console.error('No se pudieron leer los datos de sesión:', error);
-      localStorage.removeItem('usuario_ocid');
+        console.error("Error al cargar notificaciones:", error);
+        mostrarMensaje("No se pudieron cargar las notificaciones", true);
+        if (contenedor) contenedor.innerHTML = '<p style="text-align:center; color:#ef4444;">No se pudieron cargar las notificaciones</p>';
     }
+}
 
-    const nombre = usuario && (usuario.nombre || usuario.correo);
-    const etiquetaNombre = document.querySelector(
-      '.nombre_usuario, .nombre_perfil, .nombre_usuario_superior'
-    );
-    const etiquetaRol = document.querySelector(
-      '.rol_usuario, .cargo_perfil, .rol_usuario_superior, .cargo_usuario'
-    );
-    const avatar = document.querySelector(
-      '.avatar_usuario, .avatar_perfil, .avatar_superior'
-    );
-
-    if (nombre && etiquetaNombre) etiquetaNombre.textContent = nombre;
-    if (usuario && usuario.rol && etiquetaRol) etiquetaRol.textContent = usuario.rol;
-    if (nombre && avatar) {
-      avatar.textContent = nombre.split(/\s+/).slice(0, 2)
-        .map(parte => parte.charAt(0)).join('').toUpperCase();
+async function marcarLeida(id, boton) {
+    try {
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones/${id}/leer`, { method: "PUT" }));
+        if (datos.success) {
+            const item = document.querySelector(`[data-id="${id}"]`);
+            if (item) {
+                item.classList.remove("no_leido");
+                item.classList.add("leido");
+                const btnCheck = item.querySelector(".boton_marcar_leido");
+                if (btnCheck) btnCheck.remove();
+            }
+            await cargarNotificaciones();
+            mostrarMensaje("Notificación marcada como leída.");
+        }
+    } catch (error) {
+        mostrarMensaje("No se pudo marcar como leída", true);
     }
+}
 
-    if (usuario && usuario.id) {
-      fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(async respuesta => {
-          const datos = await respuesta.json();
-          if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron cargar las notificaciones');
-          const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
-          document.querySelectorAll(
-            '.badge_campana, .insignia_notificacion, .etiqueta_notificaciones, .insignia_notificacion_lateral'
-          ).forEach(insignia => {
-            insignia.textContent = noLeidas;
-            insignia.style.display = noLeidas === 0 ? 'none' : '';
-          });
-        })
-        .catch(error => console.error('Error al actualizar el contador de notificaciones:', error));
+async function borrarNotificacion(id, boton) {
+    if (!confirm("¿Deseas borrar esta notificación?")) return;
+    try {
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones/${id}`, { method: "DELETE" }));
+        if (datos.success) {
+            const item = document.querySelector(`[data-id="${id}"]`);
+            if (item) item.remove();
+            await cargarNotificaciones();
+            mostrarMensaje("Notificación eliminada.");
+        }
+    } catch (error) {
+        mostrarMensaje("No se pudo eliminar la notificación", true);
     }
-
-    document.querySelectorAll('.boton_campana').forEach(boton => {
-      boton.addEventListener('click', () => {
-        window.location.href = 'notificaciones.html';
-      });
-    });
-
-    if (!barraSuperior.querySelector('.menu_movil')) {
-      const boton = document.createElement('button');
-      boton.type = 'button';
-      boton.className = 'menu_movil';
-      boton.setAttribute('aria-label', 'Abrir menú de navegación');
-      boton.setAttribute('aria-expanded', 'false');
-      boton.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>';
-      barraSuperior.prepend(boton);
-
-      const fondo = document.createElement('button');
-      fondo.type = 'button';
-      fondo.className = 'fondo_menu_movil';
-      fondo.setAttribute('aria-label', 'Cerrar menú de navegación');
-      document.body.appendChild(fondo);
-
-      function cambiarMenu(abierto) {
-        document.body.classList.toggle('menu_movil_abierto', abierto);
-        boton.setAttribute('aria-expanded', String(abierto));
-      }
-
-      boton.addEventListener('click', () => {
-        cambiarMenu(!document.body.classList.contains('menu_movil_abierto'));
-      });
-      fondo.addEventListener('click', () => cambiarMenu(false));
-      barraLateral.querySelectorAll('a').forEach(enlace => {
-        enlace.addEventListener('click', () => cambiarMenu(false));
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape') cambiarMenu(false);
-      });
+}
+async function marcarTodasLeidas() {
+    const items = document.querySelectorAll(".item_notificacion.no_leido");
+    for (const item of items) {
+        const id = Number(item.getAttribute("data-id"));
+        try {
+            await fetchConAuth(`${API}/notificaciones/${id}/leer`, { method: "PUT" });
+        } catch (e) {}
     }
+    await cargarNotificaciones();
+    mostrarMensaje("Todas las notificaciones marcadas como leídas.");
+}
 
-    barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
-      if (enlace.textContent.toLowerCase().includes('cerrar sesión')) {
-        enlace.href = 'login.html';
-        enlace.addEventListener('click', evento => {
-          evento.preventDefault();
-          localStorage.removeItem('usuario_ocid');
-          window.location.href = 'login.html';
-        });
-      }
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', iniciarInterfaz);
-  } else {
-    iniciarInterfaz();
-  }
-})();
-
-let filtroActual = 'todas';
-    let notificacionesUsuario = [];
-    let idUsuarioNotificaciones = null;
-
-    function actualizarContadores() {
-      const noLeidas = notificacionesUsuario.filter(item => !item.leida).length;
-      const leidas = notificacionesUsuario.length - noLeidas;
-      document.getElementById('conteo_todas').textContent = notificacionesUsuario.length;
-      document.getElementById('conteo_no_leidas').textContent = noLeidas;
-      document.getElementById('conteo_leidas').textContent = leidas;
-      ['badge_superior', 'badge_lateral'].forEach(id => {
-        const badge = document.getElementById(id);
-        if (!badge) return;
-        badge.style.display = noLeidas ? '' : 'none';
-        badge.textContent = noLeidas;
-      });
+async function borrarTodas() {
+    if (!confirm("¿Deseas borrar todas las notificaciones?")) return;
+    const items = document.querySelectorAll(".item_notificacion");
+    for (const item of items) {
+        const id = Number(item.getAttribute("data-id"));
+        try {
+            await fetchConAuth(`${API}/notificaciones/${id}`, { method: "DELETE" });
+        } catch (e) {}
     }
+    await cargarNotificaciones();
+    mostrarMensaje("Todas las notificaciones eliminadas.");
+}
 
-    function cambiarFiltro(tipo) {
-      filtroActual = tipo;
-      document.getElementById('pestana_todas').classList.remove('pestana_filtro_activa');
-      document.getElementById('pestana_no_leidas').classList.remove('pestana_filtro_activa');
-      document.getElementById('pestana_leidas').classList.remove('pestana_filtro_activa');
-      const pestana = tipo === 'todas' ? 'pestana_todas' : tipo === 'no_leidas' ? 'pestana_no_leidas' : 'pestana_leidas';
-      document.getElementById(pestana).classList.add('pestana_filtro_activa');
-      dibujarNotificaciones();
-    }
+async function refrescarNotificaciones() {
+    await cargarNotificaciones();
+    mostrarMensaje("Notificaciones actualizadas.");
+}
 
-    function dibujarNotificaciones() {
-      const lista = document.getElementById('lista_notificaciones');
-      lista.replaceChildren();
-      const visibles = notificacionesUsuario.filter(item =>
-        tipoVisible(item)
-      );
-      visibles.forEach(item => {
-        const articulo = document.createElement('article');
-        articulo.className = 'item_notificacion ' + (item.leida ? 'leido' : 'no_leido');
-        articulo.dataset.estado = item.leida ? 'leido' : 'no_leido';
-        const grupo = document.createElement('div');
-        grupo.className = 'flex items-center gap-4';
-        const texto = document.createElement('div');
-        texto.className = 'flex flex-col gap-1';
-        const titulo = document.createElement('span');
-        titulo.style.cssText = 'font-size:14px;font-weight:700;color:#0f172a';
-        titulo.textContent = item.anuncio_titulo ? 'Nuevo anuncio: ' + item.anuncio_titulo :
-          item.tarea_id ? 'Tarea asignada' : 'Notificación del sistema';
-        const detalle = document.createElement('span');
-        detalle.style.cssText = 'font-size:13px;color:#64748b';
-        detalle.textContent = item.anuncio_id ? 'Se publicó un anuncio para la comunidad.' :
-          item.tarea_id ? 'Tienes una actualización de tarea.' : 'Actualización de tu cuenta.';
-        texto.append(titulo, detalle);
-        grupo.appendChild(texto);
-        const fecha = document.createElement('span');
-        fecha.style.cssText = 'font-size:12px;color:#94a3b8';
-        fecha.textContent = item.fecha ? new Date(item.fecha).toLocaleString('es-MX') : '';
-        articulo.append(grupo, fecha);
-        articulo.addEventListener('click', () => marcarLeida(item));
-        lista.appendChild(articulo);
-      });
-      if (!visibles.length) {
-        const vacio = document.createElement('p');
-        vacio.style.cssText = 'padding:24px;color:#64748b;text-align:center';
-        vacio.textContent = 'No hay notificaciones para mostrar.';
-        lista.appendChild(vacio);
-      }
-      actualizarContadores();
-    }
-
-    function tipoVisible(item) {
-      return filtroActual === 'todas' ||
-        (filtroActual === 'no_leidas' && !item.leida) ||
-        (filtroActual === 'leidas' && item.leida);
-    }
-
-    async function actualizarNotificaciones(ruta, opciones) {
-      const respuesta = await fetch(window.OCID_API_BASE + ruta, opciones);
-      const datos = await respuesta.json();
-      if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron actualizar las notificaciones');
-      return datos;
-    }
-
-    async function marcarLeida(item) {
-      if (item.leida) return;
-      try {
-        await actualizarNotificaciones('/notificaciones/' + encodeURIComponent(item.id) + '/leida', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario_id: idUsuarioNotificaciones })
-        });
-        item.leida = true;
-        dibujarNotificaciones();
-      } catch (error) {
-        alert(error.message);
-      }
-    }
-
-    document.getElementById('boton_marcar_leidas').addEventListener('click', async () => {
-      if (!idUsuarioNotificaciones) return;
-      try {
-        await actualizarNotificaciones('/notificaciones/leidas', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario_id: idUsuarioNotificaciones })
-        });
-        notificacionesUsuario.forEach(item => { item.leida = true; });
-        dibujarNotificaciones();
-      } catch (error) {
-        alert(error.message);
-      }
-    });
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-        if (!usuario || !usuario.id) throw new Error('Inicia sesión para consultar notificaciones.');
-        idUsuarioNotificaciones = usuario.id;
-        notificacionesUsuario = await actualizarNotificaciones('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id));
-        dibujarNotificaciones();
-      } catch (error) {
-        console.error(error);
-        const lista = document.getElementById('lista_notificaciones');
-        lista.textContent = error.message;
-      }
-    });
-
-document.querySelectorAll('[data-evento-pagina~="evento-1"]').forEach(function (elemento) { elemento.addEventListener('mouseout', function (event) { this.style.backgroundColor='#2563eb' }); });
-document.querySelectorAll('[data-evento-pagina~="evento-2"]').forEach(function (elemento) { elemento.addEventListener('mouseover', function (event) { this.style.backgroundColor='#1d4ed8' }); });
-document.querySelectorAll('[data-evento-pagina~="evento-3"]').forEach(function (elemento) { elemento.addEventListener('click', function (event) { cambiarFiltro('todas') }); });
-document.querySelectorAll('[data-evento-pagina~="evento-4"]').forEach(function (elemento) { elemento.addEventListener('click', function (event) { cambiarFiltro('no_leidas') }); });
-document.querySelectorAll('[data-evento-pagina~="evento-5"]').forEach(function (elemento) { elemento.addEventListener('click', function (event) { cambiarFiltro('leidas') }); });
+document.addEventListener("DOMContentLoaded", () => {
+    inicializarSesion();
+    cargarNotificaciones();
+});
+��t e s t  
+ 

@@ -7,6 +7,22 @@ let listaAnunciosGlobal = [];
 let listaUsuariosGlobal = [];
 let listaDepartamentosGlobal = [];
 
+function obtenerToken() {
+    try {
+        const u = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
+        return u && u.token ? u.token : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function fetchConAuth(url, opciones = {}) {
+    const token = obtenerToken();
+    const headers = { ...(opciones.headers || {}) };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return fetch(url, { ...opciones, headers });
+}
+
 try {
     usuario = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
     if (!usuario || !usuario.id) usuario = null;
@@ -79,7 +95,7 @@ async function cargarAnuncios() {
     const contenedor = $("contenedor_lista_anuncios");
     if (contenedor) contenedor.innerHTML = '<p class="texto_vacio">Cargando anuncios...</p>';
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/anuncios`));
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/anuncios`));
         listaAnunciosGlobal = obtenerLista(datos).map(a => ({
             id: a.id, titulo: a.titulo || "", contenido: a.contenido || "",
             prioridad: normalizarPrioridad(a.prioridad), autor: a.autor_nombre || "Usuario",
@@ -89,7 +105,7 @@ async function cargarAnuncios() {
     } catch (error) {
         console.error("Error al cargar anuncios:", error);
         listaAnunciosGlobal = [];
-        if (contenedor) contenedor.innerHTML = `<p class="texto_vacio">No se pudieron cargar los anuncios: ${escaparHTML(error.message)}</p>`;
+        if (contenedor) contenedor.innerHTML = '<p class="texto_vacio">No se pudieron cargar los anuncios</p>';
         actualizarContadorAnuncios(null);
     }
 }
@@ -134,7 +150,7 @@ async function publicarAnuncio(evento) {
     const boton = $("btn_guardar_anuncio");
     if (boton) boton.disabled = true;
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/anuncios`, {
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/anuncios`, {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ titulo, contenido, prioridad, autor_id: Number(usuario.id), departamento_id: Number(departamento) })
         }));
@@ -152,7 +168,7 @@ async function eliminarAnuncio(id, evento) {
     if (!usuario?.id) { mostrarMensaje("Inicia sesión para eliminar anuncios.", true); return; }
     if (!id || !confirm("¿Deseas eliminar este anuncio?")) return;
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/anuncios/${Number(id)}`, { method: "DELETE" }));
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/anuncios/${Number(id)}`, { method: "DELETE" }));
         if (datos.success !== true) throw new Error(datos.error || "No se confirmó la eliminación.");
         mostrarMensaje("Anuncio eliminado correctamente.");
         await cargarAnuncios();
@@ -161,7 +177,7 @@ async function eliminarAnuncio(id, evento) {
 
 async function cargarUsuarios() {
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/login`));
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/login`));
         listaUsuariosGlobal = obtenerLista(datos);
         const docentes = listaUsuariosGlobal.filter(u => String(u.rol || "").toLowerCase().includes("docente"));
         if ($("conteo_usr")) $("conteo_usr").textContent = docentes.length ? String(docentes.length) : "—";
@@ -175,7 +191,7 @@ async function cargarUsuarios() {
 
 async function cargarDepartamentos() {
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/departamentos`));
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/departamentos`));
         listaDepartamentosGlobal = obtenerLista(datos);
         
         const selector = $("campo_departamento_anuncio");
@@ -208,7 +224,7 @@ async function cargarDepartamentos() {
 
 async function cargarEventosProximos() {
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/calendario`));
+        const datos = await leerRespuesta(await fetchConAuth(`${API}/calendario`));
         const listaEventos = obtenerLista(datos);
         
         if ($("metrica_conteo_eventos")) {
@@ -256,6 +272,7 @@ async function ejecutarAutenticacion(evento) {
         }));
         if (datos.success !== true || !datos.usuario?.id) throw new Error(datos.error || "No se pudo iniciar sesión.");
         usuario = datos.usuario;
+        if (datos.token) usuario.token = datos.token;
         localStorage.setItem("usuario_ocid", JSON.stringify(usuario));
         inicializarSesion();
         cerrarModal("modal_login_sesion");
