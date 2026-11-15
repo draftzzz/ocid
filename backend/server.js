@@ -415,23 +415,6 @@ app.put('/anuncios/:id', async (req, res) => {
 });
 
 // --- ARCHIVOS Y PAPELERA DE RECICLAJE ---
-app.get('/archivos', async (req, res) => {
-  try {
-    const resultado = await pool.query(
-      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id, a.anuncio_id, a.fecha,
-              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
-       FROM archivos a
-       LEFT JOIN usuarios u ON u.id = a.autor_id
-       LEFT JOIN departamentos d ON d.id = a.departamento_id
-       WHERE COALESCE(a.eliminado, FALSE) = FALSE
-       ORDER BY a.fecha DESC, a.id DESC`
-    );
-    res.json(resultado.rows);
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'No se pudieron cargar los archivos' });
-  }
-});
-
 app.get('/archivos/papelera', async (req, res) => {
   try {
     const resultado = await pool.query(
@@ -446,6 +429,23 @@ app.get('/archivos/papelera', async (req, res) => {
     res.json({ success: true, archivos: resultado.rows });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de reciclaje' });
+  }
+});
+
+app.get('/archivos', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id, a.anuncio_id, a.fecha,
+              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
+       FROM archivos a
+       LEFT JOIN usuarios u ON u.id = a.autor_id
+       LEFT JOIN departamentos d ON d.id = a.departamento_id
+       WHERE COALESCE(a.eliminado, FALSE) = FALSE
+       ORDER BY a.fecha DESC, a.id DESC`
+    );
+    res.json(resultado.rows);
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudieron cargar los archivos' });
   }
 });
 
