@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. Estilos Globales y Reset (Sin Scroll)
+   1. Estilos Globales y Reset (Basado en Perfil)
    ========================================================================== */
 * {
     box-sizing: border-box;
@@ -9,17 +9,16 @@
     -webkit-font-smoothing: antialiased;
 }
 
-html, body {
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    background-color: #f1f5f9;
-    color: #0f172a;
+html {
+    min-width: 320px;
 }
 
 body {
+    background-color: #f1f5f9;
+    color: #0f172a;
     display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
 }
 
 a {
@@ -27,15 +26,18 @@ a {
     color: inherit;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
     font-family: inherit;
     outline: none;
 }
 
-/* Scrollbars limpios para áreas internas permitidas */
+/* Scrollbars limpios */
 *::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
 }
 *::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
@@ -64,81 +66,111 @@ button, input, select, textarea {
     display: flex;
     align-items: center;
     gap: 12px;
-    min-height: 70px;
-    padding: 16px 20px;
+    min-height: 82px;
+    padding: 20px;
     border-bottom: 1px solid #1e293b;
     background-color: #0d1527;
 }
 
 .icono_escudo {
     display: flex;
+    flex: 0 0 38px;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: 8px;
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: #ffffff;
-    font-size: 18px;
+    font-size: 20px;
+    box-shadow: 0px 4px 10px rgba(37, 99, 235, 0.35);
 }
 
 .texto_logo_titulo {
     color: #ffffff;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 20px;
 }
 
 .texto_logo_subtitulo {
     color: #64748b;
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
 }
 
 .navegacion_lateral {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 2px;
-    padding: 12px;
+    gap: 4px;
+    padding: 16px 12px;
     overflow-y: auto;
 }
 
 .enlace_navegacion {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
-    min-height: 38px;
-    padding: 10px 12px;
-    border-radius: 8px;
+    min-height: 40px;
+    padding: 11px 14px;
+    border-radius: 9px;
+    background-color: transparent;
     color: #cbd5e1;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 500;
+    line-height: 18px;
+    cursor: pointer;
 }
 
-.enlace_navegacion:hover, .enlace_navegacion.activo {
-    background-color: #2563eb;
+.enlace_navegacion:hover {
+    background-color: #1e293b;
     color: #ffffff;
 }
 
+.enlace_navegacion.activo {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.enlace_navegacion.activo:hover {
+    background-color: #1d4ed8;
+}
+
 .icono_nav {
-    width: 18px;
+    flex-shrink: 0;
+    width: 20px;
     text-align: center;
+    font-size: 16px;
 }
 
 .insignia_notificacion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 19px;
+    min-height: 19px;
     margin-left: auto;
     padding: 1px 6px;
     border-radius: 10px;
     background-color: #ef4444;
     color: #ffffff;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
 }
 
 .separador_menu {
     height: 1px;
     background-color: #1e293b;
-    margin: 6px 12px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    margin-left: 14px;
+    margin-right: 14px;
 }
 
 .boton_cerrar_sesion {
@@ -146,14 +178,18 @@ button, input, select, textarea {
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 10px 12px;
-    border: 0;
+    padding: 10px 14px;
+    border: 0px;
     border-radius: 8px;
-    background: transparent;
+    background-color: transparent;
     color: #ef4444;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
+}
+
+.boton_cerrar_sesion:hover {
+    background-color: rgba(239, 68, 68, 0.12);
 }
 
 /* ==========================================================================
@@ -163,39 +199,43 @@ button, input, select, textarea {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    min-width: 0px;
     height: 100vh;
-    overflow: hidden;
+    overflow-y: auto;
     background-color: #f1f5f9;
 }
 
 .barra_superior {
-    height: 60px;
-    min-height: 60px;
+    height: 64px;
+    min-height: 64px;
     background-color: #0d1527;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0px 28px;
     border-bottom: 1px solid #1e293b;
+    position: sticky;
+    top: 0px;
+    z-index: 30;
     color: #ffffff;
 }
 
 .seccion_superior_izquierda {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
     flex: 1;
-    max-width: 500px;
+    max-width: 620px;
 }
 
 .seccion_superior_derecha {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
 }
 
-.menu_movil, .boton_menu_hamburguesa {
+.menu_movil,
+.boton_menu_hamburguesa {
     display: none;
 }
 
@@ -208,24 +248,36 @@ button, input, select, textarea {
     display: flex;
     align-items: center;
     width: 100%;
+    max-width: 440px;
 }
 
 .icono_busqueda {
     position: absolute;
-    left: 12px;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #64748b;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .campo_busqueda {
     width: 100%;
-    height: 34px;
-    padding: 0 12px 0 34px;
+    padding: 8px 14px 8px 38px;
     background-color: #1e293b;
     border: 1px solid #334155;
-    border-radius: 6px;
+    border-radius: 8px;
     color: #f8fafc;
-    font-size: 12.5px;
+    font-size: 13px;
+}
+
+.campo_busqueda::placeholder {
+    color: #64748b;
+}
+
+.campo_busqueda:focus {
+    border-color: #3b82f6;
+    background-color: #1a2436;
+    box-shadow: 0px 0px 0px 3px rgba(59, 130, 246, 0.2);
 }
 
 .boton_notificaciones {
@@ -233,125 +285,175 @@ button, input, select, textarea {
     background: transparent;
     border: none;
     color: #cbd5e1;
-    font-size: 16px;
+    font-size: 17px;
+    padding: 6px;
+    border-radius: 8px;
     cursor: pointer;
+    margin-left: 30px;
 }
 
 .punto_notificacion {
     position: absolute;
-    top: -2px;
-    right: -2px;
+    top: 2px;
+    right: 2px;
     background-color: #ef4444;
     color: #ffffff;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 2px solid #0d1527;
 }
 
 .perfil_usuario_barra {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    padding-left: 8px;
     cursor: pointer;
 }
 
 .avatar_usuario {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background-color: #3b82f6;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
+    border: 2px solid #1e293b;
 }
 
 .detalles_usuario {
     display: flex;
     flex-direction: column;
+    text-align: left;
 }
 
 .nombre_usuario_texto {
     color: #f8fafc;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 16px;
 }
 
 .rol_usuario_texto {
     color: #94a3b8;
-    font-size: 10px;
+    font-size: 11px;
+    line-height: 14px;
 }
 
 .icono_dropdown {
     color: #64748b;
-    font-size: 10px;
+    font-size: 11px;
+    margin-left: 4px;
 }
 
 /* ==========================================================================
-   4. Cuerpo de Tareas (Fijo, sin scroll general)
+   4. Cuerpo de Tareas
    ========================================================================== */
 .cuerpo_contenido {
     flex: 1;
-    padding: 16px 20px;
-    max-width: 1200px;
+    padding: 28px 32px;
+    max-width: 1300px;
     width: 100%;
-    margin: 0 auto;
+    margin: 0px auto;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    overflow: hidden;
+    gap: 20px;
 }
 
 .fila_encabezado_anuncios {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 2px;
 }
 
 .titulo_pantalla {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
     color: #0f172a;
+    line-height: 28px;
 }
 
 .subtitulo_pantalla {
-    font-size: 12px;
+    font-size: 13px;
     color: #64748b;
+    margin-top: 2px;
 }
 
 .boton_nuevo_anuncio {
     background-color: #2563eb;
     color: #ffffff;
     border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-size: 12.5px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
     font-weight: 600;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     cursor: pointer;
-    white-space: nowrap;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.boton_nuevo_anuncio:hover {
+    background-color: #1d4ed8;
 }
 
 /* ==========================================================================
-   5. Filtros Compactos
+   5. Pestañas de Filtro Rápido (NUEVO) y Barra de Búsqueda
    ========================================================================== */
-.barra_filtros {
-    background-color: #ffffff;
-    padding: 10px 14px;
-    border-radius: 8px;
+.barra_pestanas_tareas {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pestana_tarea {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+
+.pestana_tarea:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+.pestana_tarea.activa {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.barra_filtros {
+    background-color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .filtro_busqueda_contenedor {
@@ -361,52 +463,55 @@ button, input, select, textarea {
 
 .input_filtro_busqueda {
     width: 100%;
-    height: 34px;
+    height: 40px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 0 10px 0 30px;
-    font-size: 12.5px;
-    background-color: #f8fafc;
+    padding: 0px 12px 0px 36px;
+    font-size: 13px;
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
+.input_filtro_busqueda:focus {
+    border-color: #2563eb;
 }
 
 .icono_lupa_filtro {
     position: absolute;
-    left: 10px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: #94a3b8;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .filtro_selector {
     flex: 1;
-    height: 34px;
+    height: 40px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 0 8px;
-    font-size: 12px;
-    background-color: #f8fafc;
+    padding: 0px 12px;
+    font-size: 13px;
+    background-color: #ffffff;
     color: #334155;
+    outline: none;
+}
+
+.filtro_selector:focus {
+    border-color: #2563eb;
 }
 
 /* ==========================================================================
-   6. Tabla Adaptable / Vista de Tarjetas para Móvil
+   6. Tabla de Tareas
    ========================================================================== */
 .tarjeta_tabla {
     background-color: #ffffff;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    flex: 1;
-    max-height: calc(100vh - 210px);
-}
-
-.contenedor_tabla_responsive {
-    width: 100%;
-    overflow-y: auto;
-    flex: 1;
 }
 
 .tabla_tareas {
@@ -416,17 +521,22 @@ button, input, select, textarea {
 }
 
 .tabla_tareas thead {
-    display: none; /* Oculta los encabezados de tabla clásicos en espacios reducidos para ganar espacio */
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tabla_tareas th {
+    padding: 14px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .tabla_tareas tbody tr {
-    display: flex;
-    flex-direction: column;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e2e8f0;
-    position: relative;
-    gap: 6px;
-    background-color: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.15s ease;
 }
 
 .tabla_tareas tbody tr:hover {
@@ -434,53 +544,26 @@ button, input, select, textarea {
 }
 
 .tabla_tareas td {
-    padding: 0;
-    border: none;
-    font-size: 12.5px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #334155;
+    vertical-align: middle;
 }
 
-/* Distribución de celdas como tarjeta móvil */
 .tabla_tareas td:nth-child(1) {
-    font-weight: 700;
-    font-size: 14px;
-    color: #0f172a;
-    padding-right: 30px; /* Espacio para el botón de opciones */
-}
-
-.tabla_tareas td:nth-child(2) {
-    color: #64748b;
-    font-size: 12px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.tabla_tareas td:nth-child(3),
-.tabla_tareas td:nth-child(4),
-.tabla_tareas td:nth-child(5) {
-    display: inline-block;
-    font-size: 11px;
-    color: #475569;
-    margin-right: 10px;
-}
-
-.tabla_tareas td:nth-child(3)::before { content: "Asignado: "; color: #94a3b8; }
-.tabla_tareas td:nth-child(4)::before { content: "Depto: "; color: #94a3b8; }
-.tabla_tareas td:nth-child(5)::before { content: "Límite: "; color: #94a3b8; }
-
-.tabla_tareas td:nth-child(6) {
-    position: absolute;
-    top: 12px;
-    right: 40px;
-}
-
-.badge_estado {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 10px;
     font-weight: 600;
+    color: #0f172a;
+}
+
+/* IMPORTANTE: Evita que "En proceso" se rompa en dos líneas */
+.badge_estado {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .estado_pendiente { background-color: #fef3c7; color: #b45309 !important; }
@@ -488,71 +571,71 @@ button, input, select, textarea {
 .estado_completado { background-color: #dcfce7; color: #15803d !important; }
 
 .columna_acciones {
-    position: absolute !important;
-    top: 10px;
-    right: 10px;
+    text-align: center;
 }
 
 .boton_opciones_anuncio {
     background: transparent;
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
+    border: none;
     color: #64748b;
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
+    border-radius: 4px;
     font-size: 14px;
 }
 
-.boton_opciones_anuncio:focus,
-.boton_opciones_anuncio:active {
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
+.boton_opciones_anuncio:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
 }
 
-/* Pie de tabla / Paginación fija abajo */
+/* Pie de tabla / Paginación */
 .pie_tabla {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    padding: 14px 18px;
     border-top: 1px solid #e2e8f0;
-    background-color: #f8fafc;
-    flex-shrink: 0;
+    background-color: #ffffff;
 }
 
 .texto_conteo_filas {
-    font-size: 11.5px;
+    font-size: 13px;
     color: #64748b;
 }
 
 .bloque_paginacion {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .boton_pagina {
-    min-width: 30px;
-    height: 30px;
+    min-width: 32px;
+    height: 32px;
     padding: 0 6px;
     border-radius: 6px;
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #475569;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #e2e8f0;
     background-color: #ffffff;
     cursor: pointer;
+}
+
+.boton_pagina:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
 }
 
 .boton_pagina_activo {
     background-color: #2563eb !important;
     color: #ffffff !important;
     border-color: #2563eb !important;
+    font-weight: 600;
 }
 
 /* ==========================================================================
@@ -563,11 +646,11 @@ button, input, select, textarea {
     position: fixed;
     inset: 0;
     background-color: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(2px);
     z-index: 100;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 16px;
 }
 
 .fondo_oscuro_modal.modal_activo {
@@ -576,18 +659,18 @@ button, input, select, textarea {
 
 .caja_modal {
     background-color: #ffffff;
-    border-radius: 10px;
+    border-radius: 12px;
     width: 100%;
-    max-width: 460px;
+    max-width: 500px;
     max-height: 90vh;
-    box-shadow: 0px 15px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1), 0px 10px 10px -5px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
 .cabecera_modal {
-    padding: 12px 16px;
+    padding: 18px 24px;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
@@ -595,7 +678,7 @@ button, input, select, textarea {
 }
 
 .titulo_modal {
-    font-size: 14.5px;
+    font-size: 17px;
     font-weight: 700;
     color: #0f172a;
 }
@@ -603,16 +686,27 @@ button, input, select, textarea {
 .boton_cerrar_modal {
     background: transparent;
     border: none;
-    color: #94a3b8;
+    color: #64748b;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.boton_cerrar_modal:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
 }
 
 .cuerpo_modal {
-    padding: 14px 16px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
     overflow-y: auto;
     flex: 1;
 }
@@ -620,46 +714,51 @@ button, input, select, textarea {
 .grupo_campo_modal {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
 .etiqueta_campo {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     color: #334155;
 }
 
-.input_campo_modal, .selector_campo_modal, .textarea_campo_modal {
+.input_campo_modal,
+.selector_campo_modal,
+.textarea_campo_modal {
     width: 100%;
+    height: 38px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 7px 10px;
-    font-size: 12px;
+    padding: 0px 12px;
+    font-size: 13px;
     color: #0f172a;
     background-color: #ffffff;
 }
 
 .textarea_campo_modal {
-    min-height: 70px;
-    max-height: 100px;
-    resize: none;
+    height: auto;
+    min-height: 80px;
+    padding: 10px 12px;
+    resize: vertical;
 }
 
 .pie_modal {
-    padding: 10px 16px;
+    padding: 16px 24px;
     background-color: #f8fafc;
     border-top: 1px solid #e2e8f0;
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 12px;
 }
 
-.boton_cancelar_modal, .boton_guardar_modal {
-    padding: 7px 14px;
+.boton_cancelar_modal,
+.boton_guardar_modal {
+    padding: 8px 16px;
     border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
+    font-size: 13px;
     font-weight: 600;
+    cursor: pointer;
 }
 
 .boton_cancelar_modal {
@@ -670,8 +769,12 @@ button, input, select, textarea {
 
 .boton_guardar_modal {
     background-color: #2563eb;
-    border: none;
+    border: 1px solid #2563eb;
     color: #ffffff;
+}
+
+.boton_guardar_modal:hover {
+    background-color: #1d4ed8;
 }
 
 /* ==========================================================================
@@ -679,15 +782,14 @@ button, input, select, textarea {
    ========================================================================== */
 .contenedor_toast_flotante {
     position: fixed;
-    bottom: 16px;
-    right: 16px;
-    left: 16px;
+    bottom: 24px;
+    right: 24px;
     z-index: 99999;
     display: flex;
     flex-direction: column;
     gap: 8px;
     pointer-events: none;
-    align-items: center;
+    align-items: flex-end;
 }
 
 .toast_mensaje {
@@ -695,32 +797,37 @@ button, input, select, textarea {
     display: flex;
     align-items: center;
     gap: 10px;
-    width: 100%;
-    max-width: 360px;
-    padding: 10px 14px;
+    padding: 12px 20px;
     background-color: #0f172a;
     color: #ffffff;
     border-radius: 8px;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-    font-size: 12.5px;
+    box-shadow: 0px 10px 15px -3px rgba(0, 0, 0, 0.2);
+    font-size: 13px;
     border-left: 4px solid #3b82f6;
 }
 
 /* ==========================================================================
-   9. Media Queries Responsivos (Móviles)
+   9. Media Queries Responsivos
    ========================================================================== */
 @media (max-width: 900px) {
-    .menu_movil, .boton_menu_hamburguesa {
+    .menu_movil,
+    .boton_menu_hamburguesa {
         display: flex !important;
         align-items: center;
         justify-content: center;
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
         background: transparent !important;
         border: none !important;
+        box-shadow: none !important;
         color: #94a3b8 !important;
-        font-size: 16px !important;
+        font-size: 18px !important;
         cursor: pointer;
+    }
+
+    .menu_movil:hover,
+    .boton_menu_hamburguesa:hover {
+        color: #ffffff !important;
     }
 
     .barra_lateral {
@@ -732,7 +839,8 @@ button, input, select, textarea {
         box-shadow: 8px 0px 24px rgba(15, 23, 42, 0.2);
     }
 
-    body.menu_movil_abierto .barra_lateral {
+    body.menu_movil_abierto .barra_lateral,
+    .barra_lateral.menu_abierto {
         transform: translateX(0px);
     }
 
@@ -754,9 +862,9 @@ button, input, select, textarea {
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 600px) {
     .barra_superior {
-        padding: 0 12px;
+        padding: 0px 12px;
     }
 
     .seccion_superior_derecha .detalles_usuario,
@@ -765,14 +873,13 @@ button, input, select, textarea {
     }
 
     .cuerpo_contenido {
-        padding: 10px 12px !important;
-        gap: 10px;
+        padding: 18px 14px;
     }
 
     .fila_encabezado_anuncios {
         flex-direction: column;
         align-items: stretch;
-        gap: 8px;
+        gap: 12px;
     }
 
     .boton_nuevo_anuncio {
@@ -781,14 +888,12 @@ button, input, select, textarea {
     }
 
     .barra_filtros {
-        padding: 8px 10px;
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 6px;
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .filtro_busqueda_contenedor, .filtro_selector {
+    .filtro_busqueda_contenedor,
+    .filtro_selector {
         width: 100%;
-        min-width: 100%;
     }
 }

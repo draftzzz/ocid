@@ -1,78 +1,3 @@
-"use strict";
-
-const $ = (id) => document.getElementById(id);
-const API = "https://ocid.onrender.com";
-
-function obtenerToken() {
-    try {
-        const u = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
-        return u && u.token ? u.token : null;
-    } catch (e) {
-        return null;
-    }
-}
-
-async function fetchConAuth(url, opciones = {}) {
-    const token = obtenerToken();
-    const headers = { ...(opciones.headers || {}) };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    return fetch(url, { ...opciones, headers });
-}
-
-async function leerRespuesta(respuesta) {
-    const tipo = respuesta.headers.get("content-type") || "";
-    let datos = {};
-    if (tipo.includes("application/json")) datos = await respuesta.json();
-    else {
-        const texto = await respuesta.text();
-        datos = texto ? { message: texto } : {};
-    }
-    if (!respuesta.ok) throw new Error(datos.error || datos.message || `Error HTTP ${respuesta.status}`);
-    return datos;
-}
-
-function mostrarMensaje(texto, esError = false) {
-    const caja = $("aviso_notificacion");
-    const textoCaja = $("texto_aviso_notificacion");
-    const icono = $("icono_aviso_notificacion");
-    if (!caja || !textoCaja) { (esError ? console.error : console.log)(texto); return; }
-    textoCaja.textContent = texto;
-    if (icono) {
-        icono.className = esError ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-check";
-        icono.style.color = esError ? "#ef4444" : "#22c55e";
-    }
-    caja.classList.add("visible");
-    setTimeout(() => caja.classList.remove("visible"), 3500);
-}
-
-function inicializarSesion() {
-    try {
-        const u = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
-        if (u && u.id) {
-            const nombre = u.nombre || u.correo || "Usuario";
-            if ($("nombreUsuario")) $("nombreUsuario").textContent = nombre;
-            if ($("etiqueta_rol_usuario")) $("etiqueta_rol_usuario").textContent = u.rol || "";
-            if ($("avatar_usuario_circulo")) {
-                $("avatar_usuario_circulo").innerHTML = `<i class="fa-solid fa-user"></i>`;
-                const inicial = (nombre.charAt(0) || "U").toUpperCase();
-                $("avatar_usuario_circulo").textContent = inicial;
-            }
-        }
-    } catch (e) {}
-}
-
-function cerrarSesion() {
-    localStorage.removeItem("usuario_ocid");
-    inicializarSesion();
-    mostrarMensaje("Sesión cerrada.");
-    setTimeout(() => { location.href = "inicio.html"; }, 1000);
-}
-
-function cerrarModal(id) { $(id)?.classList.remove("visible"); }
-
-function escaparHTML(texto) {
-    return String(texto ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
 async function cargarNotificaciones() {
     const contenedor = $("contenedor_notificaciones");
     const vacio = $("vacio_notificaciones");
@@ -87,7 +12,16 @@ async function cargarNotificaciones() {
 
     try {
         const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones`));
-        const notificaciones = datos.notificaciones || [];
+        let notificaciones = datos.notificaciones || [];
+
+        // -------------------------------------------------------------
+        // FILTRO: Mostrar solo las notificaciones realizadas a partir
+        // del momento en que se cargó la página (se descartan las anteriores)
+        // -------------------------------------------------------------
+        notificaciones = notificaciones.filter(n => {
+            const fechaNoti = new Date(n.fecha || n.fecha_creacion).getTime();
+            return fechaNoti >= timestampCargaPagina;
+        });
 
         const total = notificaciones.length;
         const sinLeer = notificaciones.filter(n => !n.leida).length;
@@ -133,73 +67,3 @@ async function cargarNotificaciones() {
         if (contenedor) contenedor.innerHTML = '<p style="text-align:center; color:#ef4444;">No se pudieron cargar las notificaciones</p>';
     }
 }
-
-async function marcarLeida(id, boton) {
-    try {
-        const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones/${id}/leer`, { method: "PUT" }));
-        if (datos.success) {
-            const item = document.querySelector(`[data-id="${id}"]`);
-            if (item) {
-                item.classList.remove("no_leido");
-                item.classList.add("leido");
-                const btnCheck = item.querySelector(".boton_marcar_leido");
-                if (btnCheck) btnCheck.remove();
-            }
-            await cargarNotificaciones();
-            mostrarMensaje("Notificación marcada como leída.");
-        }
-    } catch (error) {
-        mostrarMensaje("No se pudo marcar como leída", true);
-    }
-}
-
-async function borrarNotificacion(id, boton) {
-    if (!confirm("¿Deseas borrar esta notificación?")) return;
-    try {
-        const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones/${id}`, { method: "DELETE" }));
-        if (datos.success) {
-            const item = document.querySelector(`[data-id="${id}"]`);
-            if (item) item.remove();
-            await cargarNotificaciones();
-            mostrarMensaje("Notificación eliminada.");
-        }
-    } catch (error) {
-        mostrarMensaje("No se pudo eliminar la notificación", true);
-    }
-}
-async function marcarTodasLeidas() {
-    const items = document.querySelectorAll(".item_notificacion.no_leido");
-    for (const item of items) {
-        const id = Number(item.getAttribute("data-id"));
-        try {
-            await fetchConAuth(`${API}/notificaciones/${id}/leer`, { method: "PUT" });
-        } catch (e) {}
-    }
-    await cargarNotificaciones();
-    mostrarMensaje("Todas las notificaciones marcadas como leídas.");
-}
-
-async function borrarTodas() {
-    if (!confirm("¿Deseas borrar todas las notificaciones?")) return;
-    const items = document.querySelectorAll(".item_notificacion");
-    for (const item of items) {
-        const id = Number(item.getAttribute("data-id"));
-        try {
-            await fetchConAuth(`${API}/notificaciones/${id}`, { method: "DELETE" });
-        } catch (e) {}
-    }
-    await cargarNotificaciones();
-    mostrarMensaje("Todas las notificaciones eliminadas.");
-}
-
-async function refrescarNotificaciones() {
-    await cargarNotificaciones();
-    mostrarMensaje("Notificaciones actualizadas.");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    inicializarSesion();
-    cargarNotificaciones();
-});
-��t e s t  
- 

@@ -144,8 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let listaDepartamentos = [];
   let listaDocentesUsuarios = [];
   let paginaActual = 1;
-  const elementosPorPagina = 3; // EXACTAMENTE 3 ELEMENTOS POR PÁGINA
+  const elementosPorPagina = 3; 
   let tareaEnEdicionId = null;
+  let alcanceActualTareas = 'todas'; // 'todas' | 'mias' | 'departamento'
 
   let departamentosSeleccionadosIDs = new Set();
   let personasSeleccionadasIDs = new Set();
@@ -419,20 +420,54 @@ document.addEventListener('DOMContentLoaded', () => {
     return soloFecha;
   }
 
+  // LOGICA DE FILTRADO RÁPIDO Y BÚSQUEDA
+  window.cambiarAlcanceTareas = function(nuevoAlcance, boton) {
+    alcanceActualTareas = nuevoAlcance;
+    document.querySelectorAll('.pestana_tarea').forEach(btn => btn.classList.remove('activa'));
+    if (boton) boton.classList.add('activa');
+    paginaActual = 1;
+    renderizarTabla();
+  };
+
   function obtenerTareasFiltradas() {
     const textoBusqueda = inputTexto ? inputTexto.value.toLowerCase().trim() : '';
     const depFiltro = selectDepartamento ? selectDepartamento.value : 'todos';
     const estFiltro = selectEstado ? selectEstado.value : 'todos';
 
+    let usuarioActual = null;
+    try {
+      usuarioActual = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
+    } catch (e) {
+      usuarioActual = null;
+    }
+
+    const miId = usuarioActual && usuarioActual.id ? String(usuarioActual.id) : '';
+    const miNombre = usuarioActual && (usuarioActual.nombre || usuarioActual.correo || usuarioActual.usuario || '').toLowerCase().trim();
+    const miDepto = usuarioActual && (usuarioActual.departamento || usuarioActual.departamento_nombre || '').toLowerCase().trim();
+
     return tareas.filter(tarea => {
+      // 1. Filtro rápido de alcance (Pestañas superiores)
+      if (alcanceActualTareas === 'mias') {
+        const asignadoTexto = (tarea.asignado || tarea.asignado_a || tarea.personas || '').toLowerCase();
+        const coincideNombre = miNombre && asignadoTexto.includes(miNombre);
+        const coincideId = miId && String(tarea.usuario_id) === miId;
+        if (!coincideNombre && !coincideId) return false;
+      } else if (alcanceActualTareas === 'departamento') {
+        const deptoTarea = (tarea.departamento || tarea.departamento_nombre || '').toLowerCase();
+        const esGeneral = deptoTarea.includes('general');
+        const coincideDepto = miDepto && deptoTarea.includes(miDepto);
+        if (!esGeneral && !coincideDepto) return false;
+      }
+
+      // 2. Filtros de texto, select departamento y select estado
       const tituloT = (tarea.titulo || '').toLowerCase();
       const descT = (tarea.descripcion || tarea.detalles || '').toLowerCase();
       const asigT = (tarea.asignado || tarea.asignado_a || tarea.personas || '').toLowerCase();
-      const deptoTexto = tarea.departamento || tarea.departamento_nombre || 'General';
+      const deptoTexto = (tarea.departamento || tarea.departamento_nombre || 'General').toLowerCase();
       const estadoT = tarea.estado || 'Pendiente';
 
       const coincideTexto = [tituloT, descT, asigT].join(' ').includes(textoBusqueda);
-      const coincideDep = depFiltro === 'todos' || deptoTexto.includes(depFiltro);
+      const coincideDep = depFiltro === 'todos' || deptoTexto.includes(depFiltro.toLowerCase());
       const coincideEst = estFiltro === 'todos' || estadoT === estFiltro;
 
       return coincideTexto && coincideDep && coincideEst;

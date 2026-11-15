@@ -13,26 +13,30 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'clave_secreta_jwt_muy_segura_cambiar_en_produccion';
 
 // ==========================================
+// CONFIGURACIÓN DE BASE DE DATOS
+// ==========================================
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// ==========================================
 // CONFIGURACIÓN DE SEGURIDAD (PRODUCCIÓN)
 // ==========================================
-
-// 1. Helmet para proteger cabeceras HTTP
 app.use(helmet());
 
-// 2. Rate Limiter general para prevenir ataques DDoS / fuerza bruta
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Límite de 100 peticiones por IP por ventana
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde.' }
 });
 app.use(limiter);
 
-// 3. Rate Limiter estricto para rutas de Autenticación (Login / Registro)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // Máximo 10 intentos por IP en 15 minutos
+  max: 15,
   message: { success: false, error: 'Demasiados intentos de acceso. Intente nuevamente en 15 minutos.' }
 });
 
@@ -54,8 +58,33 @@ app.use(cors({
 app.use(express.json({ limit: '15mb' }));
 
 // ==========================================
+// MIGRACIÓN AUTOMÁTICA PARA PAPELERA (BORRADO LÓGICO)
+// ==========================================
+pool.query(`
+  ALTER TABLE archivos
+  ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
+`).catch(err => console.error('Aviso migración papelera:', err.message));
+
+// ==========================================
+// COMPROBAR SERVIDOR Y BASE DE DATOS (RAÍZ)
+// ==========================================
+app.get('/health', (req, res) => {
+  res.json({ success: true, mensaje: 'OCID API funcionando correctamente' });
+});
+
+app.get('/db-test', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ success: true, mensaje: 'Conexión a Neon correcta' });
+  } catch (error) {
+    console.error('Error de base de datos:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo conectar con la base de datos' });
+  }
+});
+
+// ==========================================
 // MIDDLEWARE DE AUTENTICACIÓN JWT
-// Protege todas las rutas excepto login, registro y salud
 // ==========================================
 function autenticarJWT(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -72,56 +101,16 @@ function autenticarJWT(req, res, next) {
   });
 }
 
-// Rutas públicas (no requieren token)
-app.post('/login', authLimiter, async (req, res) => {
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-
-// COMPROBAR SERVIDOR
-app.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    mensaje: 'OCID API funcionando'
-  });
-});
-
-// COMPROBAR BASE DE DATOS
-app.get('/db-test', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-
-    res.json({
-      success: true,
-      mensaje: 'Conexión a Neon correcta'
-    });
-  } catch (error) {
-    console.error('Error de base de datos:', {
-      name: error.name,
-      code: error.code,
-      message: error.message || 'Sin detalle del controlador PostgreSQL'
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'No se pudo conectar con la base de datos'
-    });
-  }
-});
-
 // ==========================================
-// INICIAR SESIÓN (CON BCRYPT Y JWT)
+// RUTAS PÚBLICAS
 // ==========================================
+
+// Iniciar sesión
 app.post('/login', authLimiter, async (req, res) => {
   const { correo, password } = req.body;
 
   if (!correo || !password) {
-    return res.status(400).json({
-      success: false,
-      error: 'Correo y contraseña son obligatorios'
-    });
+    return res.status(400).json({ success: false, error: 'Correo y contraseña son obligatorios' });
   }
 
   try {
@@ -134,97 +123,131 @@ app.post('/login', authLimiter, async (req, res) => {
     );
 
     if (resultado.rowCount === 0) {
-      return res.status(401).json({
-        success: false,
-        error: 'Correo o contraseña incorrectos'
-      });
+      return res.status(401).json({ success: false, error: 'Correo o contraseña incorrectos' });
     }
 
     const usuario = resultado.rows[0];
-
-    // Verificar contraseña con bcrypt
     const passwordMatch = await bcrypt.compare(password, usuario.password);
 
     if (!passwordMatch) {
-      return res.status(401).json({
-        success: false,
-        error: 'Correo o contraseña incorrectos'
-      });
+      return res.status(401).json({ success: false, error: 'Correo o contraseña incorrectos' });
     }
 
-    // Generar Token JWT (expira en 8 horas)
     const token = jwt.sign(
       { id: usuario.id, correo: usuario.correo, rol: usuario.rol },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
 
-    // Ocultar contraseña antes de enviarla al cliente
     delete usuario.password;
 
-    res.json({
-      success: true,
-      token,
-      usuario
-    });
-
+    res.json({ success: true, token, usuario });
   } catch (error) {
     console.error('Error en login:', error.message);
-
-    res.status(500).json({
-      success: false,
-      error: 'Error al iniciar sesión'
-    });
+    res.status(500).json({ success: false, error: 'Error al iniciar sesión' });
   }
 });
 
-// OBTENER USUARIOS / DOCENTES
-app.get('/login', async (req, res) => {
+// Registrar usuario
+app.post('/registro', authLimiter, async (req, res) => {
+  const { nombre, correo, password, rol, departamento, departamento_id } = req.body;
+
+  if (!nombre || !correo || !password) {
+    return res.status(400).json({ success: false, error: 'Nombre, correo y contraseña son obligatorios' });
+  }
+
   try {
+    const existente = await pool.query('SELECT id FROM usuarios WHERE correo = $1 LIMIT 1', [correo.trim()]);
+    if (existente.rowCount > 0) {
+      return res.status(409).json({ success: false, error: 'Ese correo ya está registrado' });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    let departamentoId = null;
+    if (departamento_id !== undefined && departamento_id !== null && departamento_id !== '' && !isNaN(Number(departamento_id))) {
+      const numId = Number(departamento_id);
+      if (numId > 0) {
+        const deptoExiste = await pool.query('SELECT id FROM departamentos WHERE id = $1', [numId]);
+        if (deptoExiste.rowCount > 0) departamentoId = numId;
+      }
+    }
+
+    if (!departamentoId && departamento && String(departamento).trim()) {
+      const resDepto = await pool.query(
+        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) LIMIT 1',
+        [String(departamento).trim()]
+      );
+      if (resDepto.rowCount > 0) departamentoId = resDepto.rows[0].id;
+    }
+
+    const rolFinal = rol || 'Docente';
+    const esJefeBool = rolFinal.toLowerCase() === 'jefe';
+
     const resultado = await pool.query(
-      `SELECT
-         u.id,
-         u.nombre,
-         u.correo,
-         u.rol,
-         u.departamento_id,
-         u.es_jefe,
-         d.nombre AS departamento_nombre
-       FROM usuarios u
-       LEFT JOIN departamentos d
-         ON d.id = u.departamento_id
-       ORDER BY u.id DESC`
+      `INSERT INTO usuarios (nombre, correo, password, rol, departamento_id, es_jefe)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
+      [nombre.trim(), correo.trim(), hashedPassword, rolFinal, departamentoId, esJefeBool]
     );
 
-    res.json(resultado.rows);
-
+    res.status(201).json({ success: true, usuario: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al consultar usuarios:', error.message);
-
-    res.status(500).json({
-      success: false,
-      error: 'No se pudieron cargar los usuarios'
-    });
+    console.error('Error al registrar usuario:', error.message);
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Ese correo ya está registrado' });
+    }
+    res.status(500).json({ success: false, error: 'No se pudo registrar el usuario.' });
   }
 });
 
-// ACTUALIZAR PERFIL / DEPARTAMENTO / ROL DE USUARIO
+
+// ==========================================
+// RUTAS PROTEGIDAS CON JWT
+// ==========================================
+app.use(autenticarJWT);
+
+// Obtener usuarios / docentes
+app.get('/usuarios', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe, d.nombre AS departamento_nombre
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       ORDER BY u.id DESC`
+    );
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error('Error al consultar usuarios:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudieron cargar los usuarios' });
+  }
+});
+
+app.get('/docentes', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
+              d.nombre AS departamento, d.nombre AS departamento_nombre
+       FROM usuarios u LEFT JOIN departamentos d ON d.id = u.departamento_id ORDER BY u.id DESC`
+    );
+    res.json(resultado.rows);
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error al cargar docentes' });
+  }
+});
+
+// Actualizar usuario
 app.put('/usuarios/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { nombre, correo, departamento_id, departamento, rol } = req.body;
 
-  if (!Number.isInteger(id) || id <= 0 ||
-    typeof nombre !== 'string' || !nombre.trim() ||
-    typeof correo !== 'string' || !correo.trim()) {
-    return res.status(400).json({
-      success: false,
-      error: 'Los datos del perfil no son válidos'
-    });
+  if (!Number.isInteger(id) || id <= 0 || !nombre || !correo) {
+    return res.status(400).json({ success: false, error: 'Los datos del perfil no son válidos' });
   }
 
   try {
     let departamentoId = null;
-
     if (departamento_id !== null && departamento_id !== undefined && departamento_id !== '' && !isNaN(Number(departamento_id))) {
       const numId = Number(departamento_id);
       if (numId > 0) {
@@ -266,17 +289,13 @@ app.put('/usuarios/:id', async (req, res) => {
   }
 });
 
-// CAMBIAR CONTRASEÑA (CON BCRYPT)
+// Cambiar contraseña
 app.patch('/usuarios/:id/password', async (req, res) => {
   const id = Number(req.params.id);
   const { password_actual, password_nueva } = req.body;
 
-  if (!Number.isInteger(id) || id <= 0 || !password_actual ||
-    typeof password_nueva !== 'string' || password_nueva.length < 6) {
-    return res.status(400).json({
-      success: false,
-      error: 'Ingresa la contraseña actual y una nueva contraseña de al menos 6 caracteres'
-    });
+  if (!Number.isInteger(id) || id <= 0 || !password_actual || !password_nueva || password_nueva.length < 6) {
+    return res.status(400).json({ success: false, error: 'Datos incompletos o contraseña menor a 6 caracteres' });
   }
 
   try {
@@ -287,18 +306,12 @@ app.patch('/usuarios/:id/password', async (req, res) => {
 
     const usuario = usuarioRes.rows[0];
     const passwordMatch = await bcrypt.compare(password_actual, usuario.password);
-
     if (!passwordMatch) {
       return res.status(401).json({ success: false, error: 'La contraseña actual no es correcta' });
     }
 
-    const saltRounds = 10;
-    const hashedNuevaPassword = await bcrypt.hash(password_nueva, saltRounds);
-
-    await pool.query(
-      `UPDATE usuarios SET password = $1 WHERE id = $2`,
-      [hashedNuevaPassword, id]
-    );
+    const hashedNuevaPassword = await bcrypt.hash(password_nueva, 10);
+    await pool.query('UPDATE usuarios SET password = $1 WHERE id = $2', [hashedNuevaPassword, id]);
 
     res.json({ success: true, mensaje: 'Contraseña actualizada correctamente' });
   } catch (error) {
@@ -307,115 +320,17 @@ app.patch('/usuarios/:id/password', async (req, res) => {
   }
 });
 
-// REGISTRAR USUARIO / DOCENTE (HASHEANDO CONTRASEÑA)
-app.post('/registro', authLimiter, async (req, res) => {
-  const { nombre, correo, password, rol, departamento, departamento_id } = req.body;
-
-  if (!nombre || !correo || !password) {
-    return res.status(400).json({
-      success: false,
-      error: 'Nombre, correo y contraseña son obligatorios'
-    });
-  }
-
-  try {
-    const existente = await pool.query(
-      'SELECT id FROM usuarios WHERE correo = $1 LIMIT 1',
-      [correo.trim()]
-    );
-
-    if (existente.rowCount > 0) {
-      return res.status(409).json({
-        success: false,
-        error: 'Ese correo ya está registrado'
-      });
-    }
-
-    // Cifrar contraseña con bcrypt
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    let departamentoId = null;
-    
-    if (departamento_id !== undefined && departamento_id !== null && departamento_id !== '' && !isNaN(Number(departamento_id))) {
-      const numId = Number(departamento_id);
-      if (numId > 0) {
-        const deptoExiste = await pool.query('SELECT id FROM departamentos WHERE id = $1', [numId]);
-        if (deptoExiste.rowCount > 0) {
-          departamentoId = numId;
-        }
-      }
-    }
-
-    if (!departamentoId && departamento && String(departamento).trim()) {
-      const resDepto = await pool.query(
-        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) LIMIT 1',
-        [String(departamento).trim()]
-      );
-      if (resDepto.rowCount > 0) {
-        departamentoId = resDepto.rows[0].id;
-      }
-    }
-
-    const rolFinal = rol || 'Docente';
-    const esJefeBool = rolFinal.toLowerCase() === 'jefe';
-
-    const resultado = await pool.query(
-      `INSERT INTO usuarios (nombre, correo, password, rol, departamento_id, es_jefe)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
-      [
-        nombre.trim(),
-        correo.trim(),
-        hashedPassword,
-        rolFinal,
-        departamentoId,
-        esJefeBool
-      ]
-    );
-
-    res.status(201).json({
-      success: true,
-      usuario: resultado.rows[0]
-    });
-
-  } catch (error) {
-    console.error('Error al registrar usuario:', error.message);
-
-    if (error.code === '23505') {
-      return res.status(409).json({
-        success: false,
-        error: 'Ese correo ya está registrado'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      error: 'No se pudo registrar el usuario.'
-    });
-  }
-});
-
-// ==========================================
-// PROTECCIÓN JWT PARA TODAS LAS RUTAS RESTANTES
-// ==========================================
-app.use(autenticarJWT);
-
-// ELIMINAR USUARIO
-app.delete('/login/:id', async (req, res) => {
+// Eliminar usuario
+app.delete('/usuarios/:id', async (req, res) => {
   const id = Number(req.params.id);
-
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ success: false, error: 'ID de usuario inválido' });
   }
 
   let client;
-  let transaccionIniciada = false;
-
   try {
     client = await pool.connect();
     await client.query('BEGIN');
-    transaccionIniciada = true;
 
     const usuarioExiste = await client.query('SELECT id FROM usuarios WHERE id = $1 FOR UPDATE', [id]);
     if (usuarioExiste.rowCount === 0) {
@@ -429,20 +344,20 @@ app.delete('/login/:id', async (req, res) => {
     await client.query('COMMIT');
     res.json({ success: true });
   } catch (error) {
-    if (client && transaccionIniciada) await client.query('ROLLBACK');
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al eliminar usuario:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo eliminar el usuario' });
   } finally {
     if (client) client.release();
   }
 });
 
-// OBTENER ANUNCIOS
+// --- ANUNCIOS ---
 app.get('/anuncios', async (req, res) => {
   try {
     const resultado = await pool.query(
-      `SELECT
-         a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.autor_id, a.departamento_id,
-         u.nombre AS autor_nombre, d.nombre AS departamento_nombre
+      `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.autor_id, a.departamento_id,
+              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
        FROM anuncios a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
@@ -454,41 +369,36 @@ app.get('/anuncios', async (req, res) => {
   }
 });
 
-// PUBLICAR ANUNCIO
 app.post('/anuncios', async (req, res) => {
   const { titulo, contenido, prioridad, autor_id, departamento_id } = req.body;
   if (!titulo || !contenido) return res.status(400).json({ success: false, error: 'Título y contenido obligatorios' });
   
   const autorId = Number(autor_id);
+  const cliente = await pool.connect();
   try {
-    const cliente = await pool.connect();
-    try {
-      await cliente.query('BEGIN');
-      const resultado = await cliente.query(
-        `INSERT INTO anuncios (titulo, contenido, prioridad, autor_id, departamento_id, fecha)
-         VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
-        [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamento_id || null]
-      );
+    await cliente.query('BEGIN');
+    const resultado = await cliente.query(
+      `INSERT INTO anuncios (titulo, contenido, prioridad, autor_id, departamento_id, fecha)
+       VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
+      [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamento_id || null]
+    );
 
-      await cliente.query(
-        `INSERT INTO notificaciones (usuario_id, anuncio_id, leida, fecha)
-         SELECT id, $1, FALSE, NOW() FROM usuarios WHERE id <> $2`,
-        [resultado.rows[0].id, autorId]
-      );
-      await cliente.query('COMMIT');
-      res.status(201).json({ success: true, anuncio: resultado.rows[0] });
-    } catch (err) {
-      await cliente.query('ROLLBACK');
-      throw err;
-    } finally {
-      cliente.release();
-    }
+    await cliente.query(
+      `INSERT INTO notificaciones (usuario_id, anuncio_id, leida, fecha)
+       SELECT id, $1, FALSE, NOW() FROM usuarios WHERE id <> $2`,
+      [resultado.rows[0].id, autorId]
+    );
+    await cliente.query('COMMIT');
+    res.status(201).json({ success: true, anuncio: resultado.rows[0] });
   } catch (error) {
+    await cliente.query('ROLLBACK');
+    console.error('Error al publicar anuncio:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo publicar el anuncio' });
+  } finally {
+    cliente.release();
   }
 });
 
-// ACTUALIZAR ANUNCIO
 app.put('/anuncios/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { titulo, contenido, prioridad, departamento_id } = req.body;
@@ -504,7 +414,7 @@ app.put('/anuncios/:id', async (req, res) => {
   }
 });
 
-// OBTENER ARCHIVOS
+// --- ARCHIVOS Y PAPELERA DE RECICLAJE ---
 app.get('/archivos', async (req, res) => {
   try {
     const resultado = await pool.query(
@@ -513,6 +423,7 @@ app.get('/archivos', async (req, res) => {
        FROM archivos a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
+       WHERE COALESCE(a.eliminado, FALSE) = FALSE
        ORDER BY a.fecha DESC, a.id DESC`
     );
     res.json(resultado.rows);
@@ -521,13 +432,30 @@ app.get('/archivos', async (req, res) => {
   }
 });
 
-// SUBIR ARCHIVO
+app.get('/archivos/papelera', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id, a.fecha, a.fecha_eliminacion,
+              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
+       FROM archivos a
+       LEFT JOIN usuarios u ON u.id = a.autor_id
+       LEFT JOIN departamentos d ON d.id = a.departamento_id
+       WHERE a.eliminado = TRUE
+       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`
+    );
+    res.json({ success: true, archivos: resultado.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de reciclaje' });
+  }
+});
+
 app.post('/archivos', async (req, res) => {
   const { nombre, contenido, tipo, tamano, autor_id, departamento_id } = req.body;
   try {
     const resultado = await pool.query(
-      `INSERT INTO archivos (nombre, ruta, tipo, tamano, autor_id, departamento_id, anuncio_id, fecha)
-       VALUES ($1, $2, $3, $4, $5, $6, NULL, NOW()) RETURNING id, nombre, tipo, tamano, autor_id, departamento_id, fecha`,
+      `INSERT INTO archivos (nombre, ruta, tipo, tamano, autor_id, departamento_id, anuncio_id, fecha, eliminado)
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, NOW(), FALSE)
+       RETURNING id, nombre, tipo, tamano, autor_id, departamento_id, fecha`,
       [nombre.trim(), contenido, tipo, Number(tamano), Number(autor_id), Number(departamento_id)]
     );
     res.status(201).json({ success: true, archivo: resultado.rows[0] });
@@ -536,150 +464,108 @@ app.post('/archivos', async (req, res) => {
   }
 });
 
-// ELIMINAR ARCHIVO
+// Borrado lógico (Mover a la papelera)
 app.delete('/archivos/:id', async (req, res) => {
   try {
-    const resultado = await pool.query('DELETE FROM archivos WHERE id = $1 RETURNING id', [Number(req.params.id)]);
+    const resultado = await pool.query(
+      `UPDATE archivos
+       SET eliminado = TRUE, fecha_eliminacion = NOW()
+       WHERE id = $1
+       RETURNING id`,
+      [Number(req.params.id)]
+    );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe' });
-    res.json({ success: true });
+    res.json({ success: true, mensaje: 'Archivo movido a la papelera de reciclaje' });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'No se pudo eliminar el archivo' });
+    res.status(500).json({ success: false, error: 'No se pudo mover el archivo a la papelera' });
   }
 });
 
-// ==========================================
-// SECCIÓN DE TAREAS
-// ==========================================
+// Restaurar desde la papelera
+app.put('/archivos/:id/restaurar', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `UPDATE archivos
+       SET eliminado = FALSE, fecha_eliminacion = NULL
+       WHERE id = $1
+       RETURNING id`,
+      [Number(req.params.id)]
+    );
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe' });
+    res.json({ success: true, mensaje: 'Documento restaurado correctamente' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo restaurar el documento' });
+  }
+});
 
-// OBTENER TAREAS
+// Eliminación permanente
+app.delete('/archivos/:id/permanente', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      'DELETE FROM archivos WHERE id = $1 AND eliminado = TRUE RETURNING id',
+      [Number(req.params.id)]
+    );
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe en la papelera' });
+    res.json({ success: true, mensaje: 'Archivo eliminado definitivamente' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo eliminar permanentemente el archivo' });
+  }
+});
+
+// --- TAREAS ---
 app.get('/tareas', async (req, res) => {
   try {
     const resultado = await pool.query(
-      `SELECT
-         t.id,
-         t.titulo,
-         t.descripcion,
-         t.asignado,
-         t.fecha,
-         t.horario,
-         t.departamento,
-         t.estado,
-         t.autor_id,
-         t.fecha_creacion,
-         u.nombre AS autor_nombre,
-         d.nombre AS autor_departamento
+      `SELECT t.id, t.titulo, t.descripcion, t.asignado, t.fecha, t.horario, t.departamento, t.estado, t.autor_id, t.fecha_creacion,
+              u.nombre AS autor_nombre, d.nombre AS autor_departamento
        FROM tareas t
        LEFT JOIN usuarios u ON u.id = t.autor_id
        LEFT JOIN departamentos d ON d.id = u.departamento_id
        ORDER BY t.fecha ASC, t.id DESC`
     );
-
     res.json(resultado.rows);
   } catch (error) {
-    console.error('Error al consultar tareas:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'No se pudieron cargar las tareas'
-    });
+    res.status(500).json({ success: false, error: 'No se pudieron cargar las tareas' });
   }
 });
 
-// CREAR TAREA
 app.post('/tareas', async (req, res) => {
   const { titulo, descripcion, asignado, fecha, horario, departamento, estado, autor_id } = req.body;
-
-  if (!titulo || !fecha) {
-    return res.status(400).json({
-      success: false,
-      error: 'El título y la fecha son obligatorios'
-    });
-  }
+  if (!titulo || !fecha) return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
 
   let autorId = autor_id ? Number(autor_id) : null;
-
   try {
     const resultado = await pool.query(
       `INSERT INTO tareas (titulo, descripcion, asignado, fecha, horario, departamento, estado, autor_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, titulo, descripcion, asignado, fecha, horario, departamento, estado, autor_id, fecha_creacion`,
-      [
-        titulo.trim(),
-        descripcion ? descripcion.trim() : null,
-        asignado ? asignado.trim() : 'General / Sin asignar',
-        fecha,
-        horario || 'Horario a confirmar',
-        departamento || 'General',
-        estado || 'Pendiente',
-        autorId
-      ]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [titulo.trim(), descripcion ? descripcion.trim() : null, asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar', departamento || 'General', estado || 'Pendiente', autorId]
     );
-
-    res.status(201).json({
-      success: true,
-      tarea: resultado.rows[0]
-    });
+    res.status(201).json({ success: true, tarea: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al crear tarea:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'No se pudo guardar la tarea'
-    });
+    res.status(500).json({ success: false, error: 'No se pudo guardar la tarea' });
   }
 });
 
-// ACTUALIZAR TAREA
 app.put('/tareas/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { titulo, descripcion, asignado, fecha, horario, departamento, estado } = req.body;
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ success: false, error: 'ID de tarea inválido' });
-  }
-
-  if (!titulo || !fecha) {
-    return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
-  }
+  if (!titulo || !fecha) return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
 
   try {
     const resultado = await pool.query(
-      `UPDATE tareas
-       SET titulo = $1, descripcion = $2, asignado = $3, fecha = $4, horario = $5, departamento = $6, estado = $7
-       WHERE id = $8
-       RETURNING *`,
-      [
-        titulo.trim(),
-        descripcion ? descripcion.trim() : null,
-        asignado ? asignado.trim() : 'General / Sin asignar',
-        fecha,
-        horario || 'Horario a confirmar',
-        departamento || 'General',
-        estado || 'Pendiente',
-        id
-      ]
+      `UPDATE tareas SET titulo = $1, descripcion = $2, asignado = $3, fecha = $4, horario = $5, departamento = $6, estado = $7 WHERE id = $8 RETURNING *`,
+      [titulo.trim(), descripcion ? descripcion.trim() : null, asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar', departamento || 'General', estado || 'Pendiente', id]
     );
-
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'La tarea no existe' });
-    }
-
-    res.json({
-      success: true,
-      tarea: resultado.rows[0]
-    });
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'La tarea no existe' });
+    res.json({ success: true, tarea: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al actualizar tarea:', error.message);
-    res.status(500).json({
-      success: false,
-      error: 'No se pudo actualizar la tarea'
-    });
+    res.status(500).json({ success: false, error: 'No se pudo actualizar la tarea' });
   }
 });
 
-// ELIMINAR TAREA
 app.delete('/tareas/:id', async (req, res) => {
-  const id = Number(req.params.id);
   try {
-    const resultado = await pool.query('DELETE FROM tareas WHERE id = $1 RETURNING id', [id]);
+    const resultado = await pool.query('DELETE FROM tareas WHERE id = $1 RETURNING id', [Number(req.params.id)]);
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'La tarea no existe' });
     res.json({ success: true });
   } catch (error) {
@@ -687,35 +573,12 @@ app.delete('/tareas/:id', async (req, res) => {
   }
 });
 
-// OBTENER NOTIFICACIONES
-app.get('/notificaciones', async (req, res) => {
-  const usuarioId = Number(req.query.usuario_id);
-  try {
-    const resultado = await pool.query(
-      `SELECT n.id, n.usuario_id, n.anuncio_id, n.leida, n.fecha, a.titulo AS anuncio_titulo
-       FROM notificaciones n
-       LEFT JOIN anuncios a ON a.id = n.anuncio_id
-       WHERE n.usuario_id = $1 ORDER BY n.fecha DESC`,
-      [usuarioId]
-    );
-    res.json(resultado.rows);
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Error al cargar notificaciones' });
-  }
-});
-
-// ==========================================
-// SECCIÓN DE DEPARTAMENTOS
-// ==========================================
-
-// OBTENER TODOS LOS DEPARTAMENTOS
+// --- DEPARTAMENTOS ---
 app.get('/departamentos', async (req, res) => {
   try {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
-       FROM departamentos d
-       LEFT JOIN usuarios u ON u.id = d.jefe_id
-       ORDER BY d.id ASC`
+       FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id ORDER BY d.id ASC`
     );
     res.json(resultado.rows);
   } catch (error) {
@@ -723,223 +586,91 @@ app.get('/departamentos', async (req, res) => {
   }
 });
 
-// BUSCAR DEPARTAMENTO POR CÓDIGO
 app.get('/departamentos/codigo/:codigo', async (req, res) => {
   const { codigo } = req.params;
-  if (!codigo || !codigo.trim()) {
-    return res.status(400).json({ success: false, error: 'El código es obligatorio' });
-  }
-
   try {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
-       FROM departamentos d
-       LEFT JOIN usuarios u ON u.id = d.jefe_id
-       WHERE LOWER(d.codigo) = LOWER($1)
-       LIMIT 1`,
+       FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id WHERE LOWER(d.codigo) = LOWER($1) LIMIT 1`,
       [codigo.trim()]
     );
-
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Departamento no encontrado' });
-    }
-
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Departamento no encontrado' });
     res.json({ success: true, departamento: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al buscar departamento por código:', error.message);
     res.status(500).json({ success: false, error: 'Error al buscar el departamento' });
   }
 });
 
-// CREAR DEPARTAMENTO
 app.post('/departamentos', async (req, res) => {
   const { nombre, descripcion, jefe_id, codigo } = req.body;
-
-  if (!nombre || typeof nombre !== 'string' || !nombre.trim()) {
-    return res.status(400).json({
-      success: false,
-      error: 'El nombre del departamento es obligatorio'
-    });
-  }
+  if (!nombre || !nombre.trim()) return res.status(400).json({ success: false, error: 'El nombre del departamento es obligatorio' });
 
   const codigoFinal = codigo ? String(codigo).trim() : null;
   const jefeId = (jefe_id !== null && jefe_id !== undefined && jefe_id !== '') ? Number(jefe_id) : null;
 
   try {
-    if (codigoFinal) {
-      const existeCodigo = await pool.query(
-        'SELECT id FROM departamentos WHERE LOWER(codigo) = LOWER($1) LIMIT 1',
-        [codigoFinal]
-      );
-      if (existeCodigo.rowCount > 0) {
-        return res.status(409).json({
-          success: false,
-          error: 'Ya existe un departamento con ese código'
-        });
-      }
-    }
-
     const resultado = await pool.query(
       `INSERT INTO departamentos (id, nombre, descripcion, jefe_id, codigo)
-       VALUES (
-         COALESCE((SELECT MAX(id) FROM departamentos), 0) + 1,
-         $1, $2, $3, $4
-       )
+       VALUES (COALESCE((SELECT MAX(id) FROM departamentos), 0) + 1, $1, $2, $3, $4)
        RETURNING id, nombre, descripcion, jefe_id, codigo`,
       [nombre.trim(), descripcion ? descripcion.trim() : null, jefeId, codigoFinal]
     );
-
-    try {
-      await pool.query(`SELECT setval(pg_get_serial_sequence('departamentos', 'id'), (SELECT MAX(id) FROM departamentos))`);
-    } catch (e) {
-      // Ignorar si la tabla no posee secuencia serial asociada
-    }
-
-    res.status(201).json({
-      success: true,
-      departamento: resultado.rows[0]
-    });
+    res.status(201).json({ success: true, departamento: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al crear departamento:', error.message);
-    if (error.code === '23505') {
-      return res.status(409).json({
-        success: false,
-        error: 'Ya existe un departamento registrado con esos datos'
-      });
-    }
-    res.status(500).json({
-      success: false,
-      error: 'No se pudo crear el departamento'
-    });
+    if (error.code === '23505') return res.status(409).json({ success: false, error: 'Ya existe un departamento con ese código o datos' });
+    res.status(500).json({ success: false, error: 'No se pudo crear el departamento' });
   }
 });
 
-// ACTUALIZAR DEPARTAMENTO
 app.put('/departamentos/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { nombre, descripcion, jefe_id, codigo } = req.body;
-
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ success: false, error: 'ID de departamento inválido' });
-  }
-
-  if (!nombre || typeof nombre !== 'string' || !nombre.trim()) {
-    return res.status(400).json({ success: false, error: 'El nombre del departamento es obligatorio' });
-  }
-
-  const codigoFinal = codigo ? String(codigo).trim() : null;
-  const jefeId = (jefe_id !== null && jefe_id !== undefined && jefe_id !== '') ? Number(jefe_id) : null;
+  if (!nombre || !nombre.trim()) return res.status(400).json({ success: false, error: 'El nombre es obligatorio' });
 
   try {
-    if (codigoFinal) {
-      const existeCodigo = await pool.query(
-        'SELECT id FROM departamentos WHERE LOWER(codigo) = LOWER($1) AND id <> $2 LIMIT 1',
-        [codigoFinal, id]
-      );
-      if (existeCodigo.rowCount > 0) {
-        return res.status(409).json({ success: false, error: 'Ya existe otro departamento con ese código' });
-      }
-    }
-
     const resultado = await pool.query(
-      `UPDATE departamentos
-       SET nombre = $1, descripcion = $2, jefe_id = $3, codigo = $4
-       WHERE id = $5
-       RETURNING id, nombre, descripcion, jefe_id, codigo`,
-      [nombre.trim(), descripcion ? descripcion.trim() : null, jefeId, codigoFinal, id]
+      `UPDATE departamentos SET nombre = $1, descripcion = $2, jefe_id = $3, codigo = $4 WHERE id = $5 RETURNING *`,
+      [nombre.trim(), descripcion ? descripcion.trim() : null, jefe_id ? Number(jefe_id) : null, codigo ? String(codigo).trim() : null, id]
     );
-
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'El departamento no existe' });
-    }
-
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El departamento no existe' });
     res.json({ success: true, departamento: resultado.rows[0] });
   } catch (error) {
-    console.error('Error al actualizar departamento:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo actualizar el departamento' });
   }
 });
 
-// ELIMINAR DEPARTAMENTO
 app.delete('/departamentos/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ success: false, error: 'ID de departamento inválido' });
-  }
-
   try {
-    const resultado = await pool.query('DELETE FROM departamentos WHERE id = $1 RETURNING id', [id]);
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'El departamento no existe' });
-    }
+    const resultado = await pool.query('DELETE FROM departamentos WHERE id = $1 RETURNING id', [Number(req.params.id)]);
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El departamento no existe' });
     res.json({ success: true });
   } catch (error) {
-    console.error('Error al eliminar departamento:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo eliminar el departamento' });
   }
 });
 
-// OBTENER DOCENTES
-app.get('/docentes', async (req, res) => {
-  try {
-    const resultado = await pool.query(
-      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
-              d.nombre AS departamento, d.nombre AS departamento_nombre
-       FROM usuarios u LEFT JOIN departamentos d ON d.id = u.departamento_id ORDER BY u.id DESC`
-    );
-    res.json(resultado.rows);
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Error al cargar docentes' });
-  }
-});
-
-// ==========================================
-// NOTIFICACIONES DEL USUARIO
-// ==========================================
-// OBTENER NOTIFICACIONES (anuncios + tareas pendientes del departamento/usuario)
+// --- NOTIFICACIONES ---
 app.get('/notificaciones', async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
-
-    // Obtener nombre de departamento del usuario
     const usuarioResult = await pool.query(
-      `SELECT u.departamento_id, d.nombre AS departamento_nombre
-       FROM usuarios u
-       LEFT JOIN departamentos d ON d.id = u.departamento_id
-       WHERE u.id = $1`,
+      `SELECT u.departamento_id, d.nombre AS departamento_nombre FROM usuarios u LEFT JOIN departamentos d ON d.id = u.departamento_id WHERE u.id = $1`,
       [usuarioId]
     );
-    if (usuarioResult.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
-    }
+    if (usuarioResult.rowCount === 0) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
+
     const departamentoNombre = usuarioResult.rows[0].departamento_nombre || null;
     const correoUsuario = req.usuario.correo || '';
 
-    // Notificaciones de anuncios
     const anunciosResult = await pool.query(
-      `SELECT n.id, n.fecha, n.leida,
-              'anuncio' AS tipo,
-              a.titulo AS titulo,
-              a.contenido AS contenido,
-              a.departamento_id
-       FROM notificaciones n
-       LEFT JOIN anuncios a ON a.id = n.anuncio_id
-       WHERE n.usuario_id = $1
-       ORDER BY n.fecha DESC`,
+      `SELECT n.id, n.fecha, n.leida, 'anuncio' AS tipo, a.titulo, a.contenido, a.departamento_id
+       FROM notificaciones n LEFT JOIN anuncios a ON a.id = n.anuncio_id WHERE n.usuario_id = $1 ORDER BY n.fecha DESC`,
       [usuarioId]
     );
 
-    // Tareas pendientes del departamento del usuario o asignadas a él
     const tareasResult = await pool.query(
-      `SELECT t.id, t.fecha_creacion AS fecha, FALSE AS leida,
-              'tarea' AS tipo,
-              t.titulo AS titulo,
-              t.descripcion AS contenido,
-              t.departamento AS departamento_nombre
-       FROM tareas t
-       WHERE t.estado = 'Pendiente'
-         AND (($1 IS NOT NULL AND t.departamento = $1) OR t.asignado ILIKE $2)
-       ORDER BY t.fecha_creacion DESC`,
+      `SELECT t.id, t.fecha_creacion AS fecha, FALSE AS leida, 'tarea' AS tipo, t.titulo, t.descripcion AS contenido, t.departamento AS departamento_nombre
+       FROM tareas t WHERE t.estado = 'Pendiente' AND (($1 IS NOT NULL AND t.departamento = $1) OR t.asignado ILIKE $2) ORDER BY t.fecha_creacion DESC`,
       [departamentoNombre, `%${correoUsuario}%`]
     );
 
@@ -950,54 +681,37 @@ app.get('/notificaciones', async (req, res) => {
 
     res.json({ success: true, notificaciones });
   } catch (error) {
-    console.error('Error al cargar notificaciones:', error.message);
     res.status(500).json({ success: false, error: 'No se pudieron cargar las notificaciones' });
   }
 });
 
-// MARCAR NOTIFICACIÓN COMO LEÍDA
 app.put('/notificaciones/:id/leer', async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const usuarioId = req.usuario.id;
-
     const resultado = await pool.query(
       'UPDATE notificaciones SET leida = TRUE WHERE id = $1 AND usuario_id = $2 RETURNING id',
-      [id, usuarioId]
+      [Number(req.params.id), req.usuario.id]
     );
-
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
-    }
-
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo marcar como leída' });
   }
 });
 
-// ELIMINAR NOTIFICACIÓN
 app.delete('/notificaciones/:id', async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    const usuarioId = req.usuario.id;
-
     const resultado = await pool.query(
       'DELETE FROM notificaciones WHERE id = $1 AND usuario_id = $2 RETURNING id',
-      [id, usuarioId]
+      [Number(req.params.id), req.usuario.id]
     );
-
-    if (resultado.rowCount === 0) {
-      return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
-    }
-
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Notificación no encontrada' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo eliminar la notificación' });
   }
 });
 
-// MANEJO DE RUTAS NO ENCONTRADAS (404)
+// Manejo de rutas no encontradas (404)
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Ruta no encontrada' });
 });

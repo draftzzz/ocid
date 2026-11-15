@@ -1,84 +1,152 @@
 <!DOCTYPE html>
-<html lang="es-MX">
+<html lang="es">
+
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Notificaciones</title>
+
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="../css/base.css" />
+
+    <!-- Hoja de Estilos Base -->
+    <link rel="stylesheet" href="../css/notificaciones.css" />
 </head>
+
 <body>
+    <!-- BEGIN: Sidebar -->
     <aside class="barra_lateral" data-purpose="navegacion-principal">
+        <!-- Logotipo y Nombre del Plantel -->
         <div class="encabezado_logo">
-            <div class="icono_escudo"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="icono_escudo">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de Coordinación Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
             </div>
         </div>
+
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
-            <a class="enlace_navegacion" href="inicio.html" id="nav_inicio"><i class="fa-solid fa-house icono_nav"></i><span>Inicio</span></a>
-            <a class="enlace_navegacion" href="mi-departamento.html" id="nav_departamento"><i class="fa-solid fa-building-user icono_nav"></i><span>Mi Departamento</span></a>
-            <a class="enlace_navegacion" href="anuncios.html" id="nav_anuncios"><i class="fa-solid fa-bullhorn icono_nav"></i><span>Anuncios</span></a>
-            <a class="enlace_navegacion" href="archivos.html" id="nav_archivos"><i class="fa-regular fa-folder-open icono_nav"></i><span>Archivos</span></a>
-            <a class="enlace_navegacion" href="docentes.html" id="nav_docentes"><i class="fa-solid fa-users-gear icono_nav"></i><span>Docentes</span></a>
-            <a class="enlace_navegacion" href="calendario.html" id="nav_calendario"><i class="fa-regular fa-calendar-days icono_nav"></i><span>Calendario</span></a>
-            <a class="enlace_navegacion" href="tareas.html" id="nav_asistente"><i class="fa-regular fa-list-check icono_nav"></i><span>Tareas</span></a>
-            <a class="enlace_navegacion activo" href="notificaciones.html" id="nav_notificaciones"><i class="fa-solid fa-bell icono_nav"></i><span>Notificaciones</span><span class="insignia_notificacion" id="badge_notificaciones">0</span></a>
+            <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
+                <i class="fa-solid fa-house icono_nav"></i>
+                <span>Inicio</span>
+            </a>
+            <a class="enlace_navegacion" href="mi-departamento.html" id="nav_departamento">
+                <i class="fa-solid fa-building-user icono_nav"></i>
+                <span>Mi Departamento</span>
+            </a>
+            <a class="enlace_navegacion" href="anuncios.html" id="nav_anuncios">
+                <i class="fa-solid fa-bullhorn icono_nav"></i>
+                <span>Anuncios</span>
+                <span class="insignia_notificacion" id="badge_conteo_anuncios">3</span>
+            </a>
+            <a class="enlace_navegacion" href="archivos.html" id="nav_archivos">
+                <i class="fa-regular fa-folder-open icono_nav"></i>
+                <span>Archivos</span>
+            </a>
+            <a class="enlace_navegacion" href="docentes.html" id="nav_docentes">
+                <i class="fa-solid fa-users-gear icono_nav"></i>
+                <span>Docentes</span>
+            </a>
+            <a class="enlace_navegacion" href="calendario.html" id="nav_calendario">
+                <i class="fa-regular fa-calendar-days icono_nav"></i>
+                <span>Calendario</span>
+            </a>
+            <a class="enlace_navegacion" href="tareas.html" id="nav_asistente">
+                <i class="fa-regular fa-list-check icono_nav"></i>
+                <span>Tareas</span>
+            </a>
+            <a class="enlace_navegacion activo" href="notificaciones.html">
+                <i class="fa-solid fa-bell icono_nav"></i>
+                <span>Notificaciones</span>
+                <span class="insignia_notificacion" id="badge_lateral">3</span>
+            </a>
             <div class="separador_menu"></div>
-            <a class="enlace_navegacion" href="mi-perfil.html"><i class="fa-solid fa-user icono_nav"></i><span>Mi perfil</span></a>
-            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" onclick="cerrarSesion()"><i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i><span>Cerrar sesión</span></a>
+            <a class="enlace_navegacion" href="mi-perfil.html">
+                <i class="fa-solid fa-user icono_nav"></i>
+                <span>Mi perfil</span>
+            </a>
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" onclick="cerrarSesion()">
+                <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
+                <span>Cerrar sesión</span>
+            </a>
         </nav>
     </aside>
+    <!-- END: Sidebar -->
 
+    <!-- BEGIN: MainContentArea -->
     <main class="area_principal">
+        <!-- Barra Superior Global -->
         <header class="barra_superior" data-purpose="cabecera_global">
             <div class="seccion_superior_izquierda">
-                <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral"></button>
-                <h1 class="titulo_pagina">Notificaciones</h1>
+                <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
+                </button>
+                <div class="contenedor_busqueda">
+                    <i class="fa-solid fa-magnifying-glass icono_busqueda"></i>
+                    <input class="campo_busqueda" id="campo_busqueda_general" placeholder="Buscar..." type="text" />
+                </div>
             </div>
             <div class="seccion_superior_derecha">
-                <button class="boton_notificaciones" onclick="refrescarNotificaciones()" title="Refrescar"><i class="fa-solid fa-rotate-right"></i></button>
-                <button class="boton_notificaciones" onclick="marcarTodasLeidas()" title="Marcar todas leídas"><i class="fa-solid fa-check-double"></i></button>
-                <button class="boton_notificaciones" onclick="borrarTodas()" title="Borrar todas"><i class="fa-solid fa-trash"></i></button>
-                <div class="perfil_usuario_barra" onclick="abrirModalLogin()">
-                    <div class="avatar_usuario" id="avatar_usuario_circulo"><i class="fa-regular fa-user"></i></div>
-                    <div class="detalles_usuario"><strong id="nombreUsuario" style="color:#ffffff;">Cargando...</strong><span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span></div>
+                <button class="boton_notificaciones" title="Notificaciones del sistema">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="punto_notificacion" id="indicador_notificaciones">3</span>
+                </button>
+                <div class="perfil_usuario_barra">
+                    <div class="avatar_usuario" id="avatar_usuario_circulo">
+                        CR
+                    </div>
+                    <div class="detalles_usuario">
+                        <strong id="nombreUsuario" class="nombre_usuario_texto"></strong>
+                        <span class="rol_usuario_texto" id="etiqueta_rol_usuario"></span>
+                    </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
                 </div>
             </div>
         </header>
-        <div class="cuerpo_dashboard">
-            <div class="fila_estadisticas_notificaciones">
-                <div class="tarjeta_metrica"><span class="etiqueta_metrica">Total</span><span class="cifra_metrica" id="conteo_total_notificaciones">0</span></div>
-                <div class="tarjeta_metrica"><span class="etiqueta_metrica">Sin leer</span><span class="cifra_metrica" id="conteo_sin_leer">0</span></div>
-                <div class="tarjeta_metrica"><span class="etiqueta_metrica">Anuncios</span><span class="cifra_metrica" id="conteo_anuncios">0</span></div>
-                <div class="tarjeta_metrica"><span class="etiqueta_metrica">Tareas pendientes</span><span class="cifra_metrica" id="conteo_tareas_pendientes">0</span></div>
-            </div>
-            <div class="seccion_notificaciones">
-                <h2 class="titulo_seccion_notificaciones">Tus notificaciones</h2>
-                <div class="lista_notificaciones" id="contenedor_notificaciones"></div>
-                <div id="vacio_notificaciones" style="display:none; text-align:center; padding: 40px; color: #64748b;"><i class="fa-regular fa-bell" style="font-size:48px; margin-bottom:12px; opacity:0.5;"></i><p>No tienes notificaciones pendientes.</p></div>
-            </div>
-        </div>
-    <div class="fondo_modal_oscuro" id="modal_login_sesion">
-        <div class="caja_modal" style="max-width: 440px;">
-            <div class="encabezado_modal"><div class="titulo_modal"><i class="fa-solid fa-id-card" style="color:#2563eb;"></i><span>Iniciar Sesión en el Plantel</span></div><button class="boton_cerrar_modal" onclick="cerrarModal('modal_login_sesion')"><i class="fa-solid fa-xmark"></i></button></div>
-            <form id="formulario_autenticacion" onsubmit="ejecutarAutenticacion(event)">
-                <div class="cuerpo_modal">
-                    <div class="grupo_formulario"><label class="etiqueta_formulario">Correo Electrónico Institucional</label><input class="campo_formulario" id="campo_login_correo" required type="email" placeholder="correo@cbtis258.edu.mx" /></div>
-                    <div class="grupo_formulario"><label class="etiqueta_formulario">Contraseña</label><input class="campo_formulario" id="campo_login_password" required type="password" placeholder="********" /></div>
+
+        <!-- Contenido Específico de Notificaciones -->
+        <div class="contenido_principal">
+            <!-- Encabezado y Botón de Acción -->
+            <section class="cabecera_seccion_notificaciones">
+                <div class="titulos_seccion_notificaciones">
+                    <h1>Notificaciones</h1>
+                    <p>Mantente al día con las novedades del sistema.</p>
                 </div>
-                <div class="pie_modal">
-                    <button class="boton_cancelar_modal" onclick="cerrarModal('modal_login_sesion')" type="button">Cancelar</button>
-                    <button class="boton_guardar_modal" type="submit"><i class="fa-solid fa-right-to-bracket"></i> Acceder</button>
+                <button id="boton_marcar_leidas" class="boton_marcar_todas_leidas" onclick="marcarTodasLeidas()">
+                    Marcar todas como leídas
+                </button>
+            </section>
+
+            <!-- Pestañas de Filtro -->
+            <div class="contenedor_pestanas_filtro">
+                <button class="pestana_filtro pestana_filtro_activa" id="pestana_todas">
+                    Todas (<span id="conteo_total_notificaciones">0</span>)
+                </button>
+                <button class="pestana_filtro" id="pestana_no_leidas">
+                    No leídas (<span id="conteo_sin_leer">0</span>)
+                </button>
+                <button class="pestana_filtro" id="pestana_leidas">
+                    Leídas (<span id="conteo_leidas">0</span>)
+                </button>
+            </div>
+
+            <!-- Tarjeta Contenedora de Lista de Notificaciones Dinámicas -->
+            <section class="tarjeta_contenedor_notificaciones">
+                <div id="vacio_notificaciones" class="estado_vacio_notificaciones">
+                    No hay notificaciones nuevas registradas en este momento.
                 </div>
-            </form>
+                <div class="flex flex-col" id="contenedor_notificaciones">
+                    <!-- El script se encargará de inyectar las notificaciones aquí -->
+                </div>
+            </section>
         </div>
-    </div>
-    <div class="toast_alerta" id="aviso_notificacion"><i class="fa-solid fa-circle-check" id="icono_aviso_notificacion" style="color:#22c55e;"></i><span id="texto_aviso_notificacion">Operación ejecutada con éxito</span></div>
-    <script src="../js/inicio.js"></script>
+    </main>
+    <!-- END: MainContentArea -->
+
+    <!-- Script de Interactividad -->
     <script src="../js/notificaciones.js"></script>
 </body>
+
 </html>
-    </main>
