@@ -1,4 +1,4 @@
-# OCID — Plataforma de Organización y Comunicación Interna Departamental
+# OCID — Organización y Comunicación Interna para Docentes
 
 Sistema web full-stack diseñado para centralizar y agilizar la gestión administrativa, la comunicación interna y la asignación de tareas entre docentes y jefes de departamento en el entorno institucional.
 
@@ -52,10 +52,3 @@ Sistema web full-stack diseñado para centralizar y agilizar la gestión adminis
 * `GET /notificaciones` — Consulta de alertas por `usuario_id`.
 
 ---
-
-## Instalación y Configuración Local
-
-### 1. Clonar el repositorio
-```bash
-git clone [https://github.com/draftzzz/ocid.git](https://github.com/draftzzz/ocid.git)
-cd ocid
