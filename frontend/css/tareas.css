@@ -1,0 +1,794 @@
+/* ==========================================================================
+   1. Estilos Globales y Reset (Sin Scroll)
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+body {
+    display: flex;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+    outline: none;
+}
+
+/* Scrollbars limpios para áreas internas permitidas */
+*::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+*::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   2. Menú Lateral (Sidebar)
+   ========================================================================== */
+.barra_lateral {
+    width: 256px;
+    min-width: 256px;
+    background-color: #0d1527;
+    color: #94a3b8;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0px;
+    z-index: 40;
+    transition: transform 0.2s ease;
+}
+
+.encabezado_logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 70px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #1e293b;
+    background-color: #0d1527;
+}
+
+.icono_escudo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-size: 18px;
+}
+
+.texto_logo_titulo {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.texto_logo_subtitulo {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.navegacion_lateral {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.enlace_navegacion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 38px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.enlace_navegacion:hover, .enlace_navegacion.activo {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+.icono_nav {
+    width: 18px;
+    text-align: center;
+}
+
+.insignia_notificacion {
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.separador_menu {
+    height: 1px;
+    background-color: #1e293b;
+    margin: 6px 12px;
+}
+
+.boton_cerrar_sesion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #ef4444;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   3. Área Principal y Barra Superior
+   ========================================================================== */
+.area_principal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f1f5f9;
+}
+
+.barra_superior {
+    height: 60px;
+    min-height: 60px;
+    background-color: #0d1527;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid #1e293b;
+    color: #ffffff;
+}
+
+.seccion_superior_izquierda {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
+    max-width: 500px;
+}
+
+.seccion_superior_derecha {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.menu_movil, .boton_menu_hamburguesa {
+    display: none;
+}
+
+.fondo_menu_movil {
+    display: none;
+}
+
+.contenedor_busqueda {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.icono_busqueda {
+    position: absolute;
+    left: 12px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.campo_busqueda {
+    width: 100%;
+    height: 34px;
+    padding: 0 12px 0 34px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f8fafc;
+    font-size: 12.5px;
+}
+
+.boton_notificaciones {
+    position: relative;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.punto_notificacion {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 700;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.perfil_usuario_barra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.avatar_usuario {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.detalles_usuario {
+    display: flex;
+    flex-direction: column;
+}
+
+.nombre_usuario_texto {
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.rol_usuario_texto {
+    color: #94a3b8;
+    font-size: 10px;
+}
+
+.icono_dropdown {
+    color: #64748b;
+    font-size: 10px;
+}
+
+/* ==========================================================================
+   4. Cuerpo de Tareas (Fijo, sin scroll general)
+   ========================================================================== */
+.cuerpo_contenido {
+    flex: 1;
+    padding: 16px 20px;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+}
+
+.fila_encabezado_anuncios {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.titulo_pantalla {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.subtitulo_pantalla {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.boton_nuevo_anuncio {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   5. Filtros Compactos
+   ========================================================================== */
+.barra_filtros {
+    background-color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.filtro_busqueda_contenedor {
+    position: relative;
+    flex: 1.5;
+}
+
+.input_filtro_busqueda {
+    width: 100%;
+    height: 34px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 10px 0 30px;
+    font-size: 12.5px;
+    background-color: #f8fafc;
+}
+
+.icono_lupa_filtro {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.filtro_selector {
+    flex: 1;
+    height: 34px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 8px;
+    font-size: 12px;
+    background-color: #f8fafc;
+    color: #334155;
+}
+
+/* ==========================================================================
+   6. Tabla Adaptable / Vista de Tarjetas para Móvil
+   ========================================================================== */
+.tarjeta_tabla {
+    background-color: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-height: calc(100vh - 210px);
+}
+
+.contenedor_tabla_responsive {
+    width: 100%;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.tabla_tareas {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tabla_tareas thead {
+    display: none; /* Oculta los encabezados de tabla clásicos en espacios reducidos para ganar espacio */
+}
+
+.tabla_tareas tbody tr {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    position: relative;
+    gap: 6px;
+    background-color: #ffffff;
+}
+
+.tabla_tareas tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.tabla_tareas td {
+    padding: 0;
+    border: none;
+    font-size: 12.5px;
+}
+
+/* Distribución de celdas como tarjeta móvil */
+.tabla_tareas td:nth-child(1) {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0f172a;
+    padding-right: 30px; /* Espacio para el botón de opciones */
+}
+
+.tabla_tareas td:nth-child(2) {
+    color: #64748b;
+    font-size: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.tabla_tareas td:nth-child(3),
+.tabla_tareas td:nth-child(4),
+.tabla_tareas td:nth-child(5) {
+    display: inline-block;
+    font-size: 11px;
+    color: #475569;
+    margin-right: 10px;
+}
+
+.tabla_tareas td:nth-child(3)::before { content: "Asignado: "; color: #94a3b8; }
+.tabla_tareas td:nth-child(4)::before { content: "Depto: "; color: #94a3b8; }
+.tabla_tareas td:nth-child(5)::before { content: "Límite: "; color: #94a3b8; }
+
+.tabla_tareas td:nth-child(6) {
+    position: absolute;
+    top: 12px;
+    right: 40px;
+}
+
+.badge_estado {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.estado_pendiente { background-color: #fef3c7; color: #b45309 !important; }
+.estado_proceso { background-color: #dbeafe; color: #1d4ed8 !important; }
+.estado_completado { background-color: #dcfce7; color: #15803d !important; }
+
+.columna_acciones {
+    position: absolute !important;
+    top: 10px;
+    right: 10px;
+}
+
+.boton_opciones_anuncio {
+    background: transparent;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: #64748b;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 14px;
+}
+
+.boton_opciones_anuncio:focus,
+.boton_opciones_anuncio:active {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Pie de tabla / Paginación fija abajo */
+.pie_tabla {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    flex-shrink: 0;
+}
+
+.texto_conteo_filas {
+    font-size: 11.5px;
+    color: #64748b;
+}
+
+.bloque_paginacion {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.boton_pagina {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    cursor: pointer;
+}
+
+.boton_pagina_activo {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
+}
+
+/* ==========================================================================
+   7. Modales limpios
+   ========================================================================== */
+.fondo_oscuro_modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+}
+
+.fondo_oscuro_modal.modal_activo {
+    display: flex;
+}
+
+.caja_modal {
+    background-color: #ffffff;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    box-shadow: 0px 15px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cabecera_modal {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.titulo_modal {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.boton_cerrar_modal {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.cuerpo_modal {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.grupo_campo_modal {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.etiqueta_campo {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.input_campo_modal, .selector_campo_modal, .textarea_campo_modal {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #0f172a;
+    background-color: #ffffff;
+}
+
+.textarea_campo_modal {
+    min-height: 70px;
+    max-height: 100px;
+    resize: none;
+}
+
+.pie_modal {
+    padding: 10px 16px;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.boton_cancelar_modal, .boton_guardar_modal {
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.boton_cancelar_modal {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+}
+
+.boton_guardar_modal {
+    background-color: #2563eb;
+    border: none;
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   8. Componente Toast Flotante
+   ========================================================================== */
+.contenedor_toast_flotante {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    align-items: center;
+}
+
+.toast_mensaje {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 360px;
+    padding: 10px 14px;
+    background-color: #0f172a;
+    color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    font-size: 12.5px;
+    border-left: 4px solid #3b82f6;
+}
+
+/* ==========================================================================
+   9. Media Queries Responsivos (Móviles)
+   ========================================================================== */
+@media (max-width: 900px) {
+    .menu_movil, .boton_menu_hamburguesa {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        background: transparent !important;
+        border: none !important;
+        color: #94a3b8 !important;
+        font-size: 16px !important;
+        cursor: pointer;
+    }
+
+    .barra_lateral {
+        position: fixed;
+        left: 0px;
+        top: 0px;
+        height: 100vh;
+        transform: translateX(-100%);
+        box-shadow: 8px 0px 24px rgba(15, 23, 42, 0.2);
+    }
+
+    body.menu_movil_abierto .barra_lateral {
+        transform: translateX(0px);
+    }
+
+    .fondo_menu_movil {
+        position: fixed;
+        inset: 0px;
+        z-index: 35;
+        display: block;
+        background-color: rgba(15, 23, 42, 0.55);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        border: none;
+    }
+
+    body.menu_movil_abierto .fondo_menu_movil {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .barra_superior {
+        padding: 0 12px;
+    }
+
+    .seccion_superior_derecha .detalles_usuario,
+    .seccion_superior_derecha .icono_dropdown {
+        display: none;
+    }
+
+    .cuerpo_contenido {
+        padding: 10px 12px !important;
+        gap: 10px;
+    }
+
+    .fila_encabezado_anuncios {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .boton_nuevo_anuncio {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .barra_filtros {
+        padding: 8px 10px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px;
+    }
+
+    .filtro_busqueda_contenedor, .filtro_selector {
+        width: 100%;
+        min-width: 100%;
+    }
+}

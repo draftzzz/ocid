@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>OCID - Bienvenido</title>
+    <!-- Iconografía FontAwesome y Fuente Inter -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/bienvenida.css" />
+</head>
+
+<body>
+    <!-- Fondo oscuro al desplegar el menú hamburguesa -->
+    <div class="fondo_menu_movil" id="fondo_menu"></div>
+
+    <!-- BEGIN: Sidebar (Oculto por defecto) -->
+    <aside class="barra_lateral" data-purpose="navegacion-principal">
+        <div class="encabezado_logo">
+            <div class="icono_escudo">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+                <div class="texto_logo_titulo">OCID</div>
+                <div class="texto_logo_subtitulo">Plataforma de Coordinación Escolar</div>
+            </div>
+        </div>
+
+        <nav class="navegacion_lateral">
+            <a class="enlace_navegacion activo" href="bienvenida.html">
+                <i class="fa-solid fa-house icono_nav"></i>
+                <span>Inicio / Bienvenida</span>
+            </a>
+            <div class="separador_menu"></div>
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion">
+                <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
+                <span>Cerrar sesión</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- BEGIN: MainContentArea -->
+    <main class="area_principal">
+        <header class="barra_superior" data-purpose="cabecera_global">
+            <div class="seccion_superior_izquierda">
+                <button aria-label="Menu" class="boton_menu_hamburguesa" id="btn_hamburguesa"
+                    title="Alternar menú lateral">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="texto_logo_titulo" style="font-size: 15px; font-weight: 600; color: #f8fafc;">OCID - Panel
+                    de Acceso</div>
+            </div>
+            <div class="seccion_superior_derecha">
+                <div class="perfil_usuario_barra">
+                    <div class="avatar_usuario" id="avatar_usuario_circulo">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                    <div class="detalles_usuario">
+                        <strong class="nombre_usuario_texto" id="nombreUsuario"
+                            style="color: #ffffff;">Cargando...</strong>
+                        <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Sin departamento</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido Central de Bienvenida -->
+        <div class="contenido_bienvenida">
+            <div class="hero_bienvenida">
+                <h1>¡Te damos la bienvenida a OCID!</h1>
+                <p>Actualmente no estás vinculado a ningún departamento escolar. Puedes crear un nuevo departamento y
+                    convertirte en su Administrador, o unirte a uno existente utilizando un código de acceso.</p>
+                <div class="botones_accion_bienvenida">
+                    <button class="btn_accion_principal" onclick="window.location.href='crear-departamento.html'">
+                        <i class="fa-solid fa-plus"></i> Crear departamento
+                    </button>
+                    <button class="btn_accion_secundario" id="btn_abrir_modal_unirse">
+                        <i class="fa-solid fa-key"></i> Unirme con código
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bloques informativos para que no luzca vacío -->
+            <div class="grilla_info">
+                <div class="tarjeta_info">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <h3>Gestión de Anuncios</h3>
+                    <p>Mantén informados a todos los integrantes de tu área institucional mediante avisos oficiales
+                        centralizados.</p>
+                </div>
+                <div class="tarjeta_info">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <h3>Archivos y Tareas</h3>
+                    <p>Comparte documentos de control escolar y asigna actividades con seguimiento en tiempo real.</p>
+                </div>
+                <div class="tarjeta_info">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <h3>Control de Equipo</h3>
+                    <p>Administra los roles de los docentes y mantén la organización interna de manera eficiente.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para unirse con código -->
+    <div class="modal_unirse_fondo" id="modal_unirse">
+        <div class="modal_unirse_caja">
+            <h3 style="font-size: 16px; margin-bottom: 8px; color: #0f172a;">Unirse a un departamento</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Ingresa el código de 7 caracteres
+                proporcionado por tu jefe de departamento.</p>
+            <form id="form_unirse_codigo">
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">Código
+                        de acceso</label>
+                    <input type="text" id="input_codigo_acceso" maxlength="7" placeholder="Ej. X7mK9p2" required
+                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; outline: none;" />
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button type="button" id="btn_cerrar_modal"
+                        style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer;">Cancelar</button>
+                    <button type="submit"
+                        style="background: #2563eb; border: none; color: #ffffff; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">Unirse</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/bienvenida.js"></script>
+</body>
+
+</html>

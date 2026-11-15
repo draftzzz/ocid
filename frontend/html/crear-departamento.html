@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>OCID - Crear Departamento</title>
+
+    <!-- Iconografía FontAwesome y Fuente Inter -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../css/crear-departamento.css" />
+</head>
+
+<body>
+    <div class="fondo_menu_movil" id="fondo_menu"></div>
+
+    <!-- BEGIN: Sidebar -->
+    <aside class="barra_lateral" data-purpose="navegacion-principal">
+        <div class="encabezado_logo">
+            <div class="icono_escudo">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+                <div class="texto_logo_titulo">OCID</div>
+                <div class="texto_logo_subtitulo">Plataforma de Coordinación Escolar</div>
+            </div>
+        </div>
+
+        <nav class="navegacion_lateral">
+            <a class="enlace_navegacion" href="bienvenida.html">
+                <i class="fa-solid fa-house icono_nav"></i>
+                <span>Inicio / Bienvenida</span>
+            </a>
+            <div class="separador_menu"></div>
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion">
+                <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
+                <span>Cerrar sesión</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- BEGIN: MainContentArea -->
+    <main class="area_principal">
+        <header class="barra_superior" data-purpose="cabecera_global">
+            <div class="seccion_superior_izquierda">
+                <button aria-label="Menu" class="boton_menu_hamburguesa" id="btn_hamburguesa" title="Alternar menú lateral">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="texto_logo_titulo" style="font-size: 15px; font-weight: 600; color: #f8fafc;">Creación de Departamento</div>
+            </div>
+            <div class="seccion_superior_derecha">
+                <div class="perfil_usuario_barra">
+                    <div class="avatar_usuario" id="avatar_usuario_circulo">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                    <div class="detalles_usuario">
+                        <strong class="nombre_usuario_texto" id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Administrador (Nuevo)</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido Principal -->
+        <div class="cuerpo_contenido">
+            <div class="tarjeta_seccion">
+                <div class="encabezado_seccion">
+                    <div class="icono_seccion">
+                        <i class="fa-solid fa-building-user"></i>
+                    </div>
+                    <div>
+                        <h2>Registrar nuevo departamento</h2>
+                        <p>Se generará automáticamente un código único de 7 caracteres y obtendrás el rol de Jefe/Administrador con control total.</p>
+                    </div>
+                </div>
+
+                <form id="form_crear_departamento">
+                    <div class="grupo_formulario">
+                        <label for="nombre_depto">Nombre del departamento</label>
+                        <input type="text" id="nombre_depto" placeholder="Ej. Servicios Escolares" required />
+                    </div>
+
+                    <div class="grupo_formulario">
+                        <label for="descripcion_depto">Descripción o funciones generales</label>
+                        <textarea id="descripcion_depto" placeholder="Describe brevemente las responsabilidades del departamento..."></textarea>
+                    </div>
+
+                    <div class="pie_formulario">
+                        <button type="button" class="btn_secundario" onclick="window.location.href='bienvenida.html'">Cancelar</button>
+                        <button type="submit" class="btn_primario">
+                            <i class="fa-solid fa-check"></i> Crear y acceder al panel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/crear-departamento.js"></script>
+</body>
+
+</html>

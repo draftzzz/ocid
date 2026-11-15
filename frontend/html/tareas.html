@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>OCID - Tareas</title>
+
+    <!-- Iconografía FontAwesome y Fuente Inter -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+    <!-- Hojas de Estilos Globales y del Módulo -->
+    <link rel="stylesheet" href="../css/tareas.css" />
+</head>
+
+<body>
+    <!-- BEGIN: Sidebar -->
+    <aside class="barra_lateral" data-purpose="navegacion-principal">
+        <div class="encabezado_logo">
+            <div class="icono_escudo">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div>
+                <div class="texto_logo_titulo">OCID</div>
+                <div class="texto_logo_subtitulo">Plataforma de Coordinación Escolar</div>
+            </div>
+        </div>
+
+        <nav class="navegacion_lateral">
+            <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
+                <i class="fa-solid fa-house icono_nav"></i>
+                <span>Inicio</span>
+            </a>
+            <a class="enlace_navegacion" href="mi-departamento.html" id="nav_departamento">
+                <i class="fa-solid fa-building-user icono_nav"></i>
+                <span>Mi Departamento</span>
+            </a>
+            <a class="enlace_navegacion" href="anuncios.html" id="nav_anuncios">
+                <i class="fa-solid fa-bullhorn icono_nav"></i>
+                <span>Anuncios</span>
+                <span class="insignia_notificacion" id="badge_conteo_anuncios">3</span>
+            </a>
+            <a class="enlace_navegacion" href="archivos.html" id="nav_archivos">
+                <i class="fa-regular fa-folder-open icono_nav"></i>
+                <span>Archivos</span>
+            </a>
+            <a class="enlace_navegacion" href="docentes.html" id="nav_docentes">
+                <i class="fa-solid fa-users-gear icono_nav"></i>
+                <span>Docentes</span>
+            </a>
+            <a class="enlace_navegacion" href="calendario.html" id="nav_calendario">
+                <i class="fa-regular fa-calendar-days icono_nav"></i>
+                <span>Calendario</span>
+            </a>
+            <a class="enlace_navegacion activo" href="tareas.html" id="nav_asistente">
+                <i class="fa-regular fa-list-check icono_nav"></i>
+                <span>Tareas</span>
+            </a>
+            <a class="enlace_navegacion" href="notificaciones.html">
+                <i class="fa-solid fa-bell icono_nav"></i>
+                <span>Notificaciones</span>
+            </a>
+            <div class="separador_menu"></div>
+            <a class="enlace_navegacion" href="mi-perfil.html">
+                <i class="fa-solid fa-user icono_nav"></i>
+                <span>Mi perfil</span>
+            </a>
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion">
+                <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
+                <span>Cerrar sesión</span>
+            </a>
+        </nav>
+    </aside>
+    <!-- END: Sidebar -->
+
+    <!-- BEGIN: MainContentArea -->
+    <main class="area_principal">
+        <header class="barra_superior" data-purpose="cabecera_global">
+            <div class="seccion_superior_izquierda">
+                <button aria-label="Abrir menú de navegación" class="boton_menu_hamburguesa" title="Alternar menú lateral" type="button">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="contenedor_busqueda">
+                    <i class="fa-solid fa-magnifying-glass icono_busqueda"></i>
+                    <input class="campo_busqueda" id="campo_busqueda_general" placeholder="Buscar..." type="text" />
+                </div>
+            </div>
+            <div class="seccion_superior_derecha">
+                <button class="boton_notificaciones" title="Notificaciones del sistema" type="button">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="punto_notificacion" id="indicador_notificaciones">3</span>
+                </button>
+                <div class="perfil_usuario_barra">
+                    <div class="avatar_usuario" id="avatar_usuario_circulo">
+                        <i class="fa-regular fa-user"></i>
+                    </div>
+                    <div class="detalles_usuario">
+                        <strong class="nombre_usuario_texto" id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down icono_dropdown"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="cuerpo_contenido" data-purpose="vista_tareas">
+            <div class="fila_encabezado_anuncios">
+                <div>
+                    <h1 class="titulo_pantalla">Tareas</h1>
+                    <p class="subtitulo_pantalla">Administra y da seguimiento a las tareas asignadas.</p>
+                </div>
+                <button class="boton_nuevo_anuncio" id="boton_abrir_modal" type="button">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Nueva tarea</span>
+                </button>
+            </div>
+
+            <!-- Filtros de búsqueda -->
+            <section class="barra_filtros" data-purpose="filtros_busqueda">
+                <div class="filtro_busqueda_contenedor">
+                    <i class="fa-solid fa-magnifying-glass icono_lupa_filtro"></i>
+                    <input class="input_filtro_busqueda" id="campo_filtro_texto" placeholder="Buscar por título..." type="text" />
+                </div>
+                <select class="filtro_selector" id="filtro_departamento">
+                    <option value="todos">Todos los departamentos</option>
+                </select>
+                <select class="filtro_selector" id="filtro_estado">
+                    <option value="todos">Todos los estados</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Completado">Completado</option>
+                </select>
+            </section>
+
+            <!-- Tabla de datos -->
+            <section class="tarjeta_tabla" data-purpose="tabla_de_datos">
+                <div style="overflow-x: auto;">
+                    <table class="tabla_tareas">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 150px;">Título</th>
+                                <th style="min-width: 220px;">Descripción</th>
+                                <th style="min-width: 160px;">Asignado a</th>
+                                <th style="min-width: 140px;">Departamento</th>
+                                <th style="min-width: 110px;">Fecha límite</th>
+                                <th style="min-width: 110px;">Estado</th>
+                                <th style="width: 60px; text-align: center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo_tabla_tareas">
+                            <!-- Filas renderizadas por JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <footer class="pie_tabla">
+                    <span class="texto_conteo_filas" id="texto_resumen_conteo">Mostrando 0 de 0 tareas</span>
+                    <div class="bloque_paginacion" id="contenedor_botones_paginacion"></div>
+                </footer>
+            </section>
+        </div>
+    </main>
+    <!-- END: MainContentArea -->
+
+    <!-- BEGIN: ModalNuevaTarea -->
+    <div class="fondo_oscuro_modal" id="modal_nueva_tarea">
+        <div class="caja_modal">
+            <div class="cabecera_modal">
+                <h3 class="titulo_modal" id="titulo_modal_texto">Nueva Tarea</h3>
+                <button class="boton_cerrar_modal" id="boton_cerrar_cruz" type="button">×</button>
+            </div>
+            <form id="formulario_crear_tarea" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <div class="cuerpo_modal">
+                    <div class="grupo_campo_modal">
+                        <label class="etiqueta_campo" for="campo_modal_titulo">Título</label>
+                        <input class="input_campo_modal" id="campo_modal_titulo" placeholder="Ej. Revisar inventario" required="" type="text" />
+                    </div>
+
+                    <div class="grupo_campo_modal">
+                        <label class="etiqueta_campo" for="campo_modal_descripcion">Descripción</label>
+                        <textarea class="textarea_campo_modal" id="campo_modal_descripcion" placeholder="Detalles de la tarea..." required=""></textarea>
+                    </div>
+
+                    <!-- Buscador de Departamentos -->
+                    <div class="grupo_campo_modal">
+                        <label class="etiqueta_campo">Departamentos de destino (Selecciona uno o varios)</label>
+                        <input class="input_campo_modal" id="buscador_deptos_modal" placeholder="Buscar departamento..." type="text" style="margin-bottom: 6px;" />
+                        <div class="contenedor_lista_custom" style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;">
+                            <label class="item_checkbox_diseno destacado" id="wrapper_check_general">
+                                <input type="checkbox" id="check_general_depto" value="General" />
+                                <span>General (Para todos los departamentos)</span>
+                            </label>
+                            <div id="lista_checkboxes_deptos_servidor" style="display: flex; flex-direction: column; gap: 4px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Buscador de Personas/Docentes -->
+                    <div class="grupo_campo_modal">
+                        <label class="etiqueta_campo" for="buscador_personas_modal">Asignar a persona(s)</label>
+                        <input class="input_campo_modal" id="buscador_personas_modal" placeholder="Buscar docente o colaborador por nombre..." type="text" style="margin-bottom: 6px;" />
+                        <div id="contenedor_lista_personas" class="contenedor_lista_custom" style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <div class="grupo_campo_modal" style="flex: 1; min-width: 180px;">
+                            <label class="etiqueta_campo" for="campo_modal_fecha">Fecha límite</label>
+                            <input class="input_campo_modal" id="campo_modal_fecha" required="" type="date" />
+                        </div>
+                        <div class="grupo_campo_modal" style="flex: 1; min-width: 180px;">
+                            <label class="etiqueta_campo" for="campo_modal_estado">Estado inicial</label>
+                            <select class="selector_campo_modal" id="campo_modal_estado">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="En proceso">En proceso</option>
+                                <option value="Completado">Completado</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pie_modal">
+                    <button class="boton_cancelar_modal" id="boton_cancelar_modal" type="button">Cancelar</button>
+                    <button class="boton_guardar_modal" id="boton_guardar_modal_texto" type="submit">Guardar tarea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- END: ModalNuevaTarea -->
+<!-- BEGIN: ModalVerTareaCompleta -->
+    <div class="fondo_oscuro_modal" id="modal_ver_tarea">
+        <div class="caja_modal caja_modal_detalle">
+            <div class="cabecera_modal">
+                <h3 class="titulo_modal" id="detalle_titulo_tarea">Detalle de la Tarea</h3>
+                <button class="boton_cerrar_modal" id="cerrar_modal_detalle" type="button">×</button>
+            </div>
+            <div class="cuerpo_modal" style="gap: 12px;">
+                <div>
+                    <label class="etiqueta_campo">Creado por:</label>
+                    <p id="detalle_creador_tarea" style="font-size: 13px; color: #334155; font-weight: 600;"></p>
+                </div>
+                <div>
+                    <label class="etiqueta_campo">Asignado a:</label>
+                    <p id="detalle_asignado_tarea" style="font-size: 13px; color: #334155;"></p>
+                </div>
+                <div>
+                    <label class="etiqueta_campo">Fecha límite:</label>
+                    <p id="detalle_fecha_tarea" style="font-size: 13px; color: #334155;"></p>
+                </div>
+                <div>
+                    <label class="etiqueta_campo">Estado:</label>
+                    <div id="detalle_estado_tarea"></div>
+                </div>
+                <div>
+                    <label class="etiqueta_campo">Descripción Completa:</label>
+                    <div id="detalle_descripcion_tarea" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; color: #0f172a; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+            </div>
+            <div class="pie_modal">
+                <button class="boton_cancelar_modal" id="boton_cerrar_detalle_pie" type="button">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <!-- END: ModalVerTareaCompleta -->
+    <!-- Script del módulo -->
+    <script src="../js/tareas.js"></script>
+</body>
+
+</html>

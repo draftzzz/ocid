@@ -1,0 +1,12 @@
+# modulos
+node_modules/
+
+#variables
+.env
+
+# logs
+*.log
+
+#editor
+.vscode/
+.idea/

@@ -1,0 +1,1076 @@
+/* ==========================================================================
+   1. Estilos Globales y Reset (Sin variables, solo px)
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+html {
+    min-width: 320px;
+}
+
+body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    outline: none;
+}
+
+/* ==========================================================================
+   2. Menú Lateral (Sidebar)
+   ========================================================================== */
+.barra_lateral {
+    width: 256px;
+    min-width: 256px;
+    background-color: #0d1527;
+    color: #94a3b8;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0px;
+    z-index: 40;
+    transition: transform 0.2s ease;
+}
+
+.encabezado_logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 82px;
+    padding: 20px;
+    border-bottom: 1px solid #1e293b;
+    background-color: #0d1527;
+}
+
+.icono_escudo {
+    display: flex;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-size: 20px;
+    box-shadow: 0px 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.texto_logo_titulo {
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 20px;
+}
+
+.texto_logo_subtitulo {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
+}
+
+.navegacion_lateral {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 12px;
+    overflow-y: auto;
+}
+
+.enlace_navegacion {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 40px;
+    padding: 11px 14px;
+    border-radius: 9px;
+    background-color: transparent;
+    color: #cbd5e1;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 18px;
+    cursor: pointer;
+}
+
+.enlace_navegacion:hover {
+    background-color: #1e293b;
+    color: #ffffff;
+}
+
+.enlace_navegacion.activo {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.enlace_navegacion.activo:hover {
+    background-color: #1d4ed8;
+}
+
+.icono_nav {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.insignia_notificacion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 19px;
+    min-height: 19px;
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.separador_menu {
+    height: 1px;
+    background-color: #1e293b;
+    margin: 8px 14px;
+}
+
+.boton_cerrar_sesion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    border: 0px;
+    border-radius: 8px;
+    background-color: transparent;
+    color: #ef4444;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.boton_cerrar_sesion:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+}
+
+/* ==========================================================================
+   3. Área Principal y Barra Superior
+   ========================================================================== */
+.area_principal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0px;
+    height: 100vh;
+    overflow-y: auto;
+    background-color: #f1f5f9;
+}
+
+.barra_superior {
+    height: 64px;
+    min-height: 64px;
+    background-color: #0d1527;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 28px;
+    border-bottom: 1px solid #1e293b;
+    position: sticky;
+    top: 0px;
+    z-index: 30;
+    color: #ffffff;
+}
+
+.seccion_superior_izquierda {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    max-width: 620px;
+}
+
+.seccion_superior_derecha {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Ocultar botones de menú hamburguesa por defecto en PC */
+.menu_movil,
+.boton_menu_hamburguesa {
+    display: none;
+}
+
+.fondo_menu_movil {
+    display: none;
+}
+
+.contenedor_busqueda {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 440px;
+}
+
+.icono_busqueda {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 14px;
+}
+
+.campo_busqueda {
+    width: 100%;
+    padding: 8px 14px 8px 38px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f8fafc;
+    font-size: 13px;
+}
+
+.campo_busqueda::placeholder {
+    color: #64748b;
+}
+
+.campo_busqueda:focus {
+    border-color: #3b82f6;
+    background-color: #1a2436;
+    box-shadow: 0px 0px 0px 3px rgba(59, 130, 246, 0.2);
+}
+
+.boton_notificaciones {
+    position: relative;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 17px;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 30px;
+}
+
+.punto_notificacion {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #0d1527;
+}
+
+.perfil_usuario_barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 8px;
+    cursor: pointer;
+}
+
+.avatar_usuario {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    border: 2px solid #1e293b;
+}
+
+.detalles_usuario {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.nombre_usuario_texto {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+}
+
+.rol_usuario_texto {
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 14px;
+}
+
+.icono_dropdown {
+    color: #64748b;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+/* ==========================================================================
+   4. Zona de Contenido de Archivos (Inputs Grandes de 44px)
+   ========================================================================== */
+.cuerpo_contenido {
+    flex: 1;
+    padding: 28px 32px;
+    max-width: 1300px;
+    width: 100%;
+    margin: 0px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+}
+
+.encabezado_archivos {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.titulo_seccion {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 28px;
+}
+
+.subtitulo_seccion {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.boton_subir_archivo {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+    transition: background-color 0.2s ease;
+}
+
+.boton_subir_archivo:hover {
+    background-color: #1d4ed8;
+}
+
+/* Barra de filtros con inputs grandes (44px) */
+.barra_filtros {
+    background-color: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.03);
+    flex-wrap: wrap;
+}
+
+.filtro_busqueda {
+    position: relative;
+    flex: 1.5;
+    min-width: 240px;
+}
+
+.input_filtro {
+    width: 100%;
+    height: 44px !important;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0px 14px 0px 38px;
+    font-size: 14px;
+    color: #0f172a;
+    background-color: #f8fafc;
+}
+
+.input_filtro:focus {
+    border-color: #2563eb;
+    background-color: #ffffff;
+}
+
+.icono_filtro_lupa {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+.selector_filtro {
+    flex: 1;
+    height: 44px !important;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0px 14px;
+    font-size: 14px;
+    color: #334155;
+    background-color: #f8fafc;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.selector_filtro:focus {
+    border-color: #2563eb;
+}
+
+/* Tarjeta contenedora de la Tabla */
+.tarjeta_tabla {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.tabla_archivos {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tabla_archivos thead tr {
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+}
+
+.tabla_archivos th {
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tabla_archivos tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.15s ease;
+}
+
+.tabla_archivos tbody tr:last-child {
+    border-bottom: none;
+}
+
+.tabla_archivos tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.tabla_archivos td {
+    padding: 16px 20px;
+    font-size: 13.5px;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.contenedor_nombre_archivo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icono_tipo_pdf {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background-color: #fee2e2;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.icono_tipo_xlsx {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background-color: #dcfce7;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.texto_nombre_archivo {
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 18px;
+}
+
+.texto_tamano_archivo {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.badge_pdf {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background-color: #fee2e2;
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge_xlsx {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background-color: #dcfce7;
+    color: #10b981;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.acciones_celda {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.boton_accion_icono {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.boton_accion_icono:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+/* Paginador */
+.pie_paginador {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    padding-top: 12px;
+}
+
+/* Recuadro de avisos para archivos */
+.aviso_docentes {
+    padding: 12px 16px;
+    border-radius: 8px;
+    background-color: #d1fae5;
+    color: #065f46;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #15f585;
+    transform: translateY(10px);
+}
+
+.aviso_docentes_error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+/* Modal Emergente con inputs grandes (44px) */
+.modal_fondo {
+    display: none;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.65);
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.modal_caja {
+    background-color: #ffffff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.modal_encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal_titulo {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.boton_cerrar_modal {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 20px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.boton_cerrar_modal:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.modal_cuerpo {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.zona_arrastre_archivo {
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    background-color: #f8fafc;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.zona_arrastre_archivo:hover {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.campo_formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.etiqueta_campo {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.input_modal {
+    width: 100%;
+    height: 44px !important;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0px 14px;
+    font-size: 14px;
+    background-color: #ffffff;
+    color: #0f172a;
+}
+
+.input_modal:focus {
+    border-color: #2563eb;
+}
+
+.modal_pie {
+    padding: 16px 24px;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.boton_cancelar {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+}
+
+.boton_cancelar:hover {
+    background-color: #f1f5f9;
+}
+
+.boton_guardar {
+    background-color: #2563eb;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.boton_guardar:hover {
+    background-color: #1d4ed8;
+}
+
+/* ==========================================================================
+   6. Media Queries Responsivos (Menú Hamburguesa Operativo y Tabla Adaptada)
+   ========================================================================== */
+@media (max-width: 900px) {
+    /* Forzar visibilidad y funcionamiento del botón hamburguesa */
+    .menu_movil,
+    .boton_menu_hamburguesa {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #94a3b8 !important;
+        font-size: 20px !important;
+        cursor: pointer;
+    }
+
+    .menu_movil:hover,
+    .boton_menu_hamburguesa:hover {
+        color: #ffffff !important;
+    }
+
+    /* Menú lateral flotante operativo por encima de todo (z-index elevado) */
+    .barra_lateral {
+        position: fixed !important;
+        left: 0px !important;
+        top: 0px !important;
+        height: 100vh !important;
+        z-index: 10000 !important;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease-in-out;
+        box-shadow: 10px 0px 30px rgba(15, 23, 42, 0.4);
+    }
+
+    body.menu_movil_abierto .barra_lateral,
+    .barra_lateral.menu_abierto {
+        transform: translateX(0px) !important;
+    }
+
+    /* Fondo oscuro cubriendo toda la pantalla de forma funcional */
+    .fondo_menu_movil {
+        position: fixed !important;
+        inset: 0px !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999 !important;
+        display: none;
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        border: none;
+    }
+
+    body.menu_movil_abierto .fondo_menu_movil {
+        display: block !important;
+    }
+
+    .encabezado_archivos {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .boton_subir_archivo {
+        justify-content: center;
+        width: 100%;
+        height: 44px;
+    }
+
+    /* Ajuste de filtros e inputs grandes para móvil */
+    .barra_filtros {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        padding: 16px;
+    }
+
+    .filtro_busqueda,
+    .input_filtro,
+    .selector_filtro {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: 44px !important;
+    }
+
+    /* Conversión de la tabla a formato de tarjetas apiladas */
+    .tarjeta_tabla {
+        border: none;
+        background: transparent;
+        box-shadow: none;
+        overflow: visible;
+    }
+
+    .tabla_archivos,
+    .tabla_archivos tbody,
+    .tabla_archivos tr,
+    .tabla_archivos td,
+    .tabla_archivos th {
+        display: block;
+        width: 100%;
+    }
+
+    .tabla_archivos thead {
+        display: none;
+    }
+
+    .tabla_archivos tbody tr {
+        display: flex;
+        flex-direction: column;
+        background-color: #ffffff;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 14px;
+        gap: 10px;
+    }
+
+    .tabla_archivos td {
+        padding: 4px 0 !important;
+        border: none !important;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .tabla_archivos td:nth-child(1) {
+        order: 1;
+        width: 100%;
+    }
+
+    .tabla_archivos td:nth-child(2) {
+        order: 2;
+    }
+
+    .tabla_archivos td:nth-child(2):before {
+        content: "Tipo:";
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .tabla_archivos td:nth-child(3) {
+        order: 3;
+    }
+
+    .tabla_archivos td:nth-child(3):before {
+        content: "Departamento:";
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .tabla_archivos td:nth-child(4) {
+        order: 4;
+    }
+
+    .tabla_archivos td:nth-child(4):before {
+        content: "Usuario:";
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .tabla_archivos td:nth-child(5) {
+        order: 5;
+    }
+
+    .tabla_archivos td:nth-child(5):before {
+        content: "Fecha:";
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .tabla_archivos td:nth-child(6) {
+        order: 6;
+        padding-top: 10px !important;
+        border-top: 1px solid #f1f5f9 !important;
+        margin-top: 6px;
+    }
+
+    .tabla_archivos td:nth-child(6):before {
+        content: "Acciones:";
+        font-weight: 600;
+        color: #64748b;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .barra_superior {
+        padding: 0px 12px;
+    }
+
+    .seccion_superior_derecha .detalles_usuario,
+    .seccion_superior_derecha .icono_dropdown {
+        display: none;
+    }
+
+    .cuerpo_contenido {
+        padding: 16px 12px;
+    }
+}
+/* ==========================================================================
+   7. Componente Toast Flotante y Modales Difuminados (Blur)
+   ========================================================================== */
+.fondo_modal_oscuro,
+.modal_fondo {
+    background-color: rgba(15, 23, 42, 0.65) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.modal_fondo[style*="display: flex"],
+.modal_fondo.modal_activo,
+.fondo_modal_oscuro.modal_activo {
+    display: flex !important;
+    opacity: 1 !important;
+}
+
+.contenedor_toast_flotante {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast_mensaje {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    max-width: 420px;
+    padding: 14px 18px;
+    background-color: #0f172a;
+    color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 10px 25px -5px rgba(0, 0, 0, 0.25), 0px 8px 10px -6px rgba(0, 0, 0, 0.25);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    border-left: 4px solid #3b82f6;
+}
+
+.toast_mensaje.toast_visible {
+    opacity: 1;
+    transform: translateY(0px);
+}
+
+.toast_mensaje.toast_exito { border-left-color: #10b981; }
+.toast_mensaje.toast_error { border-left-color: #ef4444; }
+.toast_mensaje.toast_advertencia { border-left-color: #f59e0b; }
+
+.toast_icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.toast_exito .toast_icono { color: #10b981; }
+.toast_error .toast_icono { color: #ef4444; }
+.toast_advertencia .toast_icono { color: #f59e0b; }
+
+.toast_texto {
+    flex: 1;
+    color: #f8fafc;
+}
+
+@media (max-width: 600px) {
+    .contenedor_toast_flotante {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        align-items: center;
+    }
+
+    .toast_mensaje {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        padding: 12px 14px;
+        font-size: 12.5px;
+    }
+}

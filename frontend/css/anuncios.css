@@ -1,0 +1,1115 @@
+/* ==========================================================================
+   1. Estilos Globales y Reset (Sin variables, solo px)
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+html {
+    min-width: 320px;
+}
+
+body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+    outline: none;
+}
+
+/* ==========================================================================
+   2. Menú Lateral (Sidebar)
+   ========================================================================== */
+.barra_lateral {
+    width: 256px;
+    min-width: 256px;
+    background-color: #0d1527;
+    color: #94a3b8;
+    border-right: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0px;
+    z-index: 40;
+    transition: transform 0.2s ease;
+}
+
+.encabezado_logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 82px;
+    padding: 20px;
+    border-bottom: 1px solid #1e293b;
+    background-color: #0d1527;
+}
+
+.icono_escudo {
+    display: flex;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-size: 20px;
+    box-shadow: 0px 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.texto_logo_titulo {
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 20px;
+}
+
+.texto_logo_subtitulo {
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
+}
+
+.navegacion_lateral {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 12px;
+    overflow-y: auto;
+}
+
+.enlace_navegacion {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 40px;
+    padding: 11px 14px;
+    border-radius: 9px;
+    background-color: transparent;
+    color: #cbd5e1;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 18px;
+    cursor: pointer;
+}
+
+.enlace_navegacion:hover {
+    background-color: #1e293b;
+    color: #ffffff;
+}
+
+.enlace_navegacion.activo {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.enlace_navegacion.activo:hover {
+    background-color: #1d4ed8;
+}
+
+.icono_nav {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.insignia_notificacion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 19px;
+    min-height: 19px;
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.pie_lateral {
+    padding: 16px 14px;
+    border-top: 1px solid #1e293b;
+}
+
+.separador_menu {
+    height: 1px;
+    background-color: #1e293b;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    margin-left: 14px;
+    margin-right: 14px;
+}
+
+.boton_cerrar_sesion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    border: 0px;
+    border-radius: 8px;
+    background-color: transparent;
+    color: #ef4444;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.boton_cerrar_sesion:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+}
+
+/* ==========================================================================
+   3. Área Principal y Barra Superior
+   ========================================================================== */
+.area_principal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0px;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #f1f5f9;
+}
+
+.barra_superior {
+    height: 64px;
+    min-height: 64px;
+    background-color: #0d1527;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 28px;
+    border-bottom: 1px solid #1e293b;
+    position: sticky;
+    top: 0px;
+    z-index: 30;
+    color: #ffffff;
+}
+
+.seccion_superior_izquierda {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+    max-width: 620px;
+}
+
+.seccion_superior_derecha {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Ocultar botones de menú hamburguesa por defecto en PC */
+.menu_movil,
+.boton_menu_hamburguesa {
+    display: none;
+}
+
+.fondo_menu_movil {
+    display: none;
+}
+
+.contenedor_busqueda {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 440px;
+}
+
+.icono_busqueda {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 14px;
+}
+
+.campo_busqueda {
+    width: 100%;
+    padding: 8px 14px 8px 38px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f8fafc;
+    font-size: 13px;
+}
+
+.campo_busqueda::placeholder {
+    color: #64748b;
+}
+
+.campo_busqueda:focus {
+    border-color: #3b82f6;
+    background-color: #1a2436;
+    box-shadow: 0px 0px 0px 3px rgba(59, 130, 246, 0.2);
+}
+
+.boton_notificaciones {
+    position: relative;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 17px;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 30px
+}
+
+.punto_notificacion {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #0d1527;
+}
+
+.perfil_usuario_barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 8px;
+    cursor: pointer;
+}
+
+.avatar_usuario {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    border: 2px solid #1e293b;
+}
+
+.detalles_usuario {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.nombre_usuario_texto {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 16px;
+}
+
+.rol_usuario_texto {
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 14px;
+}
+
+.icono_dropdown {
+    color: #64748b;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+/* ==========================================================================
+   4. Cuerpo de Anuncios y Scroll Personalizado en Contenido Principal (con px)
+   ========================================================================== */
+.cuerpo_contenido {
+    flex: 1;
+    padding: 28px 32px;
+    max-width: 1300px;
+    width: 100%;
+    margin: 0px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+    
+    /* Scroll personalizado configurado en px */
+    scrollbar-width: thin;
+    scrollbar-color: #ccd2d8 #232E33;
+}
+
+.cuerpo_contenido::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+.cuerpo_contenido::-webkit-scrollbar-track {
+    background: #232E33;
+    border-radius: 1px;
+}
+
+.cuerpo_contenido::-webkit-scrollbar-thumb {
+    background: #ccd2d8;
+    border-radius: 1px;
+}
+
+.fila_encabezado_anuncios {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.titulo_pantalla {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 28px;
+}
+
+.subtitulo_pantalla {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.boton_nuevo_anuncio {
+    background-color: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.boton_nuevo_anuncio:hover {
+    background-color: #1d4ed8;
+}
+
+.barra_filtros {
+    background-color: #ffffff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.03);
+    flex-wrap: wrap;
+}
+
+.filtro_busqueda_contenedor {
+    position: relative;
+    flex: 1.5;
+    min-width: 240px;
+}
+
+.input_filtro_busqueda {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0px 12px 0px 32px;
+    font-size: 13px;
+    color: #0f172a;
+    background-color: #f8fafc;
+}
+
+.input_filtro_busqueda:focus {
+    border-color: #2563eb;
+    background-color: #ffffff;
+}
+
+.icono_lupa_filtro {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.filtro_selector {
+    flex: 1;
+    height: 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0px 12px;
+    font-size: 13px;
+    color: #334155;
+    background-color: #f8fafc;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.filtro_selector:focus {
+    border-color: #2563eb;
+}
+
+.boton_limpiar_filtros {
+    background: transparent;
+    border: none;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 7px 12px;
+    border-radius: 6px;
+}
+
+.boton_limpiar_filtros:hover {
+    background-color: #eff6ff;
+}
+
+.aviso_docentes {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(10px);
+}
+
+.aviso_docentes[hidden] {
+    display: none !important;
+}
+
+.aviso_docentes_error {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+/* ==========================================================================
+   5. Grilla en Dos Columnas y Tarjetas
+   ========================================================================== */
+.contenedor_dos_columnas {
+    display: grid;
+    grid-template-columns: 1fr 310px;
+    gap: 22px;
+    align-items: start;
+}
+
+.columna_lista_anuncios {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tarjeta_anuncio,
+.tarjeta_lateral_panel {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.tarjeta_anuncio {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+}
+
+.fila_etiqueta_anuncio {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.etiqueta_tipo {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.etiqueta_urgente {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+
+.etiqueta_moderado {
+    background-color: #fff9dc;
+    color: #ebac25;
+}
+
+.etiqueta_general {
+    background-color: #dcfce7;
+    color: #10b981;
+}
+
+.boton_opciones_anuncio {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.boton_opciones_anuncio:hover {
+    background-color: #f1f5f9;
+    color: #334155;
+}
+
+.titulo_anuncio {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 22px;
+}
+
+.descripcion_anuncio {
+    font-size: 13px;
+    color: #475569;
+    line-height: 20px;
+}
+
+.fila_metadatos_anuncio {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.item_metadato {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.icono_metadato {
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+}
+
+/* ==========================================================================
+   6. Paneles Laterales
+   ========================================================================== */
+.columna_lateral_derecha {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.titulo_bloque_lateral {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+}
+
+.lista_conteo_departamentos {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fila_conteo_departamento {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+.indicador_con_nombre {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #334155;
+}
+
+.punto_departamento {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.punto_servicios {
+    background-color: #3b82f6;
+}
+
+.punto_control {
+    background-color: #f59e0b;
+}
+
+.punto_academico {
+    background-color: #ef4444;
+}
+
+.punto_vinculacion {
+    background-color: #10b981;
+}
+
+.punto_orientacion {
+    background-color: #8b5cf6;
+}
+
+.cifra_departamento {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 12px;
+}
+
+.lista_ultimos_anuncios {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item_ultimo_anuncio {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+}
+
+.item_ultimo_titulo {
+    color: #334155;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.item_ultimo_titulo::before {
+    content: "•";
+    color: #3b82f6;
+    font-size: 14px;
+}
+
+.item_ultimo_fecha {
+    color: #94a3b8;
+    font-size: 11px;
+    padding-left: 12px;
+}
+
+/* ==========================================================================
+   7. Modales
+   ========================================================================== */
+
+/* ==========================================================================
+   Modales con fondo difuminado (Blur)
+   ========================================================================== */
+.fondo_oscuro_modal {
+    display: none;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.65); /* Oscurece el fondo */
+    backdrop-filter: blur(4px);                 /* Difumina el contenido detrás */
+    -webkit-backdrop-filter: blur(4px);         /* Compatibilidad con Safari */
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.fondo_oscuro_modal.modal_activo {
+    display: flex;
+    opacity: 1;
+}
+
+.caja_modal {
+    background-color: #ffffff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cabecera_modal {
+    padding: 18px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.titulo_modal {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.boton_cerrar_modal {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.boton_cerrar_modal:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.cuerpo_modal {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.grupo_campo_modal {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.etiqueta_campo {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.input_campo_modal,
+.selector_campo_modal,
+.textarea_campo_modal {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #0f172a;
+    background-color: #ffffff;
+}
+
+.textarea_campo_modal {
+    min-height: 100px;
+    resize: none;
+}
+
+.input_campo_modal:focus,
+.selector_campo_modal:focus,
+.textarea_campo_modal:focus {
+    border-color: #2563eb;
+}
+
+.pie_modal {
+    padding: 14px 24px;
+    background-color: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.boton_cancelar_modal {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.boton_cancelar_modal:hover {
+    background-color: #f1f5f9;
+}
+
+.boton_guardar_modal {
+    background-color: #2563eb;
+    border: none;
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.boton_guardar_modal:hover {
+    background-color: #1d4ed8;
+}
+
+/* ==========================================================================
+   8. Media Queries Responsivos (Menú Hamburguesa limpio solo en móviles)
+   ========================================================================== */
+@media (max-width: 900px) {
+    .menu_movil,
+    .boton_menu_hamburguesa {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #94a3b8 !important;
+        font-size: 18px !important;
+        cursor: pointer;
+    }
+
+    .menu_movil:hover,
+    .boton_menu_hamburguesa:hover {
+        color: #ffffff !important;
+    }
+
+    .barra_lateral {
+        position: fixed;
+        left: 0px;
+        top: 0px;
+        height: 100vh;
+        transform: translateX(-100%);
+        box-shadow: 8px 0px 24px rgba(15, 23, 42, 0.2);
+    }
+
+    body.menu_movil_abierto .barra_lateral,
+    .barra_lateral.menu_abierto {
+        transform: translateX(0px);
+    }
+
+    .fondo_menu_movil {
+        position: fixed;
+        inset: 0px;
+        z-index: 35;
+        display: block;
+        background-color: rgba(15, 23, 42, 0.55);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        border: none;
+    }
+
+    body.menu_movil_abierto .fondo_menu_movil {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .contenedor_dos_columnas {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .barra_superior {
+        padding: 0px 12px;
+    }
+
+    .seccion_superior_derecha .detalles_usuario,
+    .seccion_superior_derecha .icono_dropdown {
+        display: none;
+    }
+
+    .cuerpo_contenido {
+        padding: 18px 14px;
+    }
+}
+/* ==========================================================================
+   9. Componente de Notificación Toast (Aviso Flotante)
+   ========================================================================== */
+.contenedor_toast_flotante {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast_mensaje {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 280px;
+    max-width: 420px;
+    padding: 14px 18px;
+    background-color: #0f172a;
+    color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0px 10px 25px -5px rgba(0, 0, 0, 0.25), 0px 8px 10px -6px rgba(0, 0, 0, 0.25);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    border-left: 4px solid #3b82f6;
+}
+
+.toast_mensaje.toast_visible {
+    opacity: 1;
+    transform: translateY(0px);
+}
+
+.toast_mensaje.toast_exito {
+    border-left-color: #10b981;
+}
+
+.toast_mensaje.toast_error {
+    border-left-color: #ef4444;
+}
+
+.toast_mensaje.toast_advertencia {
+    border-left-color: #f59e0b;
+}
+
+.toast_icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.toast_exito .toast_icono { color: #10b981; }
+.toast_error .toast_icono { color: #ef4444; }
+.toast_advertencia .toast_icono { color: #f59e0b; }
+
+.toast_texto {
+    flex: 1;
+    color: #f8fafc;
+}
+/* ==========================================================================
+   10. Adaptación Responsiva para Móviles (Anuncios y Toast)
+   ========================================================================== */
+@media (max-width: 600px) {
+    /* Ajustes generales del contenedor de anuncios */
+    .cuerpo_contenido {
+        padding: 16px 12px;
+        gap: 16px;
+    }
+
+    .fila_encabezado_anuncios {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .boton_nuevo_anuncio {
+        width: 100%;
+        justify-content: center;
+        padding: 11px 16px;
+    }
+
+    /* Ajuste de filtros en vertical para pantalla estrecha */
+    .barra_filtros {
+        padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .filtro_busqueda_contenedor,
+    .filtro_selector,
+    .boton_limpiar_filtros {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    /* Adaptación de tarjetas de anuncios */
+    .tarjeta_anuncio {
+        padding: 14px;
+        gap: 8px;
+    }
+
+    .titulo_anuncio {
+        font-size: 15px;
+        line-height: 20px;
+    }
+
+    .descripcion_anuncio {
+        font-size: 12.5px;
+        line-height: 18px;
+    }
+
+    .fila_metadatos_anuncio {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        font-size: 11.5px;
+    }
+
+    /* Ajuste de la posición y ancho del Toast en teléfonos */
+    .contenedor_toast_flotante {
+        bottom: 16px;
+        right: 16px;
+        left: 16px;
+        align-items: center;
+    }
+
+    .toast_mensaje {
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        padding: 12px 14px;
+        font-size: 12.5px;
+        line-height: 18px;
+        border-radius: 8px;
+    }
+}
