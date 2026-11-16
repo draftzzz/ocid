@@ -62,6 +62,10 @@
                 <i class="fa-solid fa-bell icono_nav"></i>
                 <span>Notificaciones</span>
             </a>
+            <a class="enlace_navegacion activo" href="papelera.html">
+                <i class="fa-solid fa-trash-arrow-up icono_nav"></i>
+                <span>Papelera</span>
+            </a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion" href="mi-perfil.html">
                 <i class="fa-solid fa-user icono_nav"></i>
@@ -100,7 +104,8 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario"
+                            style="color: #ffffff;">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -126,7 +131,8 @@
             <section class="barra_filtros" data-purpose="filtros_busqueda">
                 <div class="filtro_busqueda_contenedor">
                     <i class="fa-solid fa-magnifying-glass icono_lupa_filtro"></i>
-                    <input class="input_filtro_busqueda" id="campo_filtro_texto" placeholder="Buscar por título..." type="text" />
+                    <input class="input_filtro_busqueda" id="campo_filtro_texto" placeholder="Buscar por título..."
+                        type="text" />
                 </div>
                 <select class="filtro_selector" id="filtro_departamento">
                     <option value="todos">Todos los departamentos</option>
@@ -184,32 +190,41 @@
                 <div class="cuerpo_modal">
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo" for="campo_modal_titulo">Título</label>
-                        <input class="input_campo_modal" id="campo_modal_titulo" placeholder="Ej. Revisar inventario" required="" type="text" />
+                        <input class="input_campo_modal" id="campo_modal_titulo" placeholder="Ej. Revisar inventario"
+                            required="" type="text" />
                     </div>
 
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo" for="campo_modal_descripcion">Descripción</label>
-                        <textarea class="textarea_campo_modal" id="campo_modal_descripcion" placeholder="Detalles de la tarea..." required=""></textarea>
+                        <textarea class="textarea_campo_modal" id="campo_modal_descripcion"
+                            placeholder="Detalles de la tarea..." required=""></textarea>
                     </div>
 
                     <!-- Buscador de Departamentos -->
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo">Departamentos de destino (Selecciona uno o varios)</label>
-                        <input class="input_campo_modal" id="buscador_deptos_modal" placeholder="Buscar departamento..." type="text" style="margin-bottom: 6px;" />
-                        <div class="contenedor_lista_custom" style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;">
+                        <input class="input_campo_modal" id="buscador_deptos_modal" placeholder="Buscar departamento..."
+                            type="text" style="margin-bottom: 6px;" />
+                        <div class="contenedor_lista_custom"
+                            style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;">
                             <label class="item_checkbox_diseno destacado" id="wrapper_check_general">
                                 <input type="checkbox" id="check_general_depto" value="General" />
                                 <span>General (Para todos los departamentos)</span>
                             </label>
-                            <div id="lista_checkboxes_deptos_servidor" style="display: flex; flex-direction: column; gap: 4px;"></div>
+                            <div id="lista_checkboxes_deptos_servidor"
+                                style="display: flex; flex-direction: column; gap: 4px;"></div>
                         </div>
                     </div>
 
                     <!-- Buscador de Personas/Docentes -->
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo" for="buscador_personas_modal">Asignar a persona(s)</label>
-                        <input class="input_campo_modal" id="buscador_personas_modal" placeholder="Buscar docente o colaborador por nombre..." type="text" style="margin-bottom: 6px;" />
-                        <div id="contenedor_lista_personas" class="contenedor_lista_custom" style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;"></div>
+                        <input class="input_campo_modal" id="buscador_personas_modal"
+                            placeholder="Buscar docente o colaborador por nombre..." type="text"
+                            style="margin-bottom: 6px;" />
+                        <div id="contenedor_lista_personas" class="contenedor_lista_custom"
+                            style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;">
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -230,7 +245,8 @@
 
                 <div class="pie_modal">
                     <button class="boton_cancelar_modal" id="boton_cancelar_modal" type="button">Cancelar</button>
-                    <button class="boton_guardar_modal" id="boton_guardar_modal_texto" type="submit">Guardar tarea</button>
+                    <button class="boton_guardar_modal" id="boton_guardar_modal_texto" type="submit">Guardar
+                        tarea</button>
                 </div>
             </form>
         </div>
@@ -263,7 +279,9 @@
                 </div>
                 <div>
                     <label class="etiqueta_campo">Descripción Completa:</label>
-                    <div id="detalle_descripcion_tarea" style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; color: #0f172a; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;"></div>
+                    <div id="detalle_descripcion_tarea"
+                        style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; color: #0f172a; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">
+                    </div>
                 </div>
             </div>
             <div class="pie_modal">

@@ -62,6 +62,10 @@
                 <i class="fa-solid fa-bell icono_nav"></i>
                 <span>Notificaciones</span>
             </a>
+            <a class="enlace_navegacion activo" href="papelera.html">
+                <i class="fa-solid fa-trash-arrow-up icono_nav"></i>
+                <span>Papelera</span>
+            </a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion" href="mi-perfil.html">
                 <i class="fa-solid fa-user icono_nav"></i>
@@ -100,7 +104,8 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario"
+                            style="color: #ffffff;">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -117,8 +122,7 @@
                     <p class="subtitulo_seccion">Consulta, descarga y comparte documentos de tu departamento.</p>
                 </div>
                 <button class="boton_subir_archivo" id="abrir_modal_subir">
-                    <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
-                        width="18">
+                    <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="17 8 12 3 7 8"></polyline>
                         <line x1="12" x2="12" y1="3" y2="15"></line>
@@ -191,13 +195,15 @@
                         <polyline points="17 8 12 3 7 8"></polyline>
                         <line x1="12" x2="12" y1="3" y2="15"></line>
                     </svg>
-                    <div style="font-size: 13px; font-weight: 600; color: #334155;">Arrastra tu archivo aquí o haz clic para explorar</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #334155;">Arrastra tu archivo aquí o haz clic
+                        para explorar</div>
                     <div style="font-size: 11px; color: #94a3b8;">Formatos aceptados: PDF, XLSX, DOCX (máx. 10MB)</div>
                     <input id="input_archivo_oculto" style="display: none;" type="file" />
                 </div>
                 <div class="campo_formulario">
                     <label class="etiqueta_campo" for="nombre_documento">Nombre del documento</label>
-                    <input class="input_modal" id="nombre_documento" placeholder="Ej. Lineamientos 2026.pdf" type="text" />
+                    <input class="input_modal" id="nombre_documento" placeholder="Ej. Lineamientos 2026.pdf"
+                        type="text" />
                 </div>
                 <div class="campo_formulario">
                     <label class="etiqueta_campo" for="departamento_seleccion">Departamento destino</label>

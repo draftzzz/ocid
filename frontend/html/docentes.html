@@ -6,7 +6,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Docentes</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="../css/docentes.css"/>
+    <link rel="stylesheet" href="../css/docentes.css" />
 </head>
 
 <body>
@@ -58,6 +58,10 @@
                 <i class="fa-solid fa-bell icono_nav"></i>
                 <span>Notificaciones</span>
             </a>
+            <a class="enlace_navegacion activo" href="papelera.html">
+                <i class="fa-solid fa-trash-arrow-up icono_nav"></i>
+                <span>Papelera</span>
+            </a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion" href="mi-perfil.html">
                 <i class="fa-solid fa-user icono_nav"></i>
@@ -95,7 +99,8 @@
                         CR
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario"
+                            style="color: #ffffff;">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -124,7 +129,7 @@
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </div>
                     <input class="input_filtro_nombre" id="filtro_nombre_input" data-evento-pagina="evento-2"
-              placeholder="Buscar por nombre..." type="text" />
+                        placeholder="Buscar por nombre..." type="text" />
                 </div>
                 <select class="select_filtro" id="filtro_departamento" data-evento-pagina="evento-3">
                     <option value="todos">Todos los departamentos</option>
@@ -180,8 +185,8 @@
             <form action="/registro" class="modal_formulario" id="formulario_docente" method="POST">
                 <div class="grupo_campo">
                     <label class="label_campo" for="nombre_docente_input">Nombre completo</label>
-                    <input class="input_modal" id="nombre_docente_input" name="nombre" placeholder="Ej. Roberto Sánchez Gómez"
-                        required="" type="text" />
+                    <input class="input_modal" id="nombre_docente_input" name="nombre"
+                        placeholder="Ej. Roberto Sánchez Gómez" required="" type="text" />
                 </div>
                 <div class="grupo_campo">
                     <label class="label_campo" for="correo_docente_input">Correo institucional</label>
@@ -190,8 +195,8 @@
                 </div>
                 <div class="grupo_campo">
                     <label class="label_campo" for="password_docente_input">Contraseña inicial</label>
-                    <input class="input_modal" id="password_docente_input" name="password" placeholder="••••••••" required=""
-                        type="password" />
+                    <input class="input_modal" id="password_docente_input" name="password" placeholder="••••••••"
+                        required="" type="password" />
                 </div>
                 <div class="grupo_campo">
                     <label class="label_campo" for="departamento_select">Departamento</label>

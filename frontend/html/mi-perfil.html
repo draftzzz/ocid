@@ -62,6 +62,10 @@
                 <i class="fa-solid fa-bell icono_nav"></i>
                 <span>Notificaciones</span>
             </a>
+            <a class="enlace_navegacion activo" href="papelera.html">
+                <i class="fa-solid fa-trash-arrow-up icono_nav"></i>
+                <span>Papelera</span>
+            </a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion activo" href="mi-perfil.html" id="nav_perfil">
                 <i class="fa-solid fa-user icono_nav"></i>
@@ -100,7 +104,8 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario"
+                            style="color: #ffffff;">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -127,7 +132,8 @@
                             <i class="fa-regular fa-user" style="font-size: 28px;"></i>
                         </div>
                         <div>
-                            <p class="texto_avatar_aviso">La imagen de perfil se genera automáticamente con tus iniciales.</p>
+                            <p class="texto_avatar_aviso">La imagen de perfil se genera automáticamente con tus
+                                iniciales.</p>
                         </div>
                     </div>
                     <!-- Formulario Datos de Usuario -->
@@ -138,7 +144,8 @@
                         </div>
                         <div class="grupo_formulario">
                             <label class="etiqueta_formulario" for="campo_correo_electronico">Correo electrónico</label>
-                            <input class="campo_input" id="campo_correo_electronico" required="" type="email" value="" />
+                            <input class="campo_input" id="campo_correo_electronico" required="" type="email"
+                                value="" />
                         </div>
                         <div class="grupo_formulario">
                             <label class="etiqueta_formulario" for="campo_departamento">Departamento</label>
@@ -152,7 +159,8 @@
                         </div>
                         <div class="grupo_formulario">
                             <label class="etiqueta_formulario" for="campo_rol_usuario">Rol</label>
-                            <input class="campo_input campo_input_deshabilitado" id="campo_rol_usuario" readonly="" type="text" value="Jefe de Departamento" />
+                            <input class="campo_input campo_input_deshabilitado" id="campo_rol_usuario" readonly=""
+                                type="text" value="Jefe de Departamento" />
                         </div>
                         <div>
                             <button class="boton_primario_azul" type="submit">
@@ -165,22 +173,27 @@
                 <!-- END: ColumnaIzquierdaInformacionPersonal -->
 
                 <!-- BEGIN: ColumnaDerechaSeguridadYPreferencias -->
-                <div class="flex flex-col gap-6" data-purpose="seguridad_y_preferencias" style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="flex flex-col gap-6" data-purpose="seguridad_y_preferencias"
+                    style="display: flex; flex-direction: column; gap: 20px;">
                     <!-- Tarjeta de Contraseña -->
                     <section class="tarjeta_configuracion" data-purpose="tarjeta_cambio_clave">
                         <h2 class="tarjeta_titulo">Cambiar contraseña</h2>
                         <form id="formulario_contrasena">
                             <div class="grupo_formulario">
                                 <label class="etiqueta_formulario" for="campo_clave_actual">Contraseña actual</label>
-                                <input class="campo_input" id="campo_clave_actual" placeholder="••••••••" required="" type="password" />
+                                <input class="campo_input" id="campo_clave_actual" placeholder="••••••••" required=""
+                                    type="password" />
                             </div>
                             <div class="grupo_formulario">
                                 <label class="etiqueta_formulario" for="campo_clave_nueva">Nueva contraseña</label>
-                                <input class="campo_input" id="campo_clave_nueva" placeholder="••••••••" required="" type="password" />
+                                <input class="campo_input" id="campo_clave_nueva" placeholder="••••••••" required=""
+                                    type="password" />
                             </div>
                             <div class="grupo_formulario">
-                                <label class="etiqueta_formulario" for="campo_clave_confirmacion">Confirmar contraseña</label>
-                                <input class="campo_input" id="campo_clave_confirmacion" placeholder="••••••••" required="" type="password" />
+                                <label class="etiqueta_formulario" for="campo_clave_confirmacion">Confirmar
+                                    contraseña</label>
+                                <input class="campo_input" id="campo_clave_confirmacion" placeholder="••••••••"
+                                    required="" type="password" />
                             </div>
                             <button class="boton_primario_azul boton_primario_azul_ancho" type="submit">
                                 Cambiar contraseña

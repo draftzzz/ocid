@@ -58,10 +58,14 @@ app.use(cors({
 app.use(express.json({ limit: '15mb' }));
 
 // ==========================================
-// MIGRACIÓN AUTOMÁTICA PARA PAPELERA (BORRADO LÓGICO)
+// MIGRACIÓN AUTOMÁTICA PARA PAPELERA (ARCHIVOS Y ANUNCIOS)
 // ==========================================
 pool.query(`
   ALTER TABLE archivos
+  ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
+
+  ALTER TABLE anuncios
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
 `).catch(err => console.error('Aviso migración papelera:', err.message));
@@ -352,7 +356,25 @@ app.delete('/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- ANUNCIOS ---
+// --- ANUNCIOS Y PAPELERA DE ANUNCIOS (SOLO TUYOS) ---
+app.get('/anuncios/papelera', async (req, res) => {
+  try {
+    const usuarioId = req.usuario.id;
+    const resultado = await pool.query(
+      `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.fecha_eliminacion,
+              d.nombre AS departamento_nombre
+       FROM anuncios a
+       LEFT JOIN departamentos d ON d.id = a.departamento_id
+       WHERE a.eliminado = TRUE AND a.autor_id = $1
+       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
+      [usuarioId]
+    );
+    res.json({ success: true, anuncios: resultado.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de anuncios' });
+  }
+});
+
 app.get('/anuncios', async (req, res) => {
   try {
     const resultado = await pool.query(
@@ -361,6 +383,7 @@ app.get('/anuncios', async (req, res) => {
        FROM anuncios a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
+       WHERE COALESCE(a.eliminado, FALSE) = FALSE
        ORDER BY a.fecha DESC, a.id DESC`
     );
     res.json(resultado.rows);
@@ -378,8 +401,8 @@ app.post('/anuncios', async (req, res) => {
   try {
     await cliente.query('BEGIN');
     const resultado = await cliente.query(
-      `INSERT INTO anuncios (titulo, contenido, prioridad, autor_id, departamento_id, fecha)
-       VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING *`,
+      `INSERT INTO anuncios (titulo, contenido, prioridad, autor_id, departamento_id, fecha, eliminado)
+       VALUES ($1, $2, $3, $4, $5, NOW(), FALSE) RETURNING *`,
       [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamento_id || null]
     );
 
@@ -414,21 +437,77 @@ app.put('/anuncios/:id', async (req, res) => {
   }
 });
 
-// --- ARCHIVOS Y PAPELERA DE RECICLAJE ---
+// Borrado lógico de anuncios (Solo si te pertenecen)
+app.delete('/anuncios/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
+    const resultado = await pool.query(
+      `UPDATE anuncios
+       SET eliminado = TRUE, fecha_eliminacion = NOW()
+       WHERE id = $1 AND autor_id = $2
+       RETURNING id`,
+      [id, usuarioId]
+    );
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El anuncio no existe o no te pertenece' });
+    res.json({ success: true, mensaje: 'Anuncio movido a la papelera' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo mover el anuncio a la papelera' });
+  }
+});
+
+// Restaurar anuncio propio
+app.put('/anuncios/:id/restaurar', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
+    const resultado = await pool.query(
+      `UPDATE anuncios
+       SET eliminado = FALSE, fecha_eliminacion = NULL
+       WHERE id = $1 AND autor_id = $2
+       RETURNING id`,
+      [id, usuarioId]
+    );
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Anuncio no encontrado' });
+    res.json({ success: true, mensaje: 'Anuncio restaurado correctamente' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo restaurar el anuncio' });
+  }
+});
+
+// Eliminar anuncio permanentemente
+app.delete('/anuncios/:id/permanente', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
+    const resultado = await pool.query(
+      'DELETE FROM anuncios WHERE id = $1 AND eliminado = TRUE AND autor_id = $2 RETURNING id',
+      [id, usuarioId]
+    );
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Anuncio no encontrado en la papelera' });
+    res.json({ success: true, mensaje: 'Anuncio eliminado definitivamente' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudo eliminar permanentemente el anuncio' });
+  }
+});
+
+// --- ARCHIVOS Y PAPELERA DE ARCHIVOS (SOLO TUYOS) ---
 app.get('/archivos/papelera', async (req, res) => {
   try {
+    const usuarioId = req.usuario.id;
     const resultado = await pool.query(
       `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id, a.fecha, a.fecha_eliminacion,
               u.nombre AS autor_nombre, d.nombre AS departamento_nombre
        FROM archivos a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
-       WHERE a.eliminado = TRUE
-       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`
+       WHERE a.eliminado = TRUE AND a.autor_id = $1
+       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
+      [usuarioId]
     );
     res.json({ success: true, archivos: resultado.rows });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de reciclaje' });
+    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de archivos' });
   }
 });
 
@@ -464,34 +543,38 @@ app.post('/archivos', async (req, res) => {
   }
 });
 
-// Borrado lógico (Mover a la papelera)
+// Borrado lógico (Solo si te pertenece)
 app.delete('/archivos/:id', async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
     const resultado = await pool.query(
       `UPDATE archivos
        SET eliminado = TRUE, fecha_eliminacion = NOW()
-       WHERE id = $1
+       WHERE id = $1 AND autor_id = $2
        RETURNING id`,
-      [Number(req.params.id)]
+      [id, usuarioId]
     );
-    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe' });
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe o no te pertenece' });
     res.json({ success: true, mensaje: 'Archivo movido a la papelera de reciclaje' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo mover el archivo a la papelera' });
   }
 });
 
-// Restaurar desde la papelera
+// Restaurar archivo propio
 app.put('/archivos/:id/restaurar', async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
     const resultado = await pool.query(
       `UPDATE archivos
        SET eliminado = FALSE, fecha_eliminacion = NULL
-       WHERE id = $1
+       WHERE id = $1 AND autor_id = $2
        RETURNING id`,
-      [Number(req.params.id)]
+      [id, usuarioId]
     );
-    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe' });
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
     res.json({ success: true, mensaje: 'Documento restaurado correctamente' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo restaurar el documento' });
@@ -501,11 +584,13 @@ app.put('/archivos/:id/restaurar', async (req, res) => {
 // Eliminación permanente
 app.delete('/archivos/:id/permanente', async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    const usuarioId = req.usuario.id;
     const resultado = await pool.query(
-      'DELETE FROM archivos WHERE id = $1 AND eliminado = TRUE RETURNING id',
-      [Number(req.params.id)]
+      'DELETE FROM archivos WHERE id = $1 AND eliminado = TRUE AND autor_id = $2 RETURNING id',
+      [id, usuarioId]
     );
-    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El archivo no existe en la papelera' });
+    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Archivo no encontrado en la papelera' });
     res.json({ success: true, mensaje: 'Archivo eliminado definitivamente' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo eliminar permanentemente el archivo' });
