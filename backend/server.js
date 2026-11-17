@@ -4,9 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const cookieParser = require('cookie-parser');
 const { Pool } = require('pg');
 
 const app = express();
@@ -22,11 +20,8 @@ const pool = new Pool({
 });
 
 // ==========================================
-// CONFIGURACIÓN DE SEGURIDAD (PRODUCCIÓN)
+// CONFIGURACIÓN DE SEGURIDAD Y RATE LIMITING
 // ==========================================
-app.use(helmet());
-app.use(cookieParser());
-
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100,
@@ -42,6 +37,9 @@ const authLimiter = rateLimit({
   message: { success: false, error: 'Demasiados intentos de acceso. Intente nuevamente en 15 minutos.' }
 });
 
+// ==========================================
+// CONFIGURACIÓN DE CORS
+// ==========================================
 app.use(cors({
   origin(origin, callback) {
     const origenPermitido = !origin ||
@@ -58,7 +56,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Vital para responder de inmediato a las peticiones preflight del navegador:
 app.options('*', cors());
+
 app.use(express.json({ limit: '15mb' }));
 
 // ==========================================
@@ -131,16 +131,6 @@ app.post('/login', authLimiter, async (req, res) => {
 
     delete usuario.password;
 
-    const esProduccion = process.env.NODE_ENV === 'production';
-
-    res.cookie('token_ocid', token, {
-      httpOnly: true,
-      secure: esProduccion,
-      sameSite: esProduccion ? 'Strict' : 'Lax',
-      maxAge: 8 * 60 * 60 * 1000,
-      path: '/'
-    });
-
     res.json({ success: true, token, usuario });
   } catch (error) {
     console.error('Error en login:', error.message);
@@ -204,19 +194,19 @@ app.post('/registro', authLimiter, async (req, res) => {
 
 
 // ==========================================
-// MIDDLEWARE DE AUTENTICACIÓN JWT (BLOQUEA RUTAS SIGUIENTES SI NO HAY TOKEN)
+// MIDDLEWARE DE AUTENTICACIÓN JWT
 // ==========================================
 function autenticarJWT(req, res, next) {
   let token = null;
   const authHeader = req.headers['authorization'];
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.split(' ')[1];
-  } else if (req.cookies && req.cookies.token_ocid) {
-    token = req.cookies.token_ocid;
   }
+  
   if (!token) {
     return res.status(401).json({ success: false, error: 'Token de acceso requerido' });
   }
+
   jwt.verify(token, JWT_SECRET, (err, usuario) => {
     if (err) {
       return res.status(403).json({ success: false, error: 'Token inválido o expirado' });
