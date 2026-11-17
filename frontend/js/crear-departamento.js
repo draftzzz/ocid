@@ -12,15 +12,6 @@ if (!usuario || !usuario.id) {
     document.getElementById('avatar_usuario_circulo').textContent = iniciales;
 }
 
-// Control del Menú Lateral Móvil / Hamburguesa
-const btnHamburguesa = document.getElementById('btn_hamburguesa');
-const fondoMenu = document.getElementById('fondo_menu');
-function alternarMenu() {
-    document.body.classList.toggle('menu_movil_abierto');
-}
-if (btnHamburguesa) btnHamburguesa.addEventListener('click', alternarMenu);
-if (fondoMenu) fondoMenu.addEventListener('click', alternarMenu);
-
 // Envío del formulario para crear el departamento
 document.getElementById('form_crear_departamento').addEventListener('submit', async (e) => {
     e.preventDefault();

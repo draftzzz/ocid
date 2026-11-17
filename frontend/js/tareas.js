@@ -63,34 +63,6 @@
       });
     });
 
-    const botonHamburguesa = document.querySelector('.boton_menu_hamburguesa');
-    if (botonHamburguesa) {
-      let fondo = document.querySelector('.fondo_menu_movil');
-      if (!fondo) {
-        fondo = document.createElement('button');
-        fondo.type = 'button';
-        fondo.className = 'fondo_menu_movil';
-        fondo.setAttribute('aria-label', 'Cerrar menú de navegación');
-        document.body.appendChild(fondo);
-      }
-
-      function cambiarMenu(abierto) {
-        document.body.classList.toggle('menu_movil_abierto', abierto);
-        botonHamburguesa.setAttribute('aria-expanded', String(abierto));
-      }
-
-      botonHamburguesa.addEventListener('click', () => {
-        cambiarMenu(!document.body.classList.contains('menu_movil_abierto'));
-      });
-      fondo.addEventListener('click', () => cambiarMenu(false));
-      barraLateral.querySelectorAll('a').forEach(enlace => {
-        enlace.addEventListener('click', () => cambiarMenu(false));
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape') cambiarMenu(false);
-      });
-    }
-
     const botonCerrarSesion = document.getElementById('boton_cerrar_sesion');
     if (botonCerrarSesion) {
       botonCerrarSesion.addEventListener('click', evento => {

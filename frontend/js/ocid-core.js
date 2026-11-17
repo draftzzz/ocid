@@ -184,11 +184,31 @@
       const seccionIzq = barraSuperior.querySelector('.seccion_superior_izquierda') || barraSuperior;
       seccionIzq.prepend(btnMenu);
     }
+    if (btnMenu.dataset.ocidMenuConfigured === 'true') return;
+    btnMenu.dataset.ocidMenuConfigured = 'true';
+    btnMenu.type = 'button';
+    btnMenu.setAttribute('aria-label', 'Abrir menú de navegación');
+    btnMenu.setAttribute('aria-expanded', 'false');
+    btnMenu.title = 'Abrir menú de navegación';
+    btnMenu.innerHTML = '<svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
+    if (!barraLateral.id) barraLateral.id = 'barra_lateral_principal';
+    btnMenu.setAttribute('aria-controls', barraLateral.id);
+
     let fondo = document.querySelector('.fondo_menu_movil');
     if (!fondo) {
       fondo = crearElemento('button', { type: 'button', className: 'fondo_menu_movil', attributes: { 'aria-label': 'Cerrar menú de navegación' } });
       document.body.appendChild(fondo);
+    } else if (fondo.tagName !== 'BUTTON') {
+      const botonFondo = crearElemento('button', {
+        type: 'button',
+        className: 'fondo_menu_movil',
+        attributes: { 'aria-label': 'Cerrar menú de navegación' },
+      });
+      fondo.replaceWith(botonFondo);
+      fondo = botonFondo;
     }
+    fondo.type = 'button';
+    fondo.setAttribute('aria-label', 'Cerrar menú de navegación');
     function alternar(abierto) {
       document.body.classList.toggle('menu_movil_abierto', abierto);
       barraLateral.classList.toggle('activo', abierto);
@@ -199,6 +219,11 @@
     fondo.addEventListener('click', () => alternar(false));
     barraLateral.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => alternar(false)));
     document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') alternar(false); });
+  }
+
+  function iniciarNavegacionCompartida() {
+    actualizarCabeceraUsuario();
+    configurarMenuMovil();
   }
 
   function actualizarContadorNotificaciones() {
@@ -232,4 +257,10 @@
     configurarMenuMovil,
     actualizarContadorNotificaciones,
   };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarNavegacionCompartida);
+  } else {
+    iniciarNavegacionCompartida();
+  }
 })();

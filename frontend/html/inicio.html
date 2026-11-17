@@ -11,6 +11,7 @@
 
     <!-- Hoja de Estilos -->
     <link rel="stylesheet" href="../css/inicio.css" />
+    <link rel="stylesheet" href="../css/navigation.css" />
 </head>
 
 <body>
@@ -71,7 +72,7 @@
                 <i class="fa-solid fa-user icono_nav"></i>
                 <span>Mi perfil</span>
             </a>
-            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" onclick="cerrarSesion()">
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
                 <span>Cerrar sesión</span>
             </a>
@@ -95,12 +96,12 @@
             </div>
             <div class="seccion_superior_derecha">
                 <button class="boton_notificaciones"
-                    onclick="mostrarMensaje('Tienes notificaciones del sistema', false)"
+                    onclick="window.location.href='notificaciones.html'"
                     title="Notificaciones del sistema">
                     <i class="fa-regular fa-bell"></i>
                     <span class="punto_notificacion" id="indicador_notificaciones">3</span>
                 </button>
-                <div class="perfil_usuario_barra" onclick="abrirModalLogin()">
+                <div class="perfil_usuario_barra">
                     <div class="avatar_usuario" id="avatar_usuario_circulo">
                         <i class="fa-regular fa-user"></i>
                     </div>
@@ -121,7 +122,7 @@
                     <h1 class="saludo_titulo" id="texto_bienvenida_saludo">¡Hola, !</h1>
                     <p class="saludo_subtitulo">Bienvenido al sistema de coordinación escolar OCID</p>
                 </div>
-                <div class="tarjeta_departamento_actual" onclick="cargarDepartamentos()" title="Departamento asignado">
+                <div class="tarjeta_departamento_actual" title="Departamento asignado">
                     <div class="icono_birrete_contenedor">
                         <i class="fa-solid fa-graduation-cap"></i>
                     </div>
@@ -213,7 +214,7 @@
                             <span>Ver docentes</span>
                         </button>
                         <button class="boton_accion_rapida boton_oscuro"
-                            onclick="window.location.href='configuracion.html'">
+                            onclick="window.location.href='mi-perfil.html'">
                             <i class="fa-solid fa-gear"></i>
                             <span>Configuración</span>
                         </button>

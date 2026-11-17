@@ -52,35 +52,6 @@
         .catch(error => console.error('Error al actualizar notificaciones:', error));
     }
 
-    // Menú hamburguesa móvil
-    let botonMenu = barraSuperior.querySelector('.menu_movil, .boton_menu_hamburguesa');
-    if (!botonMenu) {
-      botonMenu = document.createElement('button');
-      botonMenu.type = 'button';
-      botonMenu.className = 'boton_menu_hamburguesa';
-      botonMenu.setAttribute('aria-label', 'Abrir menú');
-      botonMenu.innerHTML = '<i class="fa-solid fa-bars"></i>';
-      const seccionIzquierda = barraSuperior.querySelector('.seccion_superior_izquierda') || barraSuperior;
-      seccionIzquierda.prepend(botonMenu);
-    }
-
-    let fondoMovil = document.querySelector('.fondo_menu_movil');
-    if (!fondoMovil) {
-      fondoMovil = document.createElement('button');
-      fondoMovil.type = 'button';
-      fondoMovil.className = 'fondo_menu_movil';
-      document.body.appendChild(fondoMovil);
-    }
-
-    function alternarMenu(abrir) {
-      const estado = abrir !== undefined ? abrir : !document.body.classList.contains('menu_movil_abierto');
-      document.body.classList.toggle('menu_movil_abierto', estado);
-    }
-
-    botonMenu.addEventListener('click', (e) => { e.stopPropagation(); alternarMenu(); });
-    fondoMovil.addEventListener('click', () => alternarMenu(false));
-    barraLateral.querySelectorAll('a').forEach(e => e.addEventListener('click', () => alternarMenu(false)));
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') alternarMenu(false); });
   }
 
   if (document.readyState === 'loading') {

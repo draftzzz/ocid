@@ -11,6 +11,7 @@
 
     <!-- Hojas de Estilos Globales y del Módulo -->
     <link rel="stylesheet" href="../css/mi-departamento.css" />
+    <link rel="stylesheet" href="../css/navigation.css" />
 </head>
 
 <body>
@@ -83,7 +84,9 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior" data-purpose="cabecera_global">
             <div class="seccion_superior_izquierda">
-
+                <button type="button" class="boton_menu_hamburguesa" aria-label="Abrir menú de navegación" aria-expanded="false">
+                    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+                </button>
                 <div class="contenedor_busqueda">
                     <i class="fa-solid fa-magnifying-glass icono_busqueda"></i>
                     <input class="campo_busqueda" id="campo_busqueda_general" placeholder="Buscar..." type="text" />

@@ -11,6 +11,8 @@
 
     <!-- Hoja de Estilos (puedes reutilizar tu archivo de estilos base o de perfil) -->
     <link rel="stylesheet" href="../css/perfil.css" />
+    <link rel="stylesheet" href="../css/papelera.css" />
+    <link rel="stylesheet" href="../css/navigation.css" />
 </head>
 
 <body>
@@ -38,7 +40,7 @@
             <a class="enlace_navegacion activo" href="papelera.html"><i class="fa-solid fa-trash-arrow-up icono_nav"></i><span>Papelera</span></a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion" href="mi-perfil.html"><i class="fa-solid fa-user icono_nav"></i><span>Mi perfil</span></a>
-            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" onclick="cerrarSesion()"><i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i><span>Cerrar sesión</span></a>
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion"><i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i><span>Cerrar sesión</span></a>
         </nav>
     </aside>
     <!-- END: Sidebar -->
@@ -73,7 +75,20 @@
                 </div>
             </div>
 
-            <!-- Tabla de Archivos Eliminados Lógicamente -->
+            <div class="controles_papelera">
+                <div class="pestanas_papelera" aria-label="Tipo de elementos eliminados">
+                    <button id="btn_pestana_archivos" class="boton_pestana_papelera activa" type="button"
+                        aria-pressed="true" onclick="cambiarSeccionPapelera('archivos')">
+                        <i class="fa-regular fa-folder-open" aria-hidden="true"></i> Archivos
+                    </button>
+                    <button id="btn_pestana_anuncios" class="boton_pestana_papelera" type="button"
+                        aria-pressed="false" onclick="cambiarSeccionPapelera('anuncios')">
+                        <i class="fa-solid fa-bullhorn" aria-hidden="true"></i> Anuncios
+                    </button>
+                </div>
+                <span id="contador_elementos_papelera" class="contador_papelera">0 elementos</span>
+            </div>
+
             <section class="tarjeta_tabla" style="background-color: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);">
                 <div style="overflow-x: auto;">
                     <table class="tabla_tareas" style="width: 100%; border-collapse: collapse; text-align: left;">

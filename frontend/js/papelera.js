@@ -6,27 +6,8 @@
   let archivosEliminados = [];
   let anunciosEliminados = [];
 
-  function obtenerSesion() {
-    try {
-      return JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-    } catch (e) {
-      return null;
-    }
-  }
-
   function mostrarToast(mensaje, esError = false) {
-    const toast = document.getElementById('toast_mensaje');
-    if (!toast) return;
-    const texto = document.getElementById('texto_toast');
-    const icono = document.getElementById('icono_toast_papelera');
-    if (texto) texto.textContent = mensaje;
-    if (icono) {
-      icono.className = esError
-        ? 'fa-solid fa-circle-exclamation icono_toast icono_toast_error'
-        : 'fa-solid fa-circle-check icono_toast';
-    }
-    toast.classList.add('toast_visible');
-    setTimeout(() => toast.classList.remove('toast_visible'), 3500);
+    window.OCID.mostrarToast(mensaje, esError);
   }
 
   function escaparHTML(valor) {
@@ -36,32 +17,9 @@
   }
 
   function iniciarInterfaz() {
-    const usuario = obtenerSesion();
-    const nombre = usuario && (usuario.nombre || usuario.correo || usuario.usuario);
-    const rol = usuario && (usuario.rol || usuario.tipo || 'Jefe de Departamento');
-
-    const elNombre = document.getElementById('nombreUsuario');
-    const elRol = document.getElementById('etiqueta_rol_usuario');
-    const avatar = document.getElementById('avatar_usuario_circulo');
-
-    if (elNombre && nombre) elNombre.textContent = nombre;
-    if (elRol) elRol.textContent = rol;
-    if (avatar && nombre) {
-      avatar.textContent = nombre.split(/\s+/).slice(0, 2).map(p => p.charAt(0)).join('').toUpperCase();
-    }
-
-    // Actualizar contador de notificaciones solo si existe token
-    if (window.OCID.obtenerToken()) {
-      window.OCID.apiFetch('/notificaciones')
-        .then(datos => {
-          const noLeidas = Array.isArray(datos.notificaciones) ? datos.notificaciones.filter(n => !n.leida).length : 0;
-          document.querySelectorAll('.punto_notificacion, .insignia_notificacion').forEach(insignia => {
-            insignia.textContent = noLeidas;
-            insignia.style.display = noLeidas === 0 ? 'none' : '';
-          });
-        })
-        .catch(() => {});
-    }
+    window.OCID.actualizarCabeceraUsuario();
+    window.OCID.configurarCierreSesion();
+    window.OCID.actualizarContadorNotificaciones();
 
     document.querySelectorAll('.boton_notificaciones').forEach(boton => {
       boton.addEventListener('click', () => {
@@ -69,37 +27,20 @@
       });
     });
 
-    const botonHamburguesa = document.querySelector('.boton_menu_hamburguesa');
-    const fondoMovil = document.querySelector('.fondo_menu_movil');
-    if (botonHamburguesa) {
-      botonHamburguesa.addEventListener('click', () => {
-        document.body.classList.toggle('menu_movil_abierto');
-      });
-    }
-    if (fondoMovil) {
-      fondoMovil.addEventListener('click', () => {
-        document.body.classList.remove('menu_movil_abierto');
-      });
-    }
-
-    const botonCerrarSesion = document.getElementById('boton_cerrar_sesion');
-    if (botonCerrarSesion) {
-      botonCerrarSesion.addEventListener('click', evento => {
-        evento.preventDefault();
-        localStorage.removeItem('usuario_ocid');
-        localStorage.removeItem('token_ocid');
-        sessionStorage.clear();
-        window.location.href = 'login.html';
-      });
-    }
   }
 
   window.cambiarSeccionPapelera = function (seccion) {
     seccionActiva = seccion;
     const btnArchivos = document.getElementById('btn_pestana_archivos');
     const btnAnuncios = document.getElementById('btn_pestana_anuncios');
-    if (btnArchivos) btnArchivos.classList.toggle('activa', seccion === 'archivos');
-    if (btnAnuncios) btnAnuncios.classList.toggle('activa', seccion === 'anuncios');
+    if (btnArchivos) {
+      btnArchivos.classList.toggle('activa', seccion === 'archivos');
+      btnArchivos.setAttribute('aria-pressed', String(seccion === 'archivos'));
+    }
+    if (btnAnuncios) {
+      btnAnuncios.classList.toggle('activa', seccion === 'anuncios');
+      btnAnuncios.setAttribute('aria-pressed', String(seccion === 'anuncios'));
+    }
     renderizarContenidoActual();
   };
 
@@ -130,12 +71,12 @@
 
     if (contador) contador.textContent = `${lista.length} ${lista.length === 1 ? 'elemento' : 'elementos'}`;
 
-    thead.innerHTML = `
+    thead.innerHTML = `<tr>
       <th>Documento</th>
       <th>Departamento</th>
       <th>Eliminado el</th>
       <th class="columna_centrada">Acciones</th>
-    `;
+    </tr>`;
 
     if (!lista.length) {
       tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No tienes archivos propios en la papelera.</td></tr>`;
@@ -176,12 +117,12 @@
 
     if (contador) contador.textContent = `${lista.length} ${lista.length === 1 ? 'elemento' : 'elementos'}`;
 
-    thead.innerHTML = `
+    thead.innerHTML = `<tr>
       <th>Título del Anuncio</th>
       <th>Prioridad</th>
       <th>Eliminado el</th>
       <th class="columna_centrada">Acciones</th>
-    `;
+    </tr>`;
 
     if (!lista.length) {
       tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No tienes anuncios propios en la papelera.</td></tr>`;
@@ -247,7 +188,7 @@
       renderizarContenidoActual();
     } catch (error) {
       console.error(error);
-      mostrarToast('Error al conectar con el servidor.', true);
+      mostrarToast(error.message || 'No se pudo cargar la papelera.', true);
     }
   }
 
@@ -258,8 +199,9 @@
       archivosEliminados = archivosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Archivo restaurado con éxito.');
-    } catch (e) {
-      mostrarToast('No se pudo restaurar el archivo.', true);
+    } catch (error) {
+      console.error('Error al restaurar archivo:', error);
+      mostrarToast(error.message || 'No se pudo restaurar el archivo.', true);
     }
   };
 
@@ -271,8 +213,9 @@
       archivosEliminados = archivosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Archivo eliminado permanentemente.');
-    } catch (e) {
-      mostrarToast('No se pudo eliminar el archivo.', true);
+    } catch (error) {
+      console.error('Error al eliminar archivo:', error);
+      mostrarToast(error.message || 'No se pudo eliminar el archivo.', true);
     }
   };
 
@@ -283,8 +226,9 @@
       anunciosEliminados = anunciosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Anuncio restaurado con éxito.');
-    } catch (e) {
-      mostrarToast('No se pudo restaurar el anuncio.', true);
+    } catch (error) {
+      console.error('Error al restaurar anuncio:', error);
+      mostrarToast(error.message || 'No se pudo restaurar el anuncio.', true);
     }
   };
 
@@ -296,8 +240,9 @@
       anunciosEliminados = anunciosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Anuncio eliminado permanentemente.');
-    } catch (e) {
-      mostrarToast('No se pudo eliminar el anuncio.', true);
+    } catch (error) {
+      console.error('Error al eliminar anuncio:', error);
+      mostrarToast(error.message || 'No se pudo eliminar el anuncio.', true);
     }
   };
 

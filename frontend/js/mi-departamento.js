@@ -1,317 +1,322 @@
-/* Lógica propia de mi-departamento.html */
 (function () {
-  function iniciarInterfaz() {
-    const barraSuperior = document.querySelector('.barra_superior');
-    const barraLateral = document.querySelector('.barra_lateral');
+  'use strict';
 
-    if (!barraSuperior || !barraLateral) return;
+  let departamentoActual = null;
+  let miembrosActuales = [];
+  const estadosMiembros = new Map();
 
-    let usuario = null;
-    try {
-      usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-    } catch (error) {
-      console.error('No se pudieron leer los datos de sesión:', error);
-      localStorage.removeItem('usuario_ocid');
-    }
-
-    // Cargar nombre y rol correctamente en la barra superior
-    const nombreUsuarioEl = document.getElementById('nombreUsuario');
-    const rolUsuarioEl = document.getElementById('etiqueta_rol_usuario');
-    const avatarEl = document.getElementById('avatar_usuario_circulo');
-
-    if (usuario) {
-      if (nombreUsuarioEl) nombreUsuarioEl.textContent = usuario.nombre || usuario.correo || 'Usuario';
-      if (rolUsuarioEl) rolUsuarioEl.textContent = usuario.rol || 'Jefe de Departamento';
-      if (avatarEl && (usuario.nombre || usuario.correo)) {
-        const textoAvatar = (usuario.nombre || usuario.correo).split(/\s+/).slice(0, 2)
-          .map(parte => parte.charAt(0)).join('').toUpperCase();
-        avatarEl.textContent = textoAvatar;
-      }
-
-      // Cargar notificaciones
-      if (usuario.id) {
-        window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-          .then(datos => {
-            const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
-            const indicador = document.getElementById('indicador_notificaciones');
-            if (indicador) {
-              indicador.textContent = noLeidas;
-              indicador.style.display = noLeidas === 0 ? 'none' : '';
-            }
-          })
-          .catch(error => console.error('Error al actualizar el contador de notificaciones:', error));
-      }
-    } else {
-      if (nombreUsuarioEl) nombreUsuarioEl.textContent = 'Invitado';
-    }
-
-    // Menú móvil responsive
-    if (!barraSuperior.querySelector('.menu_movil')) {
-      const boton = document.createElement('button');
-      boton.type = 'button';
-      boton.className = 'menu_movil';
-      boton.setAttribute('aria-label', 'Abrir menú de navegación');
-      boton.setAttribute('aria-expanded', 'false');
-      boton.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>';
-      barraSuperior.prepend(boton);
-
-      const fondo = document.createElement('button');
-      fondo.type = 'button';
-      fondo.className = 'fondo_menu_movil';
-      fondo.setAttribute('aria-label', 'Cerrar menú de navegación');
-      document.body.appendChild(fondo);
-
-      function cambiarMenu(abierto) {
-        document.body.classList.toggle('menu_movil_abierto', abierto);
-        boton.setAttribute('aria-expanded', String(abierto));
-      }
-
-      boton.addEventListener('click', () => {
-        cambiarMenu(!document.body.classList.contains('menu_movil_abierto'));
-      });
-      fondo.addEventListener('click', () => cambiarMenu(false));
-      barraLateral.querySelectorAll('a').forEach(enlace => {
-        enlace.addEventListener('click', () => cambiarMenu(false));
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape') cambiarMenu(false);
-      });
-    }
-
-    // Botón de cerrar sesión
-    const botonCerrarSesion = document.getElementById('boton_cerrar_sesion');
-    if (botonCerrarSesion) {
-      botonCerrarSesion.addEventListener('click', evento => {
-        evento.preventDefault();
-        localStorage.removeItem('usuario_ocid');
-        window.location.href = 'login.html';
-      });
-    }
+  function obtenerElemento(id) {
+    return document.getElementById(id);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', iniciarInterfaz);
-  } else {
-    iniciarInterfaz();
+  function texto(id, valor) {
+    const elemento = obtenerElemento(id);
+    if (elemento) elemento.textContent = valor;
   }
-})();
 
-let departamentoIdActual = null;
+  function normalizar(valor) {
+    return String(valor || '').trim().toLocaleLowerCase('es-MX');
+  }
 
-// Función para renderizar integrantes con opciones de inhabilitar (localmente) o eliminar
-function renderizar_miembros(lista) {
-  const contenedor = document.getElementById("cuerpo_tabla_integrantes");
-  if (!contenedor) return;
-  contenedor.innerHTML = "";
+  function obtenerLista(respuesta) {
+    return Array.isArray(respuesta) ? respuesta : [];
+  }
 
-  lista.forEach(function(miembro) {
-    const fila = document.createElement("tr");
-    const esInactivo = miembro.estado === 'Inactivo';
-    const estadoClase = esInactivo ? 'badge_estado_inactivo' : 'badge_estado_activo';
-    const estadoTexto = miembro.estado || 'Activo';
+  function filtrarMiembros() {
+    const termino = (obtenerElemento('campo_busqueda_general')?.value || '').trim().toLocaleLowerCase('es-MX');
+    const visibles = miembrosActuales.filter(miembro =>
+      [miembro.nombre, miembro.correo, miembro.rol].some(valor =>
+        String(valor || '').toLocaleLowerCase('es-MX').includes(termino)
+      )
+    );
+    renderizarMiembros(visibles);
+  }
 
-    fila.innerHTML = `
-      <td><span class="nombre_miembro">${miembro.nombre}</span></td>
-      <td>${miembro.puesto || 'Docente'}</td>
-      <td><span class="${estadoClase}" id="estado_usuario_${miembro.id}">${estadoTexto}</span></td>
-      <td style="text-align: center; position: relative;">
-        <button class="boton_acciones boton_menu_integrante" data-id="${miembro.id}" aria-label="Acciones de usuario" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-        </button>
-        <div id="menu_opciones_integrante_${miembro.id}" style="display: none; position: absolute; right: 20px; top: 30px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0; text-align: left;">
-          <button class="btn_cambiar_estado" data-id="${miembro.id}" data-estado-actual="${estadoTexto}" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;" type="button">
-            ${estadoTexto === 'Activo' ? 'Hacer Inactivo' : 'Hacer Activo'}
-          </button>
-          <button class="btn_eliminar_integrante" data-id="${miembro.id}" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444;" type="button">
-            Eliminar
-          </button>
-        </div>
-      </td>
-    `;
-    contenedor.appendChild(fila);
-  });
+  function renderizarMiembros(lista) {
+    const cuerpo = obtenerElemento('cuerpo_tabla_integrantes');
+    if (!cuerpo) return;
+    cuerpo.replaceChildren();
 
-  // Abrir o cerrar menú de cada integrante
-  document.querySelectorAll('.boton_menu_integrante').forEach(boton => {
-    boton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = boton.getAttribute('data-id');
-      const menu = document.getElementById(`menu_opciones_integrante_${id}`);
-      
-      document.querySelectorAll('[id^="menu_opciones_integrante_"]').forEach(m => {
-        if (m.id !== `menu_opciones_integrante_${id}`) m.style.display = 'none';
+    if (!lista.length) {
+      const fila = document.createElement('tr');
+      const celda = document.createElement('td');
+      celda.colSpan = 4;
+      celda.textContent = miembrosActuales.length
+        ? 'No hay integrantes que coincidan con la búsqueda.'
+        : 'No hay integrantes registrados en este departamento.';
+      fila.appendChild(celda);
+      cuerpo.appendChild(fila);
+      return;
+    }
+
+    lista.forEach(miembro => {
+      const fila = document.createElement('tr');
+      const celdaNombre = document.createElement('td');
+      const nombre = document.createElement('span');
+      nombre.className = 'nombre_miembro';
+      nombre.textContent = miembro.nombre || miembro.correo || 'Usuario';
+      celdaNombre.appendChild(nombre);
+
+      const celdaPuesto = document.createElement('td');
+      celdaPuesto.textContent = miembro.rol || 'Docente';
+
+      const celdaEstado = document.createElement('td');
+      const estado = estadosMiembros.get(Number(miembro.id)) || 'Activo';
+      const indicadorEstado = document.createElement('span');
+      indicadorEstado.className = estado === 'Inactivo' ? 'badge_estado_inactivo' : 'badge_estado_activo';
+      indicadorEstado.id = `estado_usuario_${miembro.id}`;
+      indicadorEstado.textContent = estado;
+      celdaEstado.appendChild(indicadorEstado);
+
+      const celdaAcciones = document.createElement('td');
+      celdaAcciones.style.textAlign = 'center';
+      celdaAcciones.style.position = 'relative';
+      const botonMenu = document.createElement('button');
+      botonMenu.type = 'button';
+      botonMenu.className = 'boton_acciones boton_menu_integrante';
+      botonMenu.setAttribute('aria-label', `Acciones para ${miembro.nombre || 'integrante'}`);
+      botonMenu.textContent = '⋮';
+
+      const menu = document.createElement('div');
+      menu.id = `menu_opciones_integrante_${miembro.id}`;
+      menu.className = 'menu_integrante';
+      menu.hidden = true;
+
+      const botonEstado = document.createElement('button');
+      botonEstado.type = 'button';
+      botonEstado.className = 'btn_cambiar_estado';
+      botonEstado.textContent = estado === 'Activo' ? 'Hacer inactivo' : 'Hacer activo';
+      botonEstado.addEventListener('click', () => {
+        const siguienteEstado = estadosMiembros.get(Number(miembro.id)) === 'Inactivo' ? 'Activo' : 'Inactivo';
+        estadosMiembros.set(Number(miembro.id), siguienteEstado);
+        indicadorEstado.textContent = siguienteEstado;
+        indicadorEstado.className = siguienteEstado === 'Inactivo' ? 'badge_estado_inactivo' : 'badge_estado_activo';
+        botonEstado.textContent = siguienteEstado === 'Activo' ? 'Hacer inactivo' : 'Hacer activo';
+        menu.hidden = true;
       });
-      const menuDepto = document.getElementById('menu_opciones_departamento');
-      if (menuDepto) menuDepto.style.display = 'none';
 
-      if (menu) {
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-      }
-    });
-  });
-
-  // Cambiar estado visualmente (al no existir columna estado en BD backend actual, se gestiona dinámicamente)
-  document.querySelectorAll('.btn_cambiar_estado').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      const id = btn.getAttribute('data-id');
-      const estadoActual = btn.getAttribute('data-estado-actual');
-      const nuevoEstado = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
-      
-      const badge = document.getElementById(`estado_usuario_${id}`);
-      if (badge) {
-        badge.textContent = nuevoEstado;
-        badge.className = nuevoEstado === 'Inactivo' ? 'badge_estado_inactivo' : 'badge_estado_activo';
-      }
-      btn.setAttribute('data-estado-actual', nuevoEstado);
-      btn.textContent = nuevoEstado === 'Activo' ? 'Hacer Inactivo' : 'Hacer Activo';
-
-      // Cerrar menú
-      const menu = document.getElementById(`menu_opciones_integrante_${id}`);
-      if (menu) menu.style.display = 'none';
-    });
-  });
-
-  // Eliminar usuario conectado a la API
-  document.querySelectorAll('.btn_eliminar_integrante').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      if (!confirm('¿Estás seguro de eliminar a este integrante?')) return;
-      const id = btn.getAttribute('data-id');
-
-      try {
-        const datosRespuesta = await window.OCID.apiFetch(`/usuarios/${id}`, {
-          method: 'DELETE'
-        });
-        if (!datosRespuesta.success) {
-          throw new Error(datosRespuesta.error || 'No se pudo eliminar');
+      const botonEliminar = document.createElement('button');
+      botonEliminar.type = 'button';
+      botonEliminar.className = 'btn_eliminar_integrante';
+      botonEliminar.textContent = 'Eliminar';
+      botonEliminar.addEventListener('click', async () => {
+        const usuarioActual = window.OCID.obtenerUsuarioSesion();
+        if (Number(usuarioActual && usuarioActual.id) === Number(miembro.id)) {
+          window.OCID.mostrarToast('No puedes eliminar tu propia cuenta.', true);
+          return;
         }
+        if (!window.confirm(`¿Eliminar a ${miembro.nombre || 'este integrante'}?`)) return;
 
-        await inicializar_modulo_departamento();
-      } catch (err) {
-        console.error(err);
-        alert(err.message || 'Error al eliminar el integrante.');
-      }
+        try {
+          const resultado = await window.OCID.apiFetch(`/usuarios/${Number(miembro.id)}`, { method: 'DELETE' });
+          if (!resultado.success) throw new Error(resultado.error || 'No se pudo eliminar al integrante.');
+          window.OCID.mostrarToast('Integrante eliminado correctamente.');
+          await cargarDatosDepartamento();
+        } catch (error) {
+          console.error('Error al eliminar integrante:', error);
+          window.OCID.mostrarToast(error.message || 'No se pudo eliminar al integrante.', true);
+        }
+      });
+
+      botonMenu.addEventListener('click', evento => {
+        evento.stopPropagation();
+        document.querySelectorAll('.menu_integrante').forEach(otroMenu => {
+          if (otroMenu !== menu) otroMenu.hidden = true;
+        });
+        menu.hidden = !menu.hidden;
+      });
+      menu.append(botonEstado, botonEliminar);
+      celdaAcciones.append(botonMenu, menu);
+      fila.append(celdaNombre, celdaPuesto, celdaEstado, celdaAcciones);
+      cuerpo.appendChild(fila);
     });
-  });
-}
-
-// Inicialización de datos del departamento
-async function inicializar_modulo_departamento() {
-  try {
-    const [departamentos, usuarios, archivos, tareas] = await Promise.all([
-      window.OCID.apiFetch('/departamentos'),
-      window.OCID.apiFetch('/docentes'),
-      window.OCID.apiFetch('/archivos'),
-      window.OCID.apiFetch('/tareas')
-    ]);
-
-    // ... resto del código de renderizado ...
-  } catch (error) {
-    console.error('Error al cargar los datos del departamento:', error);
-    window.OCID.mostrarToast(error.message || 'No se pudieron cargar los datos del departamento.', true);
   }
-}
 
-// Control de los tres puntitos de la tarjeta general de departamento
-const botonOpcionesDepto = document.querySelector('.tarjeta_general .boton_acciones');
-const menuOpcionesDepto = document.getElementById('menu_opciones_departamento');
-const modalEditarDepto = document.getElementById('modal_editar_departamento');
+  function coincideDepartamento(tarea, departamento) {
+    if (!departamento) return false;
+    const nombreDepartamento = normalizar(departamento.nombre);
+    const departamentosTarea = String(tarea.departamento || tarea.autor_departamento || '')
+      .split(',')
+      .map(normalizar);
+    return departamentosTarea.includes(nombreDepartamento);
+  }
 
-if (botonOpcionesDepto && menuOpcionesDepto) {
-  botonOpcionesDepto.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.querySelectorAll('[id^="menu_opciones_integrante_"]').forEach(m => m.style.display = 'none');
-    
-    const rect = botonOpcionesDepto.getBoundingClientRect();
-    menuOpcionesDepto.style.top = (rect.bottom + window.scrollY) + 'px';
-    menuOpcionesDepto.style.left = (rect.left - 120 + window.scrollX) + 'px';
-    menuOpcionesDepto.style.display = menuOpcionesDepto.style.display === 'block' ? 'none' : 'block';
-  });
-}
+  function renderizarDepartamento(departamento, usuarios, archivos, tareas) {
+    departamentoActual = departamento;
+    const departamentoId = departamento ? Number(departamento.id) : null;
+    const miembros = departamento
+      ? usuarios.filter(usuario => Number(usuario.departamento_id) === departamentoId)
+      : [];
+    miembrosActuales = miembros;
 
-const opcionEditarDepto = document.getElementById('opcion_editar_departamento');
-if (opcionEditarDepto) {
-  opcionEditarDepto.addEventListener('click', () => {
-    menuOpcionesDepto.style.display = 'none';
-    document.getElementById('input_editar_nombre_depto').value = document.getElementById('nombre_departamento_texto').textContent;
-    document.getElementById('input_editar_desc_depto').value = document.getElementById('parrafo_descripcion').textContent;
-    modalEditarDepto.style.display = 'flex';
-  });
-}
+    texto('nombre_departamento_texto', departamento ? departamento.nombre : 'Sin departamento asignado');
+    texto('detalle_departamento_texto', departamento && departamento.codigo
+      ? `Código de acceso: ${departamento.codigo}`
+      : 'Información general del departamento');
+    texto('parrafo_descripcion', departamento && departamento.descripcion
+      ? departamento.descripcion
+      : 'Este departamento aún no tiene una descripción.');
 
-const cerrarModalDepto = document.getElementById('boton_cerrar_modal_depto');
-const cancelarModalDepto = document.getElementById('boton_cancelar_modal_depto');
-if (cerrarModalDepto) cerrarModalDepto.addEventListener('click', () => modalEditarDepto.style.display = 'none');
-if (cancelarModalDepto) cancelarModalDepto.addEventListener('click', () => modalEditarDepto.style.display = 'none');
+    const jefe = departamento && usuarios.find(usuario =>
+      Number(usuario.id) === Number(departamento.jefe_id)
+    );
+    const nombreJefe = (jefe && jefe.nombre) || (departamento && departamento.nombre_jefe) || 'Jefe no asignado';
+    const correoJefe = (jefe && jefe.correo) || '';
+    texto('nombre_jefe', nombreJefe);
+    texto('correo_jefe', correoJefe || 'Correo no disponible');
+    texto('modal_destinatario', correoJefe || 'Correo no disponible');
 
-// Guardar cambios del departamento (Nota: Requiere que exista el endpoint en el backend si se desea persistir en BD)
-const guardarModalDepto = document.getElementById('boton_guardar_modal_depto');
-if (guardarModalDepto) {
-  guardarModalDepto.addEventListener('click', async () => {
-    const nuevoNombre = document.getElementById('input_editar_nombre_depto').value.trim();
-    const nuevaDesc = document.getElementById('input_editar_desc_depto').value.trim();
+    const avatarJefe = obtenerElemento('avatar_jefe');
+    if (avatarJefe) {
+      avatarJefe.textContent = nombreJefe.split(/\s+/).slice(0, 2).map(parte => parte[0] || '').join('').toUpperCase();
+    }
 
-    if (!nuevoNombre) {
-      alert('El nombre del departamento no puede estar vacío.');
+    texto('total_docentes', String(miembros.length));
+    texto('total_documentos', String(departamento
+      ? archivos.filter(archivo => Number(archivo.departamento_id) === departamentoId).length
+      : 0));
+    texto('total_eventos', String(tareas.filter(tarea => coincideDepartamento(tarea, departamento)).length));
+    filtrarMiembros();
+  }
+
+  async function cargarDatosDepartamento() {
+    const usuario = window.OCID.obtenerUsuarioSesion();
+    if (!usuario || !window.OCID.obtenerToken()) {
+      window.location.href = 'login.html';
       return;
     }
 
     try {
-      await window.OCID.apiFetch(`/departamentos/${departamentoIdActual}`, {
-        method: 'PUT',
-        body: JSON.stringify({ nombre: nuevoNombre, descripcion: nuevaDesc })
-      });
-
-      modalEditarDepto.style.display = 'none';
-      await inicializar_modulo_departamento();
-    } catch (error) {
-      console.error('Error al actualizar el departamento:', error);
-      alert(error.message || 'No se pudo actualizar el departamento.');
-    }
-  });
-}
-
-// Cerrar menús al hacer clic fuera
-window.addEventListener('click', () => {
-  if (menuOpcionesDepto) menuOpcionesDepto.style.display = 'none';
-  document.querySelectorAll('[id^="menu_opciones_integrante_"]').forEach(m => m.style.display = 'none');
-});
-
-// Control del modal interactivo de contacto
-const modal = document.getElementById("modal_contacto");
-const boton_abrir = document.getElementById("boton_abrir_contacto");
-const boton_cerrar = document.getElementById("boton_cerrar_modal");
-const boton_cancelar = document.getElementById("boton_cancelar_modal");
-const boton_enviar = document.getElementById("boton_enviar_mensaje");
-
-if (boton_abrir && modal) {
-  boton_abrir.addEventListener("click", function() {
-    modal.style.display = "flex";
-  });
-}
-
-function ocultar_modal() {
-  if (modal) modal.style.display = "none";
-}
-
-if (boton_cerrar) boton_cerrar.addEventListener("click", ocultar_modal);
-if (boton_cancelar) boton_cancelar.addEventListener("click", ocultar_modal);
-
-if (boton_enviar) {
-  boton_enviar.addEventListener("click", function() {
-    const correo = document.getElementById("correo_jefe").textContent.trim();
-    const asunto = document.getElementById("asunto_mensaje").value.trim();
-    const mensaje = document.getElementById("cuerpo_mensaje").value.trim();
-    if (!correo || !asunto || !mensaje) {
-      document.getElementById("cuerpo_mensaje").setCustomValidity(
-        "Completa el asunto y el mensaje antes de continuar."
+      const [departamentosRespuesta, usuariosRespuesta, archivosRespuesta, tareasRespuesta] = await Promise.all([
+        window.OCID.apiFetch('/departamentos'),
+        window.OCID.apiFetch('/usuarios'),
+        window.OCID.apiFetch('/archivos'),
+        window.OCID.apiFetch('/tareas')
+      ]);
+      const departamentos = obtenerLista(departamentosRespuesta);
+      const usuarios = obtenerLista(usuariosRespuesta);
+      const archivos = obtenerLista(archivosRespuesta);
+      const tareas = obtenerLista(tareasRespuesta);
+      let departamento = departamentos.find(item =>
+        Number(item.id) === Number(usuario.departamento_id)
       );
-      document.getElementById("cuerpo_mensaje").reportValidity();
-      return;
-    }
-    document.getElementById("cuerpo_mensaje").setCustomValidity("");
-    window.location.href = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
-    ocultar_modal();
-  });
-}
+      if (!departamento) {
+        departamento = departamentos.find(item => Number(item.jefe_id) === Number(usuario.id));
+      }
 
-window.addEventListener("DOMContentLoaded", inicializar_modulo_departamento);
+      renderizarDepartamento(departamento || null, usuarios, archivos, tareas);
+    } catch (error) {
+      console.error('Error al cargar los datos del departamento:', error);
+      window.OCID.mostrarToast(error.message || 'No se pudieron cargar los datos del departamento.', true);
+    }
+  }
+
+  function configurarModales() {
+    const menuDepartamento = obtenerElemento('menu_opciones_departamento');
+    const modalEdicion = obtenerElemento('modal_editar_departamento');
+    const botonOpciones = document.querySelector('.tarjeta_general .boton_acciones');
+    const opcionEditar = obtenerElemento('opcion_editar_departamento');
+
+    if (botonOpciones && menuDepartamento) {
+      botonOpciones.addEventListener('click', evento => {
+        evento.stopPropagation();
+        document.querySelectorAll('.menu_integrante').forEach(menu => { menu.hidden = true; });
+        menuDepartamento.style.display = menuDepartamento.style.display === 'block' ? 'none' : 'block';
+      });
+    }
+
+    if (opcionEditar && modalEdicion) {
+      opcionEditar.addEventListener('click', () => {
+        if (!departamentoActual) {
+          window.OCID.mostrarToast('No hay un departamento asignado para editar.', true);
+          return;
+        }
+        menuDepartamento.style.display = 'none';
+        obtenerElemento('input_editar_nombre_depto').value = departamentoActual.nombre || '';
+        obtenerElemento('input_editar_desc_depto').value = departamentoActual.descripcion || '';
+        modalEdicion.style.display = 'flex';
+      });
+    }
+
+    ['boton_cerrar_modal_depto', 'boton_cancelar_modal_depto'].forEach(id => {
+      const boton = obtenerElemento(id);
+      if (boton) boton.addEventListener('click', () => { if (modalEdicion) modalEdicion.style.display = 'none'; });
+    });
+
+    const guardar = obtenerElemento('boton_guardar_modal_depto');
+    if (guardar) {
+      guardar.addEventListener('click', async () => {
+        const nombre = obtenerElemento('input_editar_nombre_depto').value.trim();
+        const descripcion = obtenerElemento('input_editar_desc_depto').value.trim();
+        if (!departamentoActual || !nombre) {
+          window.OCID.mostrarToast('El nombre del departamento no puede estar vacío.', true);
+          return;
+        }
+        try {
+          const resultado = await window.OCID.apiFetch(`/departamentos/${departamentoActual.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              nombre,
+              descripcion,
+              jefe_id: departamentoActual.jefe_id,
+              codigo: departamentoActual.codigo
+            })
+          });
+          if (!resultado.success) throw new Error(resultado.error || 'No se pudo actualizar el departamento.');
+          modalEdicion.style.display = 'none';
+          window.OCID.mostrarToast('Departamento actualizado correctamente.');
+          await cargarDatosDepartamento();
+        } catch (error) {
+          console.error('Error al actualizar el departamento:', error);
+          window.OCID.mostrarToast(error.message || 'No se pudo actualizar el departamento.', true);
+        }
+      });
+    }
+
+    window.addEventListener('click', evento => {
+      if (menuDepartamento && !menuDepartamento.contains(evento.target) && evento.target !== botonOpciones) {
+        menuDepartamento.style.display = 'none';
+      }
+    });
+
+    const busqueda = obtenerElemento('campo_busqueda_general');
+    if (busqueda) busqueda.addEventListener('input', filtrarMiembros);
+  }
+
+  function configurarContacto() {
+    const modal = obtenerElemento('modal_contacto');
+    const abrir = obtenerElemento('boton_abrir_contacto');
+    const cerrar = obtenerElemento('boton_cerrar_modal');
+    const cancelar = obtenerElemento('boton_cancelar_modal');
+    const enviar = obtenerElemento('boton_enviar_mensaje');
+    const ocultar = () => { if (modal) modal.style.display = 'none'; };
+
+    if (abrir && modal) abrir.addEventListener('click', () => { modal.style.display = 'flex'; });
+    if (cerrar) cerrar.addEventListener('click', ocultar);
+    if (cancelar) cancelar.addEventListener('click', ocultar);
+    if (enviar) {
+      enviar.addEventListener('click', () => {
+        const correo = departamentoActual && departamentoActual.jefe_id
+          ? obtenerElemento('correo_jefe').textContent.trim()
+          : '';
+        const asunto = obtenerElemento('asunto_mensaje').value.trim();
+        const mensaje = obtenerElemento('cuerpo_mensaje').value.trim();
+        if (!correo || !asunto || !mensaje || correo === 'Correo no disponible') {
+          window.OCID.mostrarToast('Completa el asunto y el mensaje; verifica que el jefe tenga correo.', true);
+          return;
+        }
+        window.location.href = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
+        ocultar();
+      });
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    window.OCID.actualizarCabeceraUsuario();
+    window.OCID.configurarCierreSesion();
+    window.OCID.actualizarContadorNotificaciones();
+    configurarModales();
+    configurarContacto();
+    cargarDatosDepartamento();
+  });
+})();

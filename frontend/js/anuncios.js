@@ -6,7 +6,6 @@
     if (window.OCID) {
       window.OCID.configurarCierreSesion();
       window.OCID.actualizarCabeceraUsuario();
-      window.OCID.configurarMenuMovil();
       window.OCID.actualizarContadorNotificaciones();
     }
   }

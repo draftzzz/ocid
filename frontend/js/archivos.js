@@ -58,42 +58,6 @@
       });
     });
 
-    let botonMenu = barraSuperior.querySelector('.boton_menu_hamburguesa');
-    if (!botonMenu) {
-      botonMenu = document.createElement('button');
-      botonMenu.type = 'button';
-      botonMenu.className = 'boton_menu_hamburguesa';
-      botonMenu.setAttribute('aria-label', 'Abrir menú de navegación');
-      botonMenu.innerHTML = '<i class="fa-solid fa-bars"></i>';
-      const seccionIzq = barraSuperior.querySelector('.seccion_superior_izquierda');
-      if (seccionIzq) seccionIzq.prepend(botonMenu);
-    }
-
-    let fondoMovil = document.querySelector('.fondo_menu_movil');
-    if (!fondoMovil) {
-      fondoMovil = document.createElement('button');
-      fondoMovil.type = 'button';
-      fondoMovil.className = 'fondo_menu_movil';
-      fondoMovil.setAttribute('aria-label', 'Cerrar menú de navegación');
-      document.body.appendChild(fondoMovil);
-    }
-
-    function cambiarMenu(abierto) {
-      document.body.classList.toggle('menu_movil_abierto', abierto);
-      botonMenu.setAttribute('aria-expanded', String(abierto));
-    }
-
-    botonMenu.addEventListener('click', () => {
-      cambiarMenu(!document.body.classList.contains('menu_movil_abierto'));
-    });
-    fondoMovil.addEventListener('click', () => cambiarMenu(false));
-    barraLateral.querySelectorAll('a').forEach(enlace => {
-      enlace.addEventListener('click', () => cambiarMenu(false));
-    });
-    document.addEventListener('keydown', evento => {
-      if (evento.key === 'Escape') cambiarMenu(false);
-    });
-
     barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
       if (enlace.textContent.toLowerCase().includes('cerrar sesión')) {
         enlace.href = 'login.html';

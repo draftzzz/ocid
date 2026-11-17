@@ -1,0 +1,56 @@
+.controles_papelera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pestanas_papelera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.boton_pestana_papelera {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.boton_pestana_papelera:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.boton_pestana_papelera:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.boton_pestana_papelera.activa {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.contador_papelera {
+  color: #64748b;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .controles_papelera {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

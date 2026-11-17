@@ -55,46 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(error => console.error('Error al cargar notificaciones:', error));
   }
 
-  // Menú hamburguesa responsivo
-  let botonMenu = barraSuperior.querySelector('.menu_movil, .boton_menu_hamburguesa');
-  if (!botonMenu) {
-    botonMenu = document.createElement('button');
-    botonMenu.type = 'button';
-    botonMenu.className = 'boton_menu_hamburguesa';
-    botonMenu.setAttribute('aria-label', 'Abrir menú de navegación');
-    botonMenu.setAttribute('aria-expanded', 'false');
-    botonMenu.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
-    
-    const seccionIzquierda = barraSuperior.querySelector('.seccion_superior_izquierda') || barraSuperior;
-    seccionIzquierda.prepend(botonMenu);
-  }
-
-  let fondoMovil = document.querySelector('.fondo_menu_movil');
-  if (!fondoMovil) {
-    fondoMovil = document.createElement('button');
-    fondoMovil.type = 'button';
-    fondoMovil.className = 'fondo_menu_movil';
-    fondoMovil.setAttribute('aria-label', 'Cerrar menú de navegación');
-    document.body.appendChild(fondoMovil);
-  }
-
-  function alternarMenu(abrir) {
-    const estado = abrir !== undefined ? abrir : !document.body.classList.contains('menu_movil_abierto');
-    document.body.classList.toggle('menu_movil_abierto', estado);
-    botonMenu.setAttribute('aria-expanded', String(estado));
-  }
-
-  botonMenu.addEventListener('click', (e) => {
-    e.stopPropagation();
-    alternarMenu();
-  });
-
-  fondoMovil.addEventListener('click', () => alternarMenu(false));
-
-  barraLateral.querySelectorAll('a').forEach(enlace => {
-    enlace.addEventListener('click', () => alternarMenu(false));
-  });
-
   // Cerrar sesión
   barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
     if (enlace.textContent.toLowerCase().includes('cerrar sesión')) {
