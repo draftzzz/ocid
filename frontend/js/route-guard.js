@@ -1,7 +1,9 @@
 (function () {
   'use strict';
 
-  const paginaBienvenida = window.location.pathname.toLowerCase().endsWith('/bienvenida.html');
+  const rutaActual = window.location.pathname.toLowerCase();
+  const paginaBienvenida = rutaActual.endsWith('/bienvenida.html');
+  const paginaCrearDepartamento = rutaActual.endsWith('/crear-departamento.html');
   const rutaBase = document.currentScript?.dataset.routePrefix || '';
   let token;
   let usuario;
@@ -40,5 +42,7 @@
     return;
   }
 
-  if (!tieneDepartamento) window.location.href = `${rutaBase}bienvenida.html`;
+  if (!tieneDepartamento && !paginaCrearDepartamento) {
+    window.location.href = `${rutaBase}bienvenida.html`;
+  }
 })();

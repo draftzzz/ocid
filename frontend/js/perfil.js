@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (nombre && etiquetaNombre) {
     etiquetaNombre.textContent = nombre;
   }
-  if (usuario && usuario.rol && etiquetaRol) {
-    etiquetaRol.textContent = usuario.rol;
+  if (etiquetaRol) {
+    etiquetaRol.textContent = window.OCID.obtenerEtiquetaRolUsuario(usuario);
   }
   if (nombre && avatar) {
     const iniciales = nombre.split(/\s+/)
@@ -146,7 +146,7 @@ if (formPerfil) {
       const etiquetaNombre = document.getElementById('nombreUsuario');
       const etiquetaRol = document.getElementById('etiqueta_rol_usuario');
       if (etiquetaNombre) etiquetaNombre.textContent = usuarioActualizado.nombre;
-      if (etiquetaRol) etiquetaRol.textContent = usuarioActualizado.rol;
+      if (etiquetaRol) etiquetaRol.textContent = window.OCID.obtenerEtiquetaRolUsuario(usuarioActualizado);
 
       // Aviso verde de éxito que se oculta a los 7 segundos
       mostrarAviso('Perfil actualizado correctamente.', false);

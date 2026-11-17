@@ -438,9 +438,8 @@ body.menu_movil_abierto .fondo_menu_movil {
     pointer-events: auto;
 }
 
-/* El botón hamburguesa ahora se muestra SIEMPRE (tanto en PC como en Móvil) */
+/* La visibilidad del botón hamburguesa se controla en navigation.css. */
 .boton_menu_hamburguesa {
-    display: flex !important;
     align-items: center;
     justify-content: center;
     width: 36px;

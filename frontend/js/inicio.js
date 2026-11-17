@@ -22,7 +22,7 @@
     const saludo = obtenerElemento('texto_bienvenida_saludo');
 
     if (nombreElemento) nombreElemento.textContent = nombre;
-    if (rolElemento) rolElemento.textContent = usuario.rol || 'Docente';
+    if (rolElemento) rolElemento.textContent = window.OCID.obtenerEtiquetaRolUsuario(usuario);
     if (avatar) {
       avatar.textContent = nombre.split(/\s+/).slice(0, 2).map(parte => parte[0] || '').join('').toUpperCase();
     }

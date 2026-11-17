@@ -28,7 +28,7 @@
     );
 
     if (nombre && etiquetaNombre) etiquetaNombre.textContent = nombre;
-    if (usuario && usuario.rol && etiquetaRol) etiquetaRol.textContent = usuario.rol;
+    if (etiquetaRol) etiquetaRol.textContent = window.OCID.obtenerEtiquetaRolUsuario(usuario);
     if (nombre && avatar) {
       const iniciales = nombre.split(/\s+/)
         .slice(0, 2)

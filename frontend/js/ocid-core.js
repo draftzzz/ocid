@@ -71,6 +71,16 @@
     return Number.isFinite(idNumerico) && idNumerico > 0;
   }
 
+  function obtenerEtiquetaRolUsuario(usuario) {
+    if (!tieneDepartamentoAsignado(usuario) || typeof usuario.rol !== 'string') {
+      return 'Sin departamento';
+    }
+
+    const rol = usuario.rol.trim();
+    const rolesValidos = ['docente', 'jefe', 'jefe de departamento', 'administrador'];
+    return rolesValidos.includes(rol.toLowerCase()) ? rol : 'Sin departamento';
+  }
+
   function guardarSesion(usuario, tokenJwt = null) {
     localStorage.setItem(USER_KEY, JSON.stringify(usuario));
     const tokenFinal = tokenJwt || usuario.token;
@@ -190,7 +200,7 @@
     const avatarEl = document.getElementById('avatar_usuario_circulo');
     if (usuario) {
       if (nombreEl) nombreEl.textContent = usuario.nombre || usuario.correo || 'Usuario';
-      if (rolEl) rolEl.textContent = usuario.rol || 'Docente';
+      if (rolEl) rolEl.textContent = obtenerEtiquetaRolUsuario(usuario);
       if (avatarEl && (usuario.nombre || usuario.correo)) {
         const iniciales = (usuario.nombre || usuario.correo).split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('').toUpperCase();
         avatarEl.textContent = iniciales;
@@ -355,6 +365,7 @@
     obtenerUsuarioSesion,
     obtenerToken,
     tieneDepartamentoAsignado,
+    obtenerEtiquetaRolUsuario,
     guardarSesion,
     limpiarSesion,
     apiFetch,

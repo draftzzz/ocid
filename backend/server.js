@@ -727,7 +727,8 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
   try {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
-       FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id WHERE LOWER(d.codigo) = LOWER($1) LIMIT 1`,
+       FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id
+       WHERE LOWER(BTRIM(d.codigo)) = LOWER(BTRIM($1)) LIMIT 1`,
       [codigo.trim()]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Departamento no encontrado' });

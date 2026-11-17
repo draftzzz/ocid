@@ -121,6 +121,10 @@
   cursor: pointer;
 }
 
+.pagina_bienvenida .area_principal .boton_campana {
+  display: none !important;
+}
+
 .boton_campana:hover,
 .boton_campana:focus-visible {
   background: rgba(255, 255, 255, 0.1);
@@ -293,6 +297,12 @@
   body.menu_movil_abierto .fondo_menu_movil {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+
+@media (min-width: 901px) {
+  .area_principal .boton_menu_hamburguesa {
+    display: none !important;
   }
 }
 

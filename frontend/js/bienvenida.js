@@ -20,7 +20,7 @@ modalUnirse.addEventListener('click', (e) => { if (e.target === modalUnirse) mod
 // Enviar código para unirse
 document.getElementById('form_unirse_codigo').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const codigo = document.getElementById('input_codigo_acceso').value.trim();
+    const codigo = document.getElementById('input_codigo_acceso').value.trim().toLowerCase();
     try {
         const resultado = await window.OCID.apiFetch(`/departamentos/codigo/${encodeURIComponent(codigo)}`);
         const datos = await window.OCID.apiFetch(`/usuarios/${usuario.id}`, {

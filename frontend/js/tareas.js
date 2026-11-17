@@ -17,7 +17,7 @@
     }
 
     const nombre = usuario && (usuario.nombre || usuario.correo || usuario.usuario);
-    const rol = usuario && (usuario.rol || usuario.tipo || 'Jefe de Departamento');
+    const rol = window.OCID.obtenerEtiquetaRolUsuario(usuario);
 
     const etiquetaNombre = document.getElementById('nombreUsuario');
     const etiquetaRol = document.getElementById('etiqueta_rol_usuario');
