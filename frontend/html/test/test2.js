@@ -234,10 +234,10 @@ async function ejecutarAutenticacion(evento) {
         if (datos.success !== true || !datos.usuario?.id) throw new Error(datos.error || "No se pudo iniciar sesión.");
         usuario = datos.usuario;
         window.OCID.guardarSesion(usuario, datos.token);
-        inicializarSesion();
-        cerrarModal("modal_login_sesion");
-        mostrarMensaje(`Hola, ${usuario.nombre || "Usuario"}.`);
-        await cargarDepartamentos();
+        const usuarioSesion = window.OCID.obtenerUsuarioSesion() || usuario;
+        window.location.href = window.OCID.tieneDepartamentoAsignado(usuarioSesion)
+            ? "../inicio.html"
+            : "../bienvenida.html";
     } catch (error) { mostrarMensaje(error.message, true); }
 }
 

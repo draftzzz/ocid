@@ -61,6 +61,16 @@
     }
   }
 
+  function tieneDepartamentoAsignado(usuario) {
+    const departamentoId = usuario && usuario.departamento_id;
+    if (departamentoId === null || departamentoId === undefined || String(departamentoId).trim() === '') {
+      return false;
+    }
+
+    const idNumerico = Number(departamentoId);
+    return Number.isFinite(idNumerico) && idNumerico > 0;
+  }
+
   function guardarSesion(usuario, tokenJwt = null) {
     localStorage.setItem(USER_KEY, JSON.stringify(usuario));
     const tokenFinal = tokenJwt || usuario.token;
@@ -344,6 +354,7 @@
     API_BASE,
     obtenerUsuarioSesion,
     obtenerToken,
+    tieneDepartamentoAsignado,
     guardarSesion,
     limpiarSesion,
     apiFetch,

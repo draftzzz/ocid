@@ -47,8 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
           // Guardar los datos del usuario en la sesión global
           window.OCID.guardarSesion(datos.usuario);
 
-          // Redirigir al panel principal
-          window.location.href = 'inicio.html';
+          const usuarioSesion = window.OCID.obtenerUsuarioSesion() || datos.usuario;
+          window.location.href = window.OCID.tieneDepartamentoAsignado(usuarioSesion)
+            ? 'inicio.html'
+            : 'bienvenida.html';
         } else {
           if (alerta) {
             alerta.className = 'mensaje_alerta error';

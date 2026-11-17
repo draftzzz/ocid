@@ -279,9 +279,10 @@
         throw new Error(datos.error || 'No se pudo iniciar sesión.');
       }
       window.OCID.guardarSesion(datos.usuario, datos.token);
-      window.cerrarModal('modal_login_sesion');
-      actualizarUsuario(datos.usuario);
-      await cargarInicio();
+      const usuarioSesion = window.OCID.obtenerUsuarioSesion() || datos.usuario;
+      window.location.href = window.OCID.tieneDepartamentoAsignado(usuarioSesion)
+        ? 'inicio.html'
+        : 'bienvenida.html';
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
       window.OCID.mostrarToast(error.message || 'No se pudo iniciar sesión.', true);
