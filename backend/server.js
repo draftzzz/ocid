@@ -49,7 +49,7 @@ app.use(cors({
         'https://ocid-nine.vercel.app',
         'https://ocid.onrender.com'
       ].includes(origin) ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin); // <- Esto permite cualquier puerto local (como el 5500)
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
     callback(null, origenPermitido);
   },
@@ -58,13 +58,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Importante para responder correctamente a las peticiones preflight (OPTIONS)
 app.options('*', cors());
-
 app.use(express.json({ limit: '15mb' }));
 
 // ==========================================
-// MIGRACIÓN AUTOMÁTICA PARA PAPELERA (ARCHIVOS Y ANUNCIOS)
+// MIGRACIÓN AUTOMÁTICA PARA PAPELERA
 // ==========================================
 pool.query(`
   ALTER TABLE archivos
@@ -94,30 +92,7 @@ app.get('/db-test', async (req, res) => {
 });
 
 // ==========================================
-// MIDDLEWARE DE AUTENTICACIÓN JWT
-// ==========================================
-function autenticarJWT(req, res, next) {
-  let token = null;
-  const authHeader = req.headers['authorization'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
-  } else if (req.cookies && req.cookies.token_ocid) {
-    token = req.cookies.token_ocid;
-  }
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'Token de acceso requerido' });
-  }
-  jwt.verify(token, JWT_SECRET, (err, usuario) => {
-    if (err) {
-      return res.status(403).json({ success: false, error: 'Token inválido o expirado' });
-    }
-    req.usuario = usuario;
-    next();
-  });
-}
-
-// ==========================================
-// RUTAS PÚBLICAS
+// RUTAS PÚBLICAS (EXENTAS DE TOKEN)
 // ==========================================
 
 // Iniciar sesión
@@ -229,9 +204,34 @@ app.post('/registro', authLimiter, async (req, res) => {
 
 
 // ==========================================
+// MIDDLEWARE DE AUTENTICACIÓN JWT (BLOQUEA RUTAS SIGUIENTES SI NO HAY TOKEN)
+// ==========================================
+function autenticarJWT(req, res, next) {
+  let token = null;
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies && req.cookies.token_ocid) {
+    token = req.cookies.token_ocid;
+  }
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Token de acceso requerido' });
+  }
+  jwt.verify(token, JWT_SECRET, (err, usuario) => {
+    if (err) {
+      return res.status(403).json({ success: false, error: 'Token inválido o expirado' });
+    }
+    req.usuario = usuario;
+    next();
+  });
+}
+
+app.use(autenticarJWT);
+
+
+// ==========================================
 // RUTAS PROTEGIDAS CON JWT
 // ==========================================
-app.use(autenticarJWT);
 
 // Obtener usuarios / docentes
 app.get('/usuarios', async (req, res) => {
@@ -377,7 +377,7 @@ app.delete('/usuarios/:id', async (req, res) => {
   }
 });
 
-// --- ANUNCIOS Y PAPELERA DE ANUNCIOS (SOLO TUYOS) ---
+// --- ANUNCIOS Y PAPELERA DE ANUNCIOS ---
 app.get('/anuncios/papelera', async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
@@ -458,7 +458,6 @@ app.put('/anuncios/:id', async (req, res) => {
   }
 });
 
-// Borrado lógico de anuncios (Solo si te pertenecen)
 app.delete('/anuncios/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -477,7 +476,6 @@ app.delete('/anuncios/:id', async (req, res) => {
   }
 });
 
-// Restaurar anuncio propio
 app.put('/anuncios/:id/restaurar', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -496,7 +494,6 @@ app.put('/anuncios/:id/restaurar', async (req, res) => {
   }
 });
 
-// Eliminar anuncio permanentemente
 app.delete('/anuncios/:id/permanente', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -513,7 +510,7 @@ app.delete('/anuncios/:id/permanente', async (req, res) => {
 });
 
 // ==========================================
-// ESTADÍSTICAS PARA PANEL DE INICIO
+// ESTADÍSTICAS
 // ==========================================
 app.get('/api/stats', async (req, res) => {
   try {
@@ -538,7 +535,7 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // ==========================================
-// DEPARTAMENTOS CON CONTEO DE ANUNCIOS ACTIVOS
+// DEPARTAMENTOS CON CONTEO
 // ==========================================
 app.get('/api/departamentos-con-conteo', async (req, res) => {
   try {
@@ -556,7 +553,7 @@ app.get('/api/departamentos-con-conteo', async (req, res) => {
   }
 });
 
-// --- ARCHIVOS Y PAPELERA DE ARCHIVOS (SOLO TUYOS) ---
+// --- ARCHIVOS Y PAPELERA DE ARCHIVOS ---
 app.get('/archivos/papelera', async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
@@ -608,7 +605,6 @@ app.post('/archivos', async (req, res) => {
   }
 });
 
-// Borrado lógico (Solo si te pertenece)
 app.delete('/archivos/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -627,7 +623,6 @@ app.delete('/archivos/:id', async (req, res) => {
   }
 });
 
-// Restaurar archivo propio
 app.put('/archivos/:id/restaurar', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -646,7 +641,6 @@ app.put('/archivos/:id/restaurar', async (req, res) => {
   }
 });
 
-// Eliminación permanente
 app.delete('/archivos/:id/permanente', async (req, res) => {
   try {
     const id = Number(req.params.id);
