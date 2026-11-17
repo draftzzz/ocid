@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const { Pool } = require('pg');
 
 const app = express();
@@ -24,6 +25,7 @@ const pool = new Pool({
 // CONFIGURACIÓN DE SEGURIDAD (PRODUCCIÓN)
 // ==========================================
 app.use(helmet());
+app.use(cookieParser());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -47,13 +49,17 @@ app.use(cors({
         'https://ocid-iota.vercel.app',
         'https://ocid.onrender.com'
       ].includes(origin) ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin); // <- Esto permite cualquier puerto local (como el 5500)
 
     callback(null, origenPermitido);
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
+
+// Importante para responder correctamente a las peticiones preflight (OPTIONS)
+app.options('*', cors());
 
 app.use(express.json({ limit: '15mb' }));
 
@@ -91,11 +97,16 @@ app.get('/db-test', async (req, res) => {
 // MIDDLEWARE DE AUTENTICACIÓN JWT
 // ==========================================
 function autenticarJWT(req, res, next) {
+  let token = null;
   const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies && req.cookies.token_ocid) {
+    token = req.cookies.token_ocid;
+  }
+  if (!token) {
     return res.status(401).json({ success: false, error: 'Token de acceso requerido' });
   }
-  const token = authHeader.split(' ')[1];
   jwt.verify(token, JWT_SECRET, (err, usuario) => {
     if (err) {
       return res.status(403).json({ success: false, error: 'Token inválido o expirado' });
@@ -144,6 +155,16 @@ app.post('/login', authLimiter, async (req, res) => {
     );
 
     delete usuario.password;
+
+    const esProduccion = process.env.NODE_ENV === 'production';
+
+    res.cookie('token_ocid', token, {
+      httpOnly: true,
+      secure: esProduccion,
+      sameSite: esProduccion ? 'Strict' : 'Lax',
+      maxAge: 8 * 60 * 60 * 1000,
+      path: '/'
+    });
 
     res.json({ success: true, token, usuario });
   } catch (error) {
@@ -488,6 +509,50 @@ app.delete('/anuncios/:id/permanente', async (req, res) => {
     res.json({ success: true, mensaje: 'Anuncio eliminado definitivamente' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo eliminar permanentemente el anuncio' });
+  }
+});
+
+// ==========================================
+// ESTADÍSTICAS PARA PANEL DE INICIO
+// ==========================================
+app.get('/api/stats', async (req, res) => {
+  try {
+    const [avisos, archivos, docentes, eventos] = await Promise.all([
+      pool.query("SELECT COUNT(*) AS total FROM anuncios WHERE eliminado = FALSE"),
+      pool.query("SELECT COUNT(*) AS total FROM archivos WHERE eliminado = FALSE"),
+      pool.query("SELECT COUNT(*) AS total FROM usuarios WHERE rol ILIKE 'docente'"),
+      pool.query("SELECT COUNT(*) AS total FROM tareas WHERE estado = 'Pendiente'")
+    ]);
+    res.json({
+      success: true,
+      stats: {
+        avisos: parseInt(avisos.rows[0].total, 10),
+        archivos: parseInt(archivos.rows[0].total, 10),
+        docentes: parseInt(docentes.rows[0].total, 10),
+        eventos: parseInt(eventos.rows[0].total, 10)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudieron cargar las estadísticas' });
+  }
+});
+
+// ==========================================
+// DEPARTAMENTOS CON CONTEO DE ANUNCIOS ACTIVOS
+// ==========================================
+app.get('/api/departamentos-con-conteo', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT d.id, d.nombre,
+              COUNT(a.id) FILTER (WHERE a.eliminado = FALSE) AS anuncios_activos
+       FROM departamentos d
+       LEFT JOIN anuncios a ON a.departamento_id = d.id AND a.eliminado = FALSE
+       GROUP BY d.id, d.nombre
+       ORDER BY d.nombre ASC`
+    );
+    res.json({ success: true, departamentos: resultado.rows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'No se pudieron cargar los departamentos' });
   }
 });
 

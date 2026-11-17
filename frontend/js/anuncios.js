@@ -1,125 +1,14 @@
-/* Lógica propia de anuncios.html */
+/* Lógica propia de anuncios.html (Refactorizado con OCID Core) */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
+  'use strict';
 
   function iniciarInterfaz() {
-    const barraSuperior = document.querySelector('.barra_superior');
-    const barraLateral = document.querySelector('.barra_lateral');
-
-    if (!barraSuperior || !barraLateral) return;
-
-    let usuario = null;
-    try {
-      usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-    } catch (error) {
-      console.error('No se pudieron leer los datos de sesión:', error);
-      localStorage.removeItem('usuario_ocid');
+    if (window.OCID) {
+      window.OCID.configurarCierreSesion();
+      window.OCID.actualizarCabeceraUsuario();
+      window.OCID.configurarMenuMovil();
+      window.OCID.actualizarContadorNotificaciones();
     }
-
-    const nombre = usuario && (usuario.nombre || usuario.correo);
-    const etiquetaNombre = document.querySelector(
-      '.nombre_usuario, .nombre_perfil, .nombre_usuario_superior, #nombreUsuario'
-    );
-    const etiquetaRol = document.querySelector(
-      '.rol_usuario, .cargo_perfil, .rol_usuario_superior, #etiqueta_rol_usuario'
-    );
-    const avatar = document.querySelector(
-      '.avatar_usuario, .avatar_perfil, .avatar_superior, #avatar_usuario_circulo'
-    );
-
-    if (nombre && etiquetaNombre) etiquetaNombre.textContent = nombre;
-    if (usuario && usuario.rol && etiquetaRol) etiquetaRol.textContent = usuario.rol;
-    if (nombre && avatar) {
-      const iniciales = nombre.split(/\s+/)
-        .slice(0, 2)
-        .map(parte => parte.charAt(0))
-        .join('')
-        .toUpperCase();
-      avatar.textContent = iniciales;
-      avatar.style.fontSize = '14px';
-      avatar.style.fontWeight = '700';
-    }
-
-    if (usuario && usuario.id) {
-      fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(async respuesta => {
-          const datos = await respuesta.json();
-          if (!respuesta.ok) throw new Error('No se pudo cargar');
-          const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
-          document.querySelectorAll(
-            '.badge_campana, .insignia_notificacion, .etiqueta_notificaciones, .insignia_notificacion_lateral, #indicador_notificaciones'
-          ).forEach(insignia => {
-            insignia.textContent = noLeidas;
-            insignia.style.display = noLeidas === 0 ? 'none' : '';
-          });
-        })
-        .catch(error => console.error('Error al actualizar el contador de notificaciones:', error));
-    }
-
-    document.querySelectorAll('.boton_campana').forEach(boton => {
-      boton.addEventListener('click', () => {
-        window.location.href = 'notificaciones.html';
-      });
-    });
-
-    let botonMenu = barraSuperior.querySelector('.menu_movil, .boton_menu_hamburguesa');
-    if (!botonMenu) {
-      botonMenu = document.createElement('button');
-      botonMenu.type = 'button';
-      botonMenu.className = 'boton_menu_hamburguesa';
-      botonMenu.setAttribute('aria-label', 'Abrir menú de navegación');
-      botonMenu.setAttribute('aria-expanded', 'false');
-      
-      botonMenu.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
-      
-      const seccionIzquierda = barraSuperior.querySelector('.seccion_superior_izquierda') || barraSuperior;
-      seccionIzquierda.prepend(botonMenu);
-    } else {
-      if (!botonMenu.querySelector('svg')) {
-        botonMenu.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
-      }
-    }
-
-    let fondoMovil = document.querySelector('.fondo_menu_movil');
-    if (!fondoMovil) {
-      fondoMovil = document.createElement('button');
-      fondoMovil.type = 'button';
-      fondoMovil.className = 'fondo_menu_movil';
-      fondoMovil.setAttribute('aria-label', 'Cerrar menú de navegación');
-      document.body.appendChild(fondoMovil);
-    }
-
-    function alternarMenu(abrir) {
-      const estado = abrir !== undefined ? abrir : !document.body.classList.contains('menu_movil_abierto');
-      document.body.classList.toggle('menu_movil_abierto', estado);
-      botonMenu.setAttribute('aria-expanded', String(estado));
-    }
-
-    botonMenu.addEventListener('click', (evento) => {
-      evento.stopPropagation();
-      alternarMenu();
-    });
-
-    fondoMovil.addEventListener('click', () => alternarMenu(false));
-
-    barraLateral.querySelectorAll('a').forEach(enlace => {
-      enlace.addEventListener('click', () => alternarMenu(false));
-    });
-
-    document.addEventListener('keydown', evento => {
-      if (evento.key === 'Escape') alternarMenu(false);
-    });
-
-    barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
-      if (enlace.textContent.toLowerCase().includes('cerrar sesión')) {
-        enlace.href = 'login.html';
-        enlace.addEventListener('click', evento => {
-          evento.preventDefault();
-          localStorage.removeItem('usuario_ocid');
-          window.location.href = 'login.html';
-        });
-      }
-    });
   }
 
   if (document.readyState === 'loading') {
@@ -144,76 +33,33 @@ function escaparHTML(valor) {
 }
 
 function mostrarErrorAnuncios(mensaje, tipo = 'error') {
-  let contenedor = document.getElementById('contenedor_toast');
-  if (!contenedor) {
-    contenedor = document.createElement('div');
-    contenedor.id = 'contenedor_toast';
-    contenedor.className = 'contenedor_toast_flotante';
-    document.body.appendChild(contenedor);
+  if (window.OCID && window.OCID.mostrarToast) {
+    window.OCID.mostrarToast(mensaje, tipo === 'error');
   }
-
-  let avisoAntiguo = document.getElementById('aviso_anuncios');
-  if (avisoAntiguo) avisoAntiguo.hidden = true;
-
-  let textoFinal = mensaje;
-  if (mensaje && (mensaje.toLowerCase().includes('failed to fetch') || mensaje.toLowerCase().includes('networkerror'))) {
-    textoFinal = 'No se pudo conectar con el servidor';
-  }
-
-  const toast = document.createElement('div');
-  let claseTipo = 'toast_error';
-  let iconoSVG = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
-
-  if (tipo === 'exito') {
-    claseTipo = 'toast_exito';
-    iconoSVG = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
-  } else if (tipo === 'advertencia') {
-    claseTipo = 'toast_advertencia';
-    iconoSVG = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
-  }
-
-  toast.className = `toast_mensaje ${claseTipo}`;
-  toast.innerHTML = `
-    <div class="toast_icono">${iconoSVG}</div>
-    <div class="toast_texto">${escaparHTML(textoFinal)}</div>
-  `;
-
-  contenedor.appendChild(toast);
-  setTimeout(() => toast.classList.add('toast_visible'), 10);
-
-  setTimeout(() => {
-    toast.classList.remove('toast_visible');
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
 }
 
 async function cargar_anuncios_desde_servidor() {
   try {
-    const [respuestaAnuncios, respuestaDepartamentos] = await Promise.all([
-      fetch(`${window.OCID_API_BASE}/anuncios`),
-      fetch(`${window.OCID_API_BASE}/departamentos`)
-    ]);
+    // Usamos apiFetch para enviar el token JWT automáticamente en ambas peticiones protegidas
     const [datosAnuncios, datosDepartamentos] = await Promise.all([
-      respuestaAnuncios.json(),
-      respuestaDepartamentos.json()
+      window.OCID.apiFetch('/anuncios'),
+      window.OCID.apiFetch('/departamentos')
     ]);
-    if (!respuestaAnuncios.ok || !respuestaDepartamentos.ok) {
-      throw new Error('No se pudo cargar');
-    }
 
-    lista_de_anuncios = datosAnuncios.map(anuncio => ({
+    lista_de_anuncios = (Array.isArray(datosAnuncios) ? datosAnuncios : (datosAnuncios.anuncios || [])).map(anuncio => ({
       ...anuncio,
       tipo: anuncio.prioridad || 'Urgente',
       departamento: anuncio.departamento_nombre || 'General',
       autor: anuncio.autor_nombre || 'Coordinación',
       fecha: anuncio.fecha ? new Date(anuncio.fecha).toLocaleDateString('es-MX') : ''
     }));
-    departamentos_anuncios = datosDepartamentos;
+    
+    departamentos_anuncios = Array.isArray(datosDepartamentos) ? datosDepartamentos : (datosDepartamentos.departamentos || []);
 
     const selectorDepartamento = document.getElementById('campo_departamento');
     if (selectorDepartamento) {
       selectorDepartamento.replaceChildren();
-      datosDepartamentos.forEach(departamento => {
+      departamentos_anuncios.forEach(departamento => {
         const opcion = document.createElement('option');
         opcion.value = String(departamento.id);
         opcion.textContent = departamento.nombre;
@@ -232,12 +78,7 @@ function renderizar_interfaz() {
   const depto_seleccionado = document.getElementById('filtro_departamento').value;
   const tipo_seleccionado = document.getElementById('filtro_tipo').value;
 
-  let usuarioActual = null;
-  try {
-    usuarioActual = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-  } catch (e) {
-    usuarioActual = null;
-  }
+  const usuarioActual = window.OCID ? window.OCID.obtenerUsuarioSesion() : null;
 
   const anuncios_filtrados = lista_de_anuncios.filter(item => {
     const coincide_titulo = String(item.titulo || '').toLowerCase().includes(termino_busqueda);
@@ -248,10 +89,13 @@ function renderizar_interfaz() {
 
   const contenedor = document.getElementById('contenedor_tarjetas_anuncios');
   if (!contenedor) return;
-  contenedor.innerHTML = '';
+  contenedor.replaceChildren();
 
   if (anuncios_filtrados.length === 0) {
-    contenedor.innerHTML = '<div class="estado_vacio">No se encontraron anuncios que coincidan con los filtros seleccionados.</div>';
+    const divVacio = document.createElement('div');
+    divVacio.className = 'estado_vacio';
+    divVacio.textContent = 'No se encontraron anuncios que coincidan con los filtros seleccionados.';
+    contenedor.appendChild(divVacio);
   } else {
     anuncios_filtrados.forEach(anuncio => {
       let clase_etiqueta = 'etiqueta_general';
@@ -264,43 +108,73 @@ function renderizar_interfaz() {
       tarjeta.className = 'tarjeta_anuncio';
       tarjeta.style.position = 'relative';
       
-      tarjeta.innerHTML = `
-        <div class="fila_etiqueta_anuncio">
-          <span class="etiqueta_tipo ${clase_etiqueta}">
-            <span class="punto_etiqueta"></span>
-            ${escaparHTML(anuncio.tipo)}
-          </span>
-          <div style="position: relative;">
-            <button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpciones(event, ${anuncio.id})">&#8942;</button>
-            <div id="menu_opciones_${anuncio.id}" style="display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;">
-              <button onclick="prepararEdicionAnuncio(${anuncio.id}, ${esAutor})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#0f172a' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;">
-                <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                Editar
-              </button>
-              <button onclick="eliminarAnuncio(${anuncio.id}, ${esAutor})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#ef4444' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;">
-                <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-        <h3 class="titulo_anuncio">${escaparHTML(anuncio.titulo)}</h3>
-        <p class="descripcion_anuncio">${escaparHTML(anuncio.contenido)}</p>
-        <div class="fila_metadatos_anuncio">
-          <span class="item_metadato">
-            <svg class="icono_metadato" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/></svg>
-            ${escaparHTML(anuncio.departamento)}
-          </span>
-          <span class="item_metadato">
-            <svg class="icono_metadato" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            ${escaparHTML(anuncio.autor || 'Coordinación')}
-          </span>
-          <span class="item_metadato">
-            <svg class="icono_metadato" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 7V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            ${escaparHTML(anuncio.fecha)}
-          </span>
-        </div>
-      `;
+      // Creación estructurada de elementos sin usar innerHTML masivo por seguridad
+      const filaEtiqueta = document.createElement('div');
+      filaEtiqueta.className = 'fila_etiqueta_anuncio';
+
+      const spanTipo = document.createElement('span');
+      spanTipo.className = `etiqueta_tipo ${clase_etiqueta}`;
+      const punto = document.createElement('span');
+      punto.className = 'punto_etiqueta';
+      spanTipo.appendChild(punto);
+      spanTipo.appendChild(document.createTextNode(` ${anuncio.tipo}`));
+      filaEtiqueta.appendChild(spanTipo);
+
+      const contenedorOpciones = document.createElement('div');
+      contenedorOpciones.style.position = 'relative';
+
+      const btnOpciones = document.createElement('button');
+      btnOpciones.className = 'boton_opciones_anuncio';
+      btnOpciones.title = 'Más opciones';
+      btnOpciones.innerHTML = '&#8942;';
+      btnOpciones.addEventListener('click', (e) => toggleMenuOpciones(e, anuncio.id));
+      contenedorOpciones.appendChild(btnOpciones);
+
+      const menuDesplegable = document.createElement('div');
+      menuDesplegable.id = `menu_opciones_${anuncio.id}`;
+      menuDesplegable.style.cssText = 'display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;';
+
+      const btnEditar = document.createElement('button');
+      btnEditar.style.cssText = `width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#0f172a' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;`;
+      btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
+      btnEditar.addEventListener('click', () => prepararEdicionAnuncio(anuncio.id, esAutor));
+
+      const btnEliminar = document.createElement('button');
+      btnEliminar.style.cssText = `width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#ef4444' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;`;
+      btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
+      btnEliminar.addEventListener('click', () => eliminarAnuncio(anuncio.id, esAutor));
+
+      menuDesplegable.appendChild(btnEditar);
+      menuDesplegable.appendChild(btnEliminar);
+      contenedorOpciones.appendChild(menuDesplegable);
+      filaEtiqueta.appendChild(contenedorOpciones);
+      tarjeta.appendChild(filaEtiqueta);
+
+      const h3Titulo = document.createElement('h3');
+      h3Titulo.className = 'titulo_anuncio';
+      h3Titulo.textContent = anuncio.titulo;
+      tarjeta.appendChild(h3Titulo);
+
+      const pDesc = document.createElement('p');
+      pDesc.className = 'descripcion_anuncio';
+      pDesc.textContent = anuncio.contenido;
+      tarjeta.appendChild(pDesc);
+
+      const filaMeta = document.createElement('div');
+      filaMeta.className = 'fila_metadatos_anuncio';
+
+      const crearMeta = (svgPath, texto) => {
+        const span = document.createElement('span');
+        span.className = 'item_metadato';
+        span.innerHTML = `<svg class="icono_metadato" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${svgPath}"/></svg> ${escaparHTML(texto)}`;
+        return span;
+      };
+
+      filaMeta.appendChild(crearMeta('M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5', anuncio.departamento));
+      filaMeta.appendChild(crearMeta('M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', anuncio.autor || 'Coordinación'));
+      filaMeta.appendChild(crearMeta('M8 7V3m8 7V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', anuncio.fecha));
+
+      tarjeta.appendChild(filaMeta);
       contenedor.appendChild(tarjeta);
     });
   }
@@ -357,12 +231,11 @@ async function eliminarAnuncio(id, esAutor) {
   if (!confirm('¿Estás seguro de que deseas eliminar este anuncio?')) return;
 
   try {
-    const respuesta = await fetch(`${window.OCID_API_BASE}/anuncios/${id}`, {
+    const datos = await window.OCID.apiFetch(`/anuncios/${id}`, {
       method: 'DELETE'
     });
-    const datos = await respuesta.json();
 
-    if (!respuesta.ok || !datos.success) {
+    if (!datos.success) {
       throw new Error('No se pudo borrar el anuncio en el servidor');
     }
 
@@ -397,16 +270,23 @@ function actualizar_panel_lateral() {
 
   const contenedor_ultimos = document.getElementById('contenedor_ultimos_anuncios');
   if (!contenedor_ultimos) return;
-  contenedor_ultimos.innerHTML = '';
+  contenedor_ultimos.replaceChildren();
   
   const ultimos_tres = lista_de_anuncios.slice(0, 3);
   ultimos_tres.forEach(u => {
     const item_div = document.createElement('div');
     item_div.className = 'item_ultimo_anuncio';
-    item_div.innerHTML = `
-      <div class="item_ultimo_titulo">${escaparHTML(u.titulo)}</div>
-      <div class="item_ultimo_fecha">${escaparHTML(u.fecha)}</div>
-    `;
+    
+    const tituloDiv = document.createElement('div');
+    tituloDiv.className = 'item_ultimo_titulo';
+    tituloDiv.textContent = u.titulo;
+    
+    const fechaDiv = document.createElement('div');
+    fechaDiv.className = 'item_ultimo_fecha';
+    fechaDiv.textContent = u.fecha;
+
+    item_div.appendChild(tituloDiv);
+    item_div.appendChild(fechaDiv);
     contenedor_ultimos.appendChild(item_div);
   });
 }
@@ -446,12 +326,7 @@ if (form_nuevo_anuncio) {
   form_nuevo_anuncio.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    let usuario;
-    try {
-      usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-    } catch (error) {
-      usuario = null;
-    }
+    const usuario = window.OCID ? window.OCID.obtenerUsuarioSesion() : null;
     if (!usuario || !usuario.id) {
       mostrarErrorAnuncios('Inicia sesión para publicar un anuncio.', 'advertencia');
       return;
@@ -466,22 +341,21 @@ if (form_nuevo_anuncio) {
     };
 
     try {
-      let url = `${window.OCID_API_BASE}/anuncios`;
+      let url = '/anuncios';
       let metodo = 'POST';
       let esEdicion = anuncioEnEdicionId !== null;
 
       if (esEdicion) {
-        url = `${window.OCID_API_BASE}/anuncios/${anuncioEnEdicionId}`;
+        url = `/anuncios/${anuncioEnEdicionId}`;
         metodo = 'PUT';
       }
 
-      const respuesta = await fetch(url, {
+      const datos = await window.OCID.apiFetch(url, {
         method: metodo,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(objeto_anuncio)
       });
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) {
+
+      if (!datos.success) {
         throw new Error('No se pudo guardar el anuncio');
       }
 
