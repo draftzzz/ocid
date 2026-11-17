@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alerta.style.display = 'none';
         alerta.className = 'mensaje_alerta';
       }
-      
+
       const btn = $('loginBtn');
       if (btn) btn.disabled = true;
 
@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Guardar los datos del usuario en la sesión global
           window.OCID.guardarSesion(datos.usuario);
-          
+
           // Redirigir al panel principal
           window.location.href = 'inicio.html';
         } else {
@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Error al iniciar sesión:', err);
         if (alerta) {
           alerta.className = 'mensaje_alerta error';
-          alerta.textContent = 'No se pudo conectar con el servidor';
+          // Extrae el mensaje exacto que lanza el backend (ej: "Correo o contraseña incorrectos")
+          alerta.textContent = err.message || 'Credenciales no válidas. Revisa tu correo y contraseña.';
           alerta.style.display = 'block';
         }
       } finally {
