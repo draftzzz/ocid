@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
@@ -8,6 +6,10 @@ const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 
 const app = express();
+
+// CORRECCIÓN OBLIGATORIA PARA RENDER: Confiar en el proxy de Render
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'clave_secreta_jwt_muy_segura_cambiar_en_produccion';
 
