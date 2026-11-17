@@ -16,7 +16,7 @@
   }
 
   function redirigirInicioSesion() {
-    window.location.href = 'login.html';
+    window.location.href = 'html/login.html';
   }
 
   function inicializarIndexPublico() {
@@ -51,7 +51,7 @@
         botonAcceder.appendChild(icono);
         botonAcceder.appendChild(texto);
         botonAcceder.addEventListener('click', () => {
-          window.location.href = 'inicio.html';
+          window.location.href = 'html/inicio.html';
         });
       }
 
@@ -59,7 +59,7 @@
         const spanHero = botonHeroLogin.querySelector('span');
         if (spanHero) spanHero.textContent = 'Ir a mi Panel Docente';
         botonHeroLogin.addEventListener('click', () => {
-          window.location.href = 'inicio.html';
+          window.location.href = 'html/inicio.html';
         });
       }
     } else {
