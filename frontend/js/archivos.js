@@ -172,14 +172,29 @@ function mostrarToastArchivos(mensaje, tipo = 'exito') {
   }, 4000);
 }
 
-async function respuestaArchivos(ruta, opciones) {
+async function respuestaArchivos(ruta, opciones = {}) {
   try {
-    const respuesta = await fetch(apiArchivos + ruta, opciones);
+    const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(opciones.headers || {})
+    };
+
+    const respuesta = await fetch(apiArchivos + ruta, { ...opciones, headers });
+    
+    if (respuesta.status === 401 || respuesta.status === 403) {
+      localStorage.removeItem('usuario_ocid');
+      localStorage.removeItem('token_ocid');
+      window.location.href = 'login.html';
+      throw new Error('Sesión expirada');
+    }
+
     const datos = await respuesta.json();
-    if (!respuesta.ok) throw new Error('No se pudo cargar');
+    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo cargar');
     return datos;
   } catch (err) {
-    throw new Error('No se pudo cargar');
+    throw new Error(err.message || 'No se pudo conectar con el servidor');
   }
 }
 

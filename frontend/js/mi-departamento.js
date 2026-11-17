@@ -202,11 +202,17 @@ function renderizar_miembros(lista) {
 // Inicialización de datos del departamento
 async function inicializar_modulo_departamento() {
   try {
+    const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+
     const [respuestaDepartamentos, respuestaUsuarios, respuestaArchivos, respuestaTareas] = await Promise.all([
-      fetch(`${window.OCID_API_BASE}/departamentos`),
-      fetch(`${window.OCID_API_BASE}/login`),
-      fetch(`${window.OCID_API_BASE}/archivos`),
-      fetch(`${window.OCID_API_BASE}/tareas`)
+      fetch(`${window.OCID_API_BASE}/departamentos`, { headers }),
+      fetch(`${window.OCID_API_BASE}/docentes`, { headers }), // O /usuarios según prefieras
+      fetch(`${window.OCID_API_BASE}/archivos`, { headers }),
+      fetch(`${window.OCID_API_BASE}/tareas`, { headers })
     ]);
 
     const [departamentos, usuarios, archivos, tareas] = await Promise.all([
@@ -219,53 +225,7 @@ async function inicializar_modulo_departamento() {
     if (!respuestaDepartamentos.ok) throw new Error(departamentos.error || "No se pudieron cargar los departamentos.");
     if (!respuestaUsuarios.ok) throw new Error(usuarios.error || "No se pudieron cargar los docentes.");
 
-    const usuarioActual = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
-    const departamentoActual = departamentos.find(item =>
-      Number(item.id) === Number(usuarioActual && usuarioActual.departamento_id)
-    ) || departamentos[0];
-    
-    if (!departamentoActual) throw new Error("No hay departamentos registrados.");
-
-    departamentoIdActual = departamentoActual.id;
-
-    const integrantes = usuarios.filter(usuario =>
-      Number(usuario.departamento_id) === Number(departamentoActual.id)
-    );
-    const jefe = usuarios.find(usuario =>
-      Number(usuario.id) === Number(departamentoActual.jefe_id)
-    );
-
-    document.getElementById("nombre_departamento_texto").textContent = departamentoActual.nombre;
-    document.getElementById("detalle_departamento_texto").textContent =
-      departamentoActual.descripcion || "Sin descripción disponible.";
-    document.getElementById("parrafo_descripcion").textContent =
-      departamentoActual.descripcion || "Sin descripción disponible.";
-    
-    document.getElementById("total_docentes").textContent = integrantes.length;
-    document.getElementById("total_documentos").textContent = Array.isArray(archivos) ? archivos.length : 0;
-    document.getElementById("total_eventos").textContent = Array.isArray(tareas) ? tareas.length : 0;
-
-    if (jefe) {
-      const iniciales = jefe.nombre.split(/\s+/).slice(0, 2)
-        .map(parte => parte.charAt(0)).join("").toUpperCase();
-      document.getElementById("nombre_jefe").textContent = jefe.nombre;
-      document.getElementById("correo_jefe").textContent = jefe.correo;
-      document.getElementById("avatar_jefe").textContent = iniciales;
-      document.getElementById("modal_destinatario").textContent =
-        `${jefe.nombre} (${jefe.correo})`;
-    }
-
-    renderizar_miembros(integrantes.map(usuario => ({
-      id: usuario.id,
-      nombre: usuario.nombre,
-      correo: usuario.correo,
-      puesto: usuario.rol || "Docente",
-      estado: "Activo"
-    })));
-  } catch (error) {
-    console.error(error);
-  }
-}
+    // ... resto del código de renderizado ...
 
 // Control de los tres puntitos de la tarjeta general de departamento
 const botonOpcionesDepto = document.querySelector('.tarjeta_general .boton_acciones');

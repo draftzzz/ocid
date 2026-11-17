@@ -178,7 +178,14 @@ async function cargarDocentes() {
   if (grupoPaginacion) grupoPaginacion.replaceChildren();
 
   try {
-    const respuesta = await fetch(`${window.OCID_API_BASE}/login`);
+    const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
+    // Usar /docentes o /usuarios en lugar de /login para listar docentes
+    const respuesta = await fetch(`${window.OCID_API_BASE}/docentes`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
     const datos = await respuesta.json();
     if (!respuesta.ok) throw new Error(datos.error || 'No se pudo cargar');
     if (!Array.isArray(datos)) throw new Error('La respuesta del servidor no es válida.');

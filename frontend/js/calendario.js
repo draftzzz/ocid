@@ -151,19 +151,21 @@ document.addEventListener('DOMContentLoaded', () => {
     return fecha.getFullYear() + '-' + String(fecha.getMonth() + 1).padStart(2, '0') + '-' + String(fecha.getDate()).padStart(2, '0');
   }
 
-  async function cargarTareasDesdeDB() {
+async function cargarTareasDesdeDB() {
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/tareas`);
+      const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
+      const respuesta = await fetch(`${window.OCID_API_BASE}/tareas`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       const datos = await respuesta.json();
       if (!respuesta.ok) throw new Error('No se pudo cargar');
-      if (Array.isArray(datos)) {
-        tareas = datos;
-      } else {
-        tareas = [];
-      }
+      tareas = Array.isArray(datos) ? datos : [];
     } catch (error) {
       tareas = [];
-      mostrarToastCalendario('No se pudo cargar', 'error');
+      mostrarToastCalendario('No se pudo conectar con el servidor', 'error');
     }
     dibujarTodo();
   }
