@@ -46,7 +46,7 @@ app.use(cors({
   origin(origin, callback) {
     const origenPermitido = !origin ||
       [
-        'https://ocid-iota.vercel.app',
+        'https://ocid-nine.vercel.app',
         'https://ocid.onrender.com'
       ].includes(origin) ||
       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin); // <- Esto permite cualquier puerto local (como el 5500)
