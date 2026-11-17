@@ -1,4 +1,3 @@
-const OCID_API_BASE = 'https://ocid.onrender.com';
 let usuario = null;
 try {
     usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
@@ -34,15 +33,19 @@ document.getElementById('form_unirse_codigo').addEventListener('submit', async (
     e.preventDefault();
     const codigo = document.getElementById('input_codigo_acceso').value.trim();
     try {
-        const resp = await fetch(`${OCID_API_BASE}/departamentos/unirse`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usuario_id: usuario.id, codigo })
+        const resultado = await window.OCID.apiFetch(`/departamentos/codigo/${encodeURIComponent(codigo)}`);
+        const datos = await window.OCID.apiFetch(`/usuarios/${usuario.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                nombre: usuario.nombre,
+                correo: usuario.correo,
+                departamento_id: resultado.departamento.id,
+                rol: usuario.rol
+            })
         });
-        const datos = await resp.json();
-        if (!resp.ok) throw new Error(datos.error || 'Código incorrecto');
+        if (!datos.success || !datos.usuario) throw new Error(datos.error || 'No se pudo actualizar el departamento');
 
-        localStorage.setItem('usuario_ocid', JSON.stringify(datos.usuario));
+        localStorage.setItem('usuario_ocid', JSON.stringify({ ...usuario, ...datos.usuario }));
         window.location.href = 'inicio.html';
     } catch (err) {
         alert(err.message);

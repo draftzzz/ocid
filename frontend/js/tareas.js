@@ -2,8 +2,6 @@
    Lógica Módulo de Tareas - OCID (Sesión, Toast, Buscadores y Servidor)
    ========================================================================== */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
-
   function iniciarInterfaz() {
     const barraSuperior = document.querySelector('.barra_superior');
     const barraLateral = document.querySelector('.barra_lateral');
@@ -48,10 +46,8 @@
     }
 
     if (usuario && usuario.id) {
-      fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(async respuesta => {
-          const datos = await respuesta.json();
-          if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron cargar las notificaciones');
+      window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
+        .then(datos => {
           const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
           document.querySelectorAll('.punto_notificacion, .insignia_notificacion').forEach(insignia => {
             insignia.textContent = noLeidas;
@@ -208,25 +204,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function cargarCatalogosServidor() {
     try {
-      const [resDep, resDoc, resTareas] = await Promise.all([
-        fetch(`${window.OCID_API_BASE}/departamentos`),
-        fetch(`${window.OCID_API_BASE}/docentes`).catch(() => fetch(`${window.OCID_API_BASE}/usuarios`)),
-        fetch(`${window.OCID_API_BASE}/tareas`)
+      const [departamentos, docentes, datosTareas] = await Promise.all([
+        window.OCID.apiFetch('/departamentos'),
+        window.OCID.apiFetch('/docentes'),
+        window.OCID.apiFetch('/tareas')
       ]);
 
-      if (resDep.ok) {
-        listaDepartamentos = await resDep.json();
-        poblarFiltrosYModalDepartamentos(listaDepartamentos);
-      }
-
-      if (resDoc.ok) {
-        listaDocentesUsuarios = await resDoc.json();
-      }
-
-      if (resTareas.ok) {
-        const datosTareas = await resTareas.json();
-        tareas = Array.isArray(datosTareas) ? datosTareas : [];
-      }
+      listaDepartamentos = Array.isArray(departamentos) ? departamentos : [];
+      poblarFiltrosYModalDepartamentos(listaDepartamentos);
+      listaDocentesUsuarios = Array.isArray(docentes) ? docentes : [];
+      tareas = Array.isArray(datosTareas) ? datosTareas : [];
     } catch (error) {
       console.error('Error cargando catálogos:', error);
       mostrarToastTareas('Error al sincronizar datos con el servidor.', 'error');
@@ -576,13 +563,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!tarea) return;
 
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/tareas/${id}`, {
+      const datos = await window.OCID.apiFetch(`/tareas/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...tarea, estado: nuevoEstado })
       });
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) throw new Error('No se pudo actualizar el estado');
+      if (!datos.success) throw new Error('No se pudo actualizar el estado');
 
       tarea.estado = nuevoEstado;
       mostrarToastTareas(`Estado actualizado a "${nuevoEstado}".`, 'exito');
@@ -601,11 +586,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) return;
 
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/tareas/${id}`, {
+      const datos = await window.OCID.apiFetch(`/tareas/${id}`, {
         method: 'DELETE'
       });
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) throw new Error('No se pudo eliminar');
+      if (!datos.success) throw new Error('No se pudo eliminar');
 
       tareas = tareas.filter(t => Number(t.id) !== Number(id));
       mostrarToastTareas('Tarea eliminada con éxito.', 'exito');
@@ -776,23 +760,21 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       try {
-        let url = `${window.OCID_API_BASE}/tareas`;
+        let ruta = '/tareas';
         let metodo = 'POST';
         let esEdicion = tareaEnEdicionId !== null;
 
         if (esEdicion) {
-          url = `${window.OCID_API_BASE}/tareas/${tareaEnEdicionId}`;
+          ruta = `/tareas/${tareaEnEdicionId}`;
           metodo = 'PUT';
         }
 
-        const respuesta = await fetch(url, {
+        const datos = await window.OCID.apiFetch(ruta, {
           method: metodo,
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(objetoTarea)
         });
-        const datos = await respuesta.json();
 
-        if (!respuesta.ok || !datos.success) {
+        if (!datos.success) {
           throw new Error('No se pudo guardar la tarea');
         }
 

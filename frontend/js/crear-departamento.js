@@ -1,4 +1,3 @@
-const OCID_API_BASE = 'https://ocid.onrender.com';
 let usuario = null;
 try {
     usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
@@ -29,17 +28,15 @@ document.getElementById('form_crear_departamento').addEventListener('submit', as
     const descripcion = document.getElementById('descripcion_depto').value.trim();
 
     try {
-        const resp = await fetch(`${OCID_API_BASE}/departamentos`, {
+        const datos = await window.OCID.apiFetch('/departamentos', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 nombre: nombre,
                 descripcion: descripcion,
                 jefe_id: usuario.id
             })
         });
-        const datos = await resp.json();
-        if (!resp.ok) throw new Error(datos.error || 'No se pudo crear el departamento');
+        if (!datos.success) throw new Error(datos.error || 'No se pudo crear el departamento');
 
         // Actualizar la sesión local del usuario con su nuevo departamento y rol de jefe
         usuario.departamento_id = datos.departamento.id;

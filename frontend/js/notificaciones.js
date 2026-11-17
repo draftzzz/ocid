@@ -11,7 +11,7 @@ async function cargarNotificaciones() {
     if (vacio) vacio.style.display = "none";
 
     try {
-        const datos = await leerRespuesta(await fetchConAuth(`${API}/notificaciones`));
+        const datos = await window.OCID.apiFetch('/notificaciones');
         let notificaciones = datos.notificaciones || [];
 
         // -------------------------------------------------------------

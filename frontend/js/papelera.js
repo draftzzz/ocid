@@ -2,60 +2,16 @@
    Lógica de Papelera de Reciclaje (Archivos y Anuncios Propios) - OCID
    ========================================================================== */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
   let seccionActiva = 'archivos';
   let archivosEliminados = [];
   let anunciosEliminados = [];
 
   function obtenerSesion() {
     try {
-      return JSON.parse(localStorage.getItem('usuario_ocid') || sessionStorage.getItem('usuario_ocid') || 'null');
+      return JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
     } catch (e) {
       return null;
     }
-  }
-
-  // Busca el JWT en cualquier clave estándar o dentro del objeto de usuario
-  function obtenerToken() {
-    try {
-      const clavesComunes = ['token', 'ocid_token', 'jwt', 'access_token', 'auth_token'];
-      for (const clave of clavesComunes) {
-        const val = localStorage.getItem(clave) || sessionStorage.getItem(clave);
-        if (val && val.split('.').length === 3) return val;
-      }
-
-      const u = obtenerSesion();
-      if (u && typeof u === 'object') {
-        if (u.token && String(u.token).split('.').length === 3) return u.token;
-        if (u.accessToken && String(u.accessToken).split('.').length === 3) return u.accessToken;
-      }
-
-      // Escaneo de respaldo en todo el almacenamiento por si tiene otro nombre
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        const v = localStorage.getItem(k) || '';
-        if (v.startsWith('eyJ') && v.split('.').length === 3) return v;
-        if (v.includes('"eyJ')) {
-          const parsed = JSON.parse(v);
-          if (parsed && parsed.token) return parsed.token;
-        }
-      }
-      return null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  async function fetchConAuth(url, opciones = {}) {
-    const token = obtenerToken();
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(opciones.headers || {})
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    return fetch(url, { ...opciones, headers });
   }
 
   function mostrarToast(mensaje, esError = false) {
@@ -95,11 +51,9 @@
     }
 
     // Actualizar contador de notificaciones solo si existe token
-    if (obtenerToken()) {
-      fetchConAuth(`${window.OCID_API_BASE}/notificaciones`)
-        .then(async res => {
-          if (!res.ok) return;
-          const datos = await res.json();
+    if (window.OCID.obtenerToken()) {
+      window.OCID.apiFetch('/notificaciones')
+        .then(datos => {
           const noLeidas = Array.isArray(datos.notificaciones) ? datos.notificaciones.filter(n => !n.leida).length : 0;
           document.querySelectorAll('.punto_notificacion, .insignia_notificacion').forEach(insignia => {
             insignia.textContent = noLeidas;
@@ -133,7 +87,7 @@
       botonCerrarSesion.addEventListener('click', evento => {
         evento.preventDefault();
         localStorage.removeItem('usuario_ocid');
-        localStorage.removeItem('token');
+        localStorage.removeItem('token_ocid');
         sessionStorage.clear();
         window.location.href = 'login.html';
       });
@@ -268,7 +222,7 @@
 
   async function cargarPapeleraGeneral() {
     const tbody = document.getElementById('cuerpo_tabla_papelera');
-    const token = obtenerToken();
+    const token = window.OCID.obtenerToken();
 
     if (!token) {
       if (tbody) {
@@ -282,27 +236,13 @@
     }
 
     try {
-      const [resArchivos, resAnuncios] = await Promise.all([
-        fetchConAuth(`${window.OCID_API_BASE}/archivos/papelera`),
-        fetchConAuth(`${window.OCID_API_BASE}/anuncios/papelera`)
+      const [dataArchivos, dataAnuncios] = await Promise.all([
+        window.OCID.apiFetch('/archivos/papelera'),
+        window.OCID.apiFetch('/anuncios/papelera')
       ]);
 
-      if (resArchivos.status === 401 || resArchivos.status === 403) {
-        if (tbody) {
-          tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">Tu sesión expiró. Por favor inicia sesión nuevamente.</td></tr>`;
-        }
-        return;
-      }
-
-      if (resArchivos.ok) {
-        const dataArch = await resArchivos.json();
-        archivosEliminados = Array.isArray(dataArch.archivos) ? dataArch.archivos : [];
-      }
-
-      if (resAnuncios.ok) {
-        const dataAnunc = await resAnuncios.json();
-        anunciosEliminados = Array.isArray(dataAnunc.anuncios) ? dataAnunc.anuncios : [];
-      }
+      archivosEliminados = Array.isArray(dataArchivos.archivos) ? dataArchivos.archivos : [];
+      anunciosEliminados = Array.isArray(dataAnuncios.anuncios) ? dataAnuncios.anuncios : [];
 
       renderizarContenidoActual();
     } catch (error) {
@@ -313,9 +253,8 @@
 
   window.restaurarArchivo = async function (id) {
     try {
-      const res = await fetchConAuth(`${window.OCID_API_BASE}/archivos/${id}/restaurar`, { method: 'PUT' });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error();
+      const data = await window.OCID.apiFetch(`/archivos/${id}/restaurar`, { method: 'PUT' });
+      if (!data.success) throw new Error('No se pudo restaurar el archivo.');
       archivosEliminados = archivosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Archivo restaurado con éxito.');
@@ -327,9 +266,8 @@
   window.eliminarDefinitivoArchivo = async function (id) {
     if (!confirm('¿Eliminar este archivo de forma permanente?')) return;
     try {
-      const res = await fetchConAuth(`${window.OCID_API_BASE}/archivos/${id}/permanente`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error();
+      const data = await window.OCID.apiFetch(`/archivos/${id}/permanente`, { method: 'DELETE' });
+      if (!data.success) throw new Error('No se pudo eliminar el archivo.');
       archivosEliminados = archivosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Archivo eliminado permanentemente.');
@@ -340,9 +278,8 @@
 
   window.restaurarAnuncio = async function (id) {
     try {
-      const res = await fetchConAuth(`${window.OCID_API_BASE}/anuncios/${id}/restaurar`, { method: 'PUT' });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error();
+      const data = await window.OCID.apiFetch(`/anuncios/${id}/restaurar`, { method: 'PUT' });
+      if (!data.success) throw new Error('No se pudo restaurar el anuncio.');
       anunciosEliminados = anunciosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Anuncio restaurado con éxito.');
@@ -354,9 +291,8 @@
   window.eliminarDefinitivoAnuncio = async function (id) {
     if (!confirm('¿Eliminar este anuncio de forma permanente?')) return;
     try {
-      const res = await fetchConAuth(`${window.OCID_API_BASE}/anuncios/${id}/permanente`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error();
+      const data = await window.OCID.apiFetch(`/anuncios/${id}/permanente`, { method: 'DELETE' });
+      if (!data.success) throw new Error('No se pudo eliminar el anuncio.');
       anunciosEliminados = anunciosEliminados.filter(a => Number(a.id) !== Number(id));
       renderizarContenidoActual();
       mostrarToast('Anuncio eliminado permanentemente.');

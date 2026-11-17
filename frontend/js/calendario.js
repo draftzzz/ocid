@@ -1,7 +1,5 @@
 /* Lógica interactiva y de backend para calendario.html usando la tabla 'tareas' */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
-
   function iniciarInterfaz() {
     const barraSuperior = document.querySelector('.barra_superior');
     const barraLateral = document.querySelector('.barra_lateral');
@@ -41,10 +39,8 @@
     }
 
     if (usuario && usuario.id) {
-      fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(async respuesta => {
-          const datos = await respuesta.json();
-          if (!respuesta.ok) throw new Error('No se pudo cargar');
+      window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
+        .then(datos => {
           const noLeidas = Array.isArray(datos) ? datos.filter(n => !n.leida).length : 0;
           document.querySelectorAll(
             '.badge_campana, .insignia_notificacion, .etiqueta_notificaciones, #indicador_notificaciones'
@@ -153,15 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarTareasDesdeDB() {
     try {
-      const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
-      const respuesta = await fetch(`${window.OCID_API_BASE}/tareas`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      });
-      const datos = await respuesta.json();
-      if (!respuesta.ok) throw new Error('No se pudo cargar');
+      const datos = await window.OCID.apiFetch('/tareas');
       tareas = Array.isArray(datos) ? datos : [];
     } catch (error) {
       tareas = [];
@@ -267,11 +255,10 @@ async function cargarTareasDesdeDB() {
     if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) return;
 
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/tareas/${id}`, {
+      const datos = await window.OCID.apiFetch(`/tareas/${id}`, {
         method: 'DELETE'
       });
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) throw new Error('No se pudo cargar');
+      if (!datos.success) throw new Error('No se pudo eliminar');
 
       mostrarToastCalendario('Evento eliminado correctamente.', 'exito');
       await cargarTareasDesdeDB();
@@ -467,17 +454,16 @@ async function cargarTareasDesdeDB() {
     }
 
     try {
-      let url = `${window.OCID_API_BASE}/tareas`;
+      let ruta = '/tareas';
       let metodo = 'POST';
 
       if (tareaEnEdicionId !== null) {
-        url = `${window.OCID_API_BASE}/tareas/${tareaEnEdicionId}`;
+        ruta = `/tareas/${tareaEnEdicionId}`;
         metodo = 'PUT';
       }
 
-      const respuesta = await fetch(url, {
+      const datos = await window.OCID.apiFetch(ruta, {
         method: metodo,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           titulo,
           fecha,
@@ -487,8 +473,7 @@ async function cargarTareasDesdeDB() {
         })
       });
 
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) throw new Error('No se pudo cargar');
+      if (!datos.success) throw new Error('No se pudo guardar el evento');
 
       modal.style.display = 'none';
       document.getElementById('input_titulo_evento').value = '';

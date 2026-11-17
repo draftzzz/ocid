@@ -1,6 +1,5 @@
 /* Lógica propia de docentes.html */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
   window.listaDepartamentosOCID = [];
 
   function iniciarInterfaz() {
@@ -42,10 +41,8 @@
     }
 
     if (usuario && usuario.id) {
-      fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(async respuesta => {
-          const datos = await respuesta.json();
-          if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron cargar las notificaciones');
+      window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
+        .then(datos => {
           const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
           document.querySelectorAll(
             '.badge_campana, .insignia_notificacion, .etiqueta_notificaciones, .insignia_notificacion_lateral, #indicador_notificaciones'
@@ -178,16 +175,7 @@ async function cargarDocentes() {
   if (grupoPaginacion) grupoPaginacion.replaceChildren();
 
   try {
-    const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
-    // Usar /docentes o /usuarios en lugar de /login para listar docentes
-    const respuesta = await fetch(`${window.OCID_API_BASE}/docentes`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    });
-    const datos = await respuesta.json();
-    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo cargar');
+    const datos = await window.OCID.apiFetch('/docentes');
     if (!Array.isArray(datos)) throw new Error('La respuesta del servidor no es válida.');
 
     cuerpo.replaceChildren();
@@ -205,9 +193,7 @@ async function cargarDocentes() {
 
 async function cargarDepartamentosDocentes() {
   try {
-    const respuesta = await fetch(`${window.OCID_API_BASE}/departamentos`);
-    const datos = await respuesta.json();
-    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo cargar');
+    const datos = await window.OCID.apiFetch('/departamentos');
 
     window.listaDepartamentosOCID = Array.isArray(datos) ? datos : [];
 
@@ -334,9 +320,8 @@ function agregarFilaDocente(docente) {
   selectDepto.addEventListener('change', async () => {
     const nuevoDeptoId = selectDepto.value ? Number(selectDepto.value) : null;
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/usuarios/${docente.id}`, {
+      const datos = await window.OCID.apiFetch(`/usuarios/${docente.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: docente.nombre,
           correo: docente.correo,
@@ -344,8 +329,7 @@ function agregarFilaDocente(docente) {
           rol: selectRol.value
         })
       });
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) {
+      if (!datos.success) {
         throw new Error(datos.error || 'No se pudo actualizar el departamento');
       }
       mostrarAvisoDocentes('Departamento actualizado correctamente.', false);
@@ -383,9 +367,8 @@ function agregarFilaDocente(docente) {
   selectRol.addEventListener('change', async () => {
     const nuevoRol = selectRol.value;
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/usuarios/${docente.id}`, {
+      const datos = await window.OCID.apiFetch(`/usuarios/${docente.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: docente.nombre,
           correo: docente.correo,
@@ -393,8 +376,7 @@ function agregarFilaDocente(docente) {
           rol: nuevoRol
         })
       });
-      const datos = await respuesta.json();
-      if (!respuesta.ok || !datos.success) {
+      if (!datos.success) {
         throw new Error(datos.error || 'No se pudo actualizar el rol');
       }
       mostrarAvisoDocentes('Rol actualizado correctamente.', false);
@@ -455,9 +437,8 @@ async function procesarRegistroDocente(evento) {
   const rolVal = document.getElementById('rol_select') ? document.getElementById('rol_select').value : 'Docente';
 
   try {
-    const respuesta = await fetch(`${window.OCID_API_BASE}/registro`, {
+    const datos = await window.OCID.apiFetch('/registro', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nombre: document.getElementById('nombre_docente_input').value.trim(),
         correo: document.getElementById('correo_docente_input').value.trim(),
@@ -467,8 +448,7 @@ async function procesarRegistroDocente(evento) {
         rol: rolVal
       })
     });
-    const datos = await respuesta.json();
-    if (!respuesta.ok || !datos.success) {
+    if (!datos.success) {
       throw new Error(datos.error || 'No se pudo registrar el docente');
     }
 
@@ -497,11 +477,10 @@ async function eliminarDocente(id) {
   if (!window.confirm('¿Seguro que quieres eliminar este docente?')) return;
 
   try {
-    const respuesta = await fetch(`${window.OCID_API_BASE}/login/${Number(id)}`, {
+    const datos = await window.OCID.apiFetch(`/usuarios/${Number(id)}`, {
       method: 'DELETE'
     });
-    const datos = await respuesta.json();
-    if (!respuesta.ok || !datos.success) {
+    if (!datos.success) {
       throw new Error(datos.error || 'No se pudo borrar el docente');
     }
     mostrarAvisoDocentes('Docente eliminado correctamente.', false);

@@ -2,42 +2,12 @@
    Correcciones para inicio.js — Autenticación y Carga de Datos Corregida
    ========================================================================== */
 
-// Función segura para obtener el token desde la clave unificada 'token_ocid' o 'usuario_ocid'
-function obtenerToken() {
-    try {
-        // Busca primero la clave directa del token, luego dentro del objeto de sesión
-        const tokenDirecto = localStorage.getItem("token_ocid") || localStorage.getItem("token");
-        if (tokenDirecto) return tokenDirecto;
-
-        const u = JSON.parse(localStorage.getItem("usuario_ocid") || "null");
-        return u && (u.token || u.token_ocid) ? (u.token || u.token_ocid) : null;
-    } catch (e) {
-        return null;
-    }
-}
-
-// Petición con autenticación JWT garantizada
-async function fetchConAuth(url, opciones = {}) {
-    const token = obtenerToken();
-    const headers = { 
-        "Content-Type": "application/json",
-        ...(opciones.headers || {}) 
-    };
-    
-    if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-    }
-    
-    return fetch(url, { ...opciones, headers });
-}
-
 // 1. Cargar Anuncios correctamente
 async function cargarAnuncios() {
     const contenedor = $("contenedor_lista_anuncios");
     if (contenedor) contenedor.innerHTML = '<p class="texto_vacio">Cargando anuncios...</p>';
     try {
-        const respuesta = await fetchConAuth(`${API}/anuncios`);
-        const datos = await leerRespuesta(respuesta);
+        const datos = await window.OCID.apiFetch('/anuncios');
         listaAnunciosGlobal = obtenerLista(datos).map(a => ({
             id: a.id, titulo: a.titulo || "", contenido: a.contenido || "",
             prioridad: normalizarPrioridad(a.prioridad), autor: a.autor_nombre || "Usuario",
@@ -55,8 +25,7 @@ async function cargarAnuncios() {
 // 2. Cargar Docentes / Usuarios (Ruta correcta /docentes en lugar de /login)
 async function cargarUsuarios() {
     try {
-        const respuesta = await fetchConAuth(`${API}/docentes`);
-        const datos = await leerRespuesta(respuesta);
+        const datos = await window.OCID.apiFetch('/docentes');
         listaUsuariosGlobal = obtenerLista(datos);
         const docentes = listaUsuariosGlobal.filter(u => String(u.rol || "").toLowerCase().includes("docente"));
         if ($("conteo_usr")) $("conteo_usr").textContent = docentes.length ? String(docentes.length) : "—";
@@ -71,8 +40,7 @@ async function cargarUsuarios() {
 // 3. Cargar Departamentos correctamente
 async function cargarDepartamentos() {
     try {
-        const respuesta = await fetchConAuth(`${API}/departamentos`);
-        const datos = await leerRespuesta(respuesta);
+        const datos = await window.OCID.apiFetch('/departamentos');
         listaDepartamentosGlobal = obtenerLista(datos);
         
         const selector = $("campo_departamento_anuncio");
@@ -106,9 +74,7 @@ async function cargarDepartamentos() {
 // 4. Cargar Calendario / Eventos Próximos
 async function cargarEventosProximos() {
     try {
-        // Nota: Asegúrate de que tu backend tenga la ruta /calendario o /tareas configurada
-        const respuesta = await fetchConAuth(`${API}/calendario`);
-        const datos = await leerRespuesta(respuesta);
+        const datos = await window.OCID.apiFetch('/tareas');
         const listaEventos = obtenerLista(datos);
         
         if ($("metrica_conteo_eventos")) {

@@ -1,7 +1,6 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const API = "https://ocid.onrender.com";
 let usuario = null;
 let listaAnunciosGlobal = [];
 let listaUsuariosGlobal = [];
@@ -17,18 +16,6 @@ try {
 
 function escaparHTML(texto) {
     return String(texto ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-async function leerRespuesta(respuesta) {
-    const tipo = respuesta.headers.get("content-type") || "";
-    let datos = {};
-    if (tipo.includes("application/json")) datos = await respuesta.json();
-    else {
-        const texto = await respuesta.text();
-        datos = texto ? { message: texto } : {};
-    }
-    if (!respuesta.ok) throw new Error(datos.error || datos.message || `Error HTTP ${respuesta.status}`);
-    return datos;
 }
 
 function obtenerLista(datos) {
@@ -79,7 +66,7 @@ async function cargarAnuncios() {
     const contenedor = $("contenedor_lista_anuncios");
     if (contenedor) contenedor.innerHTML = '<p class="texto_vacio">Cargando anuncios...</p>';
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/anuncios`));
+        const datos = await window.OCID.apiFetch('/anuncios');
         listaAnunciosGlobal = obtenerLista(datos).map(a => ({
             id: a.id, titulo: a.titulo || "", contenido: a.contenido || "",
             prioridad: normalizarPrioridad(a.prioridad), autor: a.autor_nombre || "Usuario",
@@ -134,10 +121,10 @@ async function publicarAnuncio(evento) {
     const boton = $("btn_guardar_anuncio");
     if (boton) boton.disabled = true;
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/anuncios`, {
+        const datos = await window.OCID.apiFetch('/anuncios', {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ titulo, contenido, prioridad, autor_id: Number(usuario.id), departamento_id: Number(departamento) })
-        }));
+        });
         if (datos.success !== true) throw new Error(datos.error || "El servidor no confirmó la publicación.");
         $("formulario_crear_anuncio")?.reset();
         cerrarModal("modal_nuevo_anuncio");
@@ -152,7 +139,7 @@ async function eliminarAnuncio(id, evento) {
     if (!usuario?.id) { mostrarMensaje("Inicia sesión para eliminar anuncios.", true); return; }
     if (!id || !confirm("¿Deseas eliminar este anuncio?")) return;
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/anuncios/${Number(id)}`, { method: "DELETE" }));
+        const datos = await window.OCID.apiFetch(`/anuncios/${Number(id)}`, { method: "DELETE" });
         if (datos.success !== true) throw new Error(datos.error || "No se confirmó la eliminación.");
         mostrarMensaje("Anuncio eliminado correctamente.");
         await cargarAnuncios();
@@ -161,7 +148,7 @@ async function eliminarAnuncio(id, evento) {
 
 async function cargarUsuarios() {
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/login`));
+        const datos = await window.OCID.apiFetch('/docentes');
         listaUsuariosGlobal = obtenerLista(datos);
         const docentes = listaUsuariosGlobal.filter(u => String(u.rol || "").toLowerCase().includes("docente"));
         if ($("conteo_usr")) $("conteo_usr").textContent = docentes.length ? String(docentes.length) : "—";
@@ -175,7 +162,7 @@ async function cargarUsuarios() {
 
 async function cargarDepartamentos() {
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/departamentos`));
+        const datos = await window.OCID.apiFetch('/departamentos');
         listaDepartamentosGlobal = obtenerLista(datos);
         
         const selector = $("campo_departamento_anuncio");
@@ -208,7 +195,7 @@ async function cargarDepartamentos() {
 
 async function cargarEventosProximos() {
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/calendario`));
+        const datos = await window.OCID.apiFetch('/tareas');
         const listaEventos = obtenerLista(datos);
         
         if ($("metrica_conteo_eventos")) {
@@ -250,13 +237,13 @@ async function ejecutarAutenticacion(evento) {
     const correo = $("campo_login_correo")?.value.trim() || "";
     const password = $("campo_login_password")?.value || "";
     try {
-        const datos = await leerRespuesta(await fetch(`${API}/login`, {
+        const datos = await window.OCID.apiPublico('/login', {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ correo, password })
-        }));
+        });
         if (datos.success !== true || !datos.usuario?.id) throw new Error(datos.error || "No se pudo iniciar sesión.");
         usuario = datos.usuario;
-        localStorage.setItem("usuario_ocid", JSON.stringify(usuario));
+        window.OCID.guardarSesion(usuario, datos.token);
         inicializarSesion();
         cerrarModal("modal_login_sesion");
         mostrarMensaje(`Hola, ${usuario.nombre || "Usuario"}.`);

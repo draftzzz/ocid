@@ -2,7 +2,6 @@
    Lógica de Configuración y Perfil - OCID
    ========================================================================== */
 
-window.OCID_API_BASE = 'https://ocid.onrender.com';
 
 // Inicialización global de la interfaz, sesión y menú móvil
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,10 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Notificaciones de la barra superior
   if (usuario && usuario.id) {
-    fetch(`${window.OCID_API_BASE}/notificaciones?usuario_id=${encodeURIComponent(usuario.id)}`)
-      .then(async respuesta => {
-        const datos = await respuesta.json();
-        if (!respuesta.ok) throw new Error('No se pudo cargar');
+    window.OCID.apiFetch(`/notificaciones?usuario_id=${encodeURIComponent(usuario.id)}`)
+      .then(datos => {
         const noLeidas = Array.isArray(datos) ? datos.filter(n => !n.leida).length : 0;
         const indicador = document.getElementById('indicador_notificaciones') || document.querySelector('.insignia_notificacion');
         if (indicador) {
@@ -123,19 +120,7 @@ function obtenerUsuarioSesion() {
 }
 
 async function peticionServidor(ruta, opciones) {
-  try {
-    const respuesta = await fetch(`${window.OCID_API_BASE}${ruta}`, opciones);
-    const datos = await respuesta.json();
-    if (!respuesta.ok) {
-      throw new Error(datos.error || 'No se pudo cargar');
-    }
-    return datos;
-  } catch (error) {
-    if (error.message.toLowerCase().includes('failed to fetch') || error.message.toLowerCase().includes('networkerror')) {
-      throw new Error('No se pudo cargar');
-    }
-    throw error;
-  }
+  return window.OCID.apiFetch(ruta, opciones);
 }
 
 // Sistema de avisos insertado exactamente debajo de la cabecera ("Administra tu cuenta...")

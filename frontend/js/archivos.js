@@ -1,7 +1,5 @@
 /* Lógica propia de archivos.html */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
-
   function iniciarInterfaz() {
     const barraSuperior = document.querySelector('.barra_superior');
     const barraLateral = document.querySelector('.barra_lateral');
@@ -41,10 +39,8 @@
     }
 
     if (usuario && usuario.id) {
-      fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(async respuesta => {
-          const datos = await respuesta.json();
-          if (!respuesta.ok) throw new Error('No se pudo cargar');
+      window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
+        .then(datos => {
           const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
           document.querySelectorAll(
             '.badge_campana, .insignia_notificacion, .etiqueta_notificaciones, .insignia_notificacion_lateral, #indicador_notificaciones'
@@ -117,7 +113,6 @@
   }
 })();
 
-const apiArchivos = window.OCID_API_BASE;
 const modalArchivo = document.getElementById('modal_subir_archivo');
 const selectorArchivo = document.getElementById('input_archivo_oculto');
 const cuerpoArchivos = document.getElementById('cuerpo_tabla_archivos');
@@ -170,32 +165,6 @@ function mostrarToastArchivos(mensaje, tipo = 'exito') {
     toast.classList.remove('toast_visible');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
-}
-
-async function respuestaArchivos(ruta, opciones = {}) {
-  try {
-    const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...(opciones.headers || {})
-    };
-
-    const respuesta = await fetch(apiArchivos + ruta, { ...opciones, headers });
-    
-    if (respuesta.status === 401 || respuesta.status === 403) {
-      localStorage.removeItem('usuario_ocid');
-      localStorage.removeItem('token_ocid');
-      window.location.href = 'login.html';
-      throw new Error('Sesión expirada');
-    }
-
-    const datos = await respuesta.json();
-    if (!respuesta.ok) throw new Error(datos.error || 'No se pudo cargar');
-    return datos;
-  } catch (err) {
-    throw new Error(err.message || 'No se pudo conectar con el servidor');
-  }
 }
 
 function formatearTamano(bytes) {
@@ -298,8 +267,8 @@ function dibujarArchivos() {
 async function cargarArchivos() {
   try {
     const [archivos, departamentos] = await Promise.all([
-      respuestaArchivos('/archivos'),
-      respuestaArchivos('/departamentos')
+      window.OCID.apiFetch('/archivos'),
+      window.OCID.apiFetch('/departamentos')
     ]);
     archivosCargados = archivos;
 
@@ -325,7 +294,7 @@ async function cargarArchivos() {
 
 async function descargarArchivo(id) {
   try {
-    const datos = await respuestaArchivos('/archivos/' + encodeURIComponent(id));
+    const datos = await window.OCID.apiFetch('/archivos/' + encodeURIComponent(id));
     const archivo = datos.archivo;
     const partes = archivo.ruta.split(',');
     const binario = atob(partes[1]);
@@ -355,7 +324,7 @@ async function eliminarArchivo(id, autorId) {
   if (!window.confirm('¿Estás seguro de eliminar este archivo?')) return;
   
   try {
-    await respuestaArchivos('/archivos/' + encodeURIComponent(id), { method: 'DELETE' });
+    await window.OCID.apiFetch('/archivos/' + encodeURIComponent(id), { method: 'DELETE' });
     mostrarToastArchivos('El archivo se eliminó correctamente.', 'exito');
     await cargarArchivos();
   } catch (error) {
@@ -421,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
           lector.readAsDataURL(archivo);
         });
 
-        await respuestaArchivos('/archivos', {
+        await window.OCID.apiFetch('/archivos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

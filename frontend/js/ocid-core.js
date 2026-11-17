@@ -48,12 +48,20 @@
   }
 
   function obtenerToken() {
-    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('token') || localStorage.getItem('ocid_token') || null;
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) return token;
+
+    try {
+      const usuario = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
+      return usuario && usuario.token ? usuario.token : null;
+    } catch (error) {
+      return null;
+    }
   }
 
   function guardarSesion(usuario, tokenJwt = null) {
     localStorage.setItem(USER_KEY, JSON.stringify(usuario));
-    const tokenFinal = tokenJwt || usuario.token || usuario.token_ocid;
+    const tokenFinal = tokenJwt || usuario.token;
     if (tokenFinal) {
       localStorage.setItem(TOKEN_KEY, tokenFinal);
     }
@@ -69,8 +77,11 @@
 
   async function apiFetch(path, opciones = {}) {
     const token = obtenerToken();
-    const headers = { 'Content-Type': 'application/json', ...(opciones.headers || {}) };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!token) throw new Error('Inicia sesión para continuar.');
+
+    const headers = new Headers(opciones.headers || {});
+    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    headers.set('Authorization', `Bearer ${token}`);
     
     let respuesta;
     try {

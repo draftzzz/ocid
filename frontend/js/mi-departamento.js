@@ -1,7 +1,5 @@
 /* Lógica propia de mi-departamento.html */
 (function () {
-  window.OCID_API_BASE = 'https://ocid.onrender.com';
-
   function iniciarInterfaz() {
     const barraSuperior = document.querySelector('.barra_superior');
     const barraLateral = document.querySelector('.barra_lateral');
@@ -32,10 +30,8 @@
 
       // Cargar notificaciones
       if (usuario.id) {
-        fetch(window.OCID_API_BASE + '/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-          .then(async respuesta => {
-            const datos = await respuesta.json();
-            if (!respuesta.ok) throw new Error(datos.error || 'No se pudieron cargar las notificaciones');
+        window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
+          .then(datos => {
             const noLeidas = Array.isArray(datos) ? datos.filter(notificacion => !notificacion.leida).length : 0;
             const indicador = document.getElementById('indicador_notificaciones');
             if (indicador) {
@@ -182,11 +178,10 @@ function renderizar_miembros(lista) {
       const id = btn.getAttribute('data-id');
 
       try {
-        const respuesta = await fetch(`${window.OCID_API_BASE}/login/${id}`, {
+        const datosRespuesta = await window.OCID.apiFetch(`/usuarios/${id}`, {
           method: 'DELETE'
         });
-        const datosRespuesta = await respuesta.json();
-        if (!respuesta.ok || !datosRespuesta.success) {
+        if (!datosRespuesta.success) {
           throw new Error(datosRespuesta.error || 'No se pudo eliminar');
         }
 
@@ -202,30 +197,19 @@ function renderizar_miembros(lista) {
 // Inicialización de datos del departamento
 async function inicializar_modulo_departamento() {
   try {
-    const token = localStorage.getItem('token_ocid') || localStorage.getItem('token') || '';
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
-
-    const [respuestaDepartamentos, respuestaUsuarios, respuestaArchivos, respuestaTareas] = await Promise.all([
-      fetch(`${window.OCID_API_BASE}/departamentos`, { headers }),
-      fetch(`${window.OCID_API_BASE}/docentes`, { headers }), // O /usuarios según prefieras
-      fetch(`${window.OCID_API_BASE}/archivos`, { headers }),
-      fetch(`${window.OCID_API_BASE}/tareas`, { headers })
-    ]);
-
     const [departamentos, usuarios, archivos, tareas] = await Promise.all([
-      respuestaDepartamentos.json(),
-      respuestaUsuarios.json(),
-      respuestaArchivos.json().catch(() => []),
-      respuestaTareas.json().catch(() => [])
+      window.OCID.apiFetch('/departamentos'),
+      window.OCID.apiFetch('/docentes'),
+      window.OCID.apiFetch('/archivos'),
+      window.OCID.apiFetch('/tareas')
     ]);
-
-    if (!respuestaDepartamentos.ok) throw new Error(departamentos.error || "No se pudieron cargar los departamentos.");
-    if (!respuestaUsuarios.ok) throw new Error(usuarios.error || "No se pudieron cargar los docentes.");
 
     // ... resto del código de renderizado ...
+  } catch (error) {
+    console.error('Error al cargar los datos del departamento:', error);
+    window.OCID.mostrarToast(error.message || 'No se pudieron cargar los datos del departamento.', true);
+  }
+}
 
 // Control de los tres puntitos de la tarjeta general de departamento
 const botonOpcionesDepto = document.querySelector('.tarjeta_general .boton_acciones');
@@ -272,22 +256,16 @@ if (guardarModalDepto) {
     }
 
     try {
-      const respuesta = await fetch(`${window.OCID_API_BASE}/departamentos/${departamentoIdActual}`, {
+      await window.OCID.apiFetch(`/departamentos/${departamentoIdActual}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nuevoNombre, descripcion: nuevaDesc })
       });
-
-      if (!respuesta.ok) throw new Error('No se pudo actualizar el departamento');
 
       modalEditarDepto.style.display = 'none';
       await inicializar_modulo_departamento();
     } catch (error) {
-      // Fallback visual si el backend no tiene implementado el PUT de departamentos aún
-      document.getElementById("nombre_departamento_texto").textContent = nuevoNombre;
-      document.getElementById("detalle_departamento_texto").textContent = nuevaDesc;
-      document.getElementById("parrafo_descripcion").textContent = nuevaDesc;
-      modalEditarDepto.style.display = 'none';
+      console.error('Error al actualizar el departamento:', error);
+      alert(error.message || 'No se pudo actualizar el departamento.');
     }
   });
 }
