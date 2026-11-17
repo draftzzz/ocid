@@ -48,19 +48,20 @@
   }
 
   function obtenerToken() {
-    const u = obtenerUsuarioSesion();
-    return u && u.token ? u.token : (localStorage.getItem('token') || null);
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('token') || localStorage.getItem('ocid_token') || null;
   }
 
-  function guardarSesion(usuario) {
+  function guardarSesion(usuario, tokenJwt = null) {
     localStorage.setItem(USER_KEY, JSON.stringify(usuario));
-    if (usuario && usuario.token) {
-      localStorage.setItem('token', usuario.token);
+    const tokenFinal = tokenJwt || usuario.token || usuario.token_ocid;
+    if (tokenFinal) {
+      localStorage.setItem(TOKEN_KEY, tokenFinal);
     }
   }
 
   function limpiarSesion() {
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('token');
     localStorage.removeItem('ocid_token');
     sessionStorage.clear();
