@@ -4,14 +4,11 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Organización y Comunicación Interna para Docentes</title>
-    <!-- Fuente institucional -->
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap"
         rel="stylesheet" />
-    <!-- Iconos Lucide -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="css/index.css" />
 </head>
 
@@ -23,18 +20,14 @@
             <span>|</span>
             <span>Coordinación Académica Digital</span>
         </div>
-        <div class="enlaces_soporte">
-            <span class="enlace_soporte_item">
-                <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i> Portal Seguro Certificado
-            </span>
-        </div>
     </aside>
+
     <!-- 2. Cabecera y Navegación Principal -->
     <header class="cabecera_principal" id="cabecera_principal">
         <div class="contenedor_navegacion">
             <a class="bloque_logotipo" href="#" id="enlace_inicio">
                 <div class="isotipo_ocid">
-                    <i data-lucide="building" style="width: 24px; height: 24px;"></i>
+                    <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
                 </div>
                 <div class="separador_marca"></div>
                 <div class="textos_marca">
@@ -46,66 +39,46 @@
                 <a class="enlace_menu" href="#como_funciona">¿Cómo Funciona?</a>
                 <a class="enlace_menu" href="#modulos_sistema">Módulos</a>
                 <a class="enlace_menu" href="#roles_permisos">Roles y Permisos</a>
-                <a class="enlace_menu" href="#contacto_soporte">Contacto</a>
             </nav>
             <div class="grupo_acciones" id="zona_acceso_rapido">
-                <button class="boton_secundario" id="boton_ver_guia" onclick="desplazar_a_seccion('como_funciona')">
-                    <i data-lucide="book-open" style="width: 16px; height: 16px;"></i>
-                    Ver Guía
-                </button>
-                <button class="boton_ingresar" id="boton_acceder" onclick="redirigir_inicio_sesion()">
-                    <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
-                    Acceder al Sistema
+                <button type="button" class="boton_ingresar" id="boton_acceder">
+                    <svg class="icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+                    <span>Acceder al Sistema</span>
                 </button>
             </div>
         </div>
     </header>
+
     <!-- 3. Sección Hero: Propuesta de Valor Institucional -->
     <section class="seccion_hero" id="seccion_hero">
         <div class="contenedor_hero">
             <div class="bloque_texto_hero">
                 <div class="etiqueta_institucional">
-                    <i data-lucide="shield" style="width: 15px; height: 15px; color: var(--azul_medio);"></i>
+                    <svg class="icono_15 icono_azul_medio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     SISTEMA OFICIAL OCID • GESTIÓN DOCENTE
                 </div>
                 <h1 class="titulo_principal">
                     Organización y Comunicación Docente en <span>un solo lugar</span>.
                 </h1>
                 <p class="descripcion_principal">
-                    Plataforma web centralizada para profesores, coordinadores de área y directivos institucionales.
+                    Plataforma web centralizada para profesores, jefes de área y directivos institucionales.
                     Consulta avisos inmediatos, gestiona planeaciones y descarga formatos oficiales de forma segura,
                     estructurada y transparente.
                 </p>
                 <div class="acciones_hero">
-                    <button class="boton_accion_primario" onclick="redirigir_inicio_sesion()">
-                        <i data-lucide="arrow-right-circle" style="width: 20px; height: 20px;"></i>
-                        Iniciar Sesión Docente
+                    <button type="button" class="boton_accion_primario" id="boton_hero_login">
+                        <svg class="icono_20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 16 16 12 12 8"/><line x1="8" x2="16" y1="12" y2="12"/></svg>
+                        <span>Iniciar Sesión</span>
                     </button>
-                    <button class="boton_secundario" onclick="desplazar_a_seccion('modulos_sistema')">
-                        <i data-lucide="layout-grid" style="width: 18px; height: 18px;"></i>
-                        Explorar Funcionalidades
+                    <button type="button" class="boton_secundario" id="boton_hero_explorar">
+                        <svg class="icono_18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                        <span>Explorar Funcionalidades</span>
                     </button>
-                </div>
-                <div class="tarjetas_confianza">
-                    <div class="elemento_confianza">
-                        <span class="icono_chequeo"><i data-lucide="check"
-                                style="width: 14px; height: 14px;"></i></span>
-                        <span>Sesiones Seguras con JWT</span>
-                    </div>
-                    <div class="elemento_confianza">
-                        <span class="icono_chequeo"><i data-lucide="check"
-                                style="width: 14px; height: 14px;"></i></span>
-                        <span>Diseño 100% Adaptable</span>
-                    </div>
-                    <div class="elemento_confianza">
-                        <span class="icono_chequeo"><i data-lucide="check"
-                                style="width: 14px; height: 14px;"></i></span>
-                        <span>Respaldado en PostgreSQL</span>
-                    </div>
                 </div>
             </div>
         </div>
     </section>
+
     <!-- 4. Sección Explicativa: ¿Cómo Funciona la Plataforma Escolar? -->
     <section class="seccion_explicativa" id="como_funciona">
         <div class="bloque_encabezado">
@@ -117,232 +90,162 @@
             </p>
         </div>
         <div class="rejilla_pasos">
-            <!-- Paso 1 -->
             <article class="tarjeta_paso" id="paso_autenticacion">
                 <div class="numero_paso">1</div>
-                <h3 class="titulo_paso">Acceso Seguro por Rol</h3>
+                <h3 class="titulo_paso">Acceso Seguro</h3>
                 <p class="texto_paso">
-                    El docente ingresa con su identificador oficial o correo escolar. El servidor valida las
-                    credenciales con hash seguro y genera una sesión protegida contra accesos indebidos con JWT.
+                    El docente ingresa con su correo institucional. El servidor valida las
+                    credenciales y genera una sesión protegida contra accesos no autorizados.
                 </p>
             </article>
-            <!-- Paso 2 -->
             <article class="tarjeta_paso" id="paso_comunicacion">
                 <div class="numero_paso">2</div>
                 <h3 class="titulo_paso">Revisión de Avisos y Fechas</h3>
                 <p class="texto_paso">
-                    Visualiza comunicados clasificados por urgencia (Normal, Importante, Urgente) emitidos por Dirección
-                    y Jefaturas, con confirmación de lectura y descargas directas de archivos.
+                    Visualiza comunicados clasificados por urgencia (Normal, Moderado, Urgente) emitidos por Dirección
+                    y Jefaturas, tambien descargas directas de archivos.
                 </p>
             </article>
-            <!-- Paso 3 -->
             <article class="tarjeta_paso" id="paso_documentacion">
                 <div class="numero_paso">3</div>
-                <h3 class="titulo_paso">Gestión y Repositorio Digital</h3>
+                <h3 class="titulo_paso">Gestión digital</h3>
                 <p class="texto_paso">
-                    Descarga plantillas oficiales de planeación curricular, formatos de evaluación y sube las actas
-                    correspondientes a tu departamento sin traslados físicos ni duplicidad documental.
+                    Descarga plantillas escolares, formatos de evaluación y sube los archivos correspondientes a tu departamento sin traslados físicos ni duplicidad documental.
                 </p>
             </article>
         </div>
     </section>
+
     <!-- 5. Sección de Módulos del Sistema -->
     <section class="seccion_modulos" id="modulos_sistema">
         <div class="contenedor_modulos">
             <div class="bloque_encabezado">
                 <span class="insignia_seccion">Herramientas</span>
-                <h2 class="titulo_seccion">Módulos diseñados para tu labor docente</h2>
+                <h2 class="titulo_seccion">Módulos diseñados para docentes</h2>
                 <p class="subtitulo_seccion">
                     Todo el ecosistema de gestión y comunicación estructurado en módulos claros, robustos y fáciles de
                     operar.
                 </p>
             </div>
             <div class="rejilla_modulos">
-                <!-- Módulo 1 -->
                 <div class="tarjeta_modulo" id="modulo_avisos">
                     <div class="icono_modulo">
-                        <i data-lucide="bell" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                     </div>
-                    <h4 class="titulo_modulo">Avisos y Circulares</h4>
-                    <p class="texto_modulo">Publicaciones oficiales con fecha límite, filtros avanzados de búsqueda y
+                    <h4 class="titulo_modulo">Avisos escolares</h4>
+                    <p class="texto_modulo">Publicaciones con fecha límite, filtros avanzados de búsqueda y
                         prioridad visual asignada.</p>
                 </div>
-                <!-- Módulo 2 -->
                 <div class="tarjeta_modulo" id="modulo_formatos">
                     <div class="icono_modulo">
-                        <i data-lucide="folder-down" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M12 10v6"/><path d="m15 13-3 3-3-3"/></svg>
                     </div>
                     <h4 class="titulo_modulo">Formatos Compartidos</h4>
                     <p class="texto_modulo">Repositorio centralizado con soporte para plantillas y formatos
                         institucionales en PDF, Word y Excel.</p>
                 </div>
-                <!-- Módulo 3 -->
                 <div class="tarjeta_modulo" id="modulo_calendario">
                     <div class="icono_modulo">
-                        <i data-lucide="calendar" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                     </div>
                     <h4 class="titulo_modulo">Calendario Escolar</h4>
                     <p class="texto_modulo">Agenda colegiada con juntas académicas, cierres de periodos evaluativos y
                         fechas clave del semestre.</p>
                 </div>
-                <!-- Módulo 4 -->
                 <div class="tarjeta_modulo" id="modulo_departamentos">
                     <div class="icono_modulo">
-                        <i data-lucide="building-2" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
                     </div>
                     <h4 class="titulo_modulo">Departamentos</h4>
-                    <p class="texto_modulo">Espacios colaborativos dedicados a cada academia, jefatura de departamento y
+                    <p class="texto_modulo">Espacios colaborativos dedicados a cada área, jefatura de departamento y
                         áreas de dirección.</p>
                 </div>
             </div>
         </div>
     </section>
+
     <!-- 6. Sección de Roles y Permisos -->
     <section class="seccion_roles" id="roles_permisos">
         <div class="bloque_encabezado">
             <span class="insignia_seccion">Seguridad y Control</span>
             <h2 class="titulo_seccion">Perfiles adaptados a cada función</h2>
             <p class="subtitulo_seccion">
-                Validación estricta desde el backend para asegurar la integridad de la información institucional.
+                Validación desde el backend para asegurar la integridad de la información institucional.
             </p>
         </div>
         <div class="rejilla_roles">
-            <!-- Rol 1: Docentes -->
             <div class="tarjeta_rol" id="rol_docente">
                 <div class="encabezado_rol">
                     <div class="icono_rol">
-                        <i data-lucide="graduation-cap" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
                     </div>
                     <h3 class="titulo_rol">Docentes</h3>
                 </div>
                 <ul class="lista_permisos">
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Consulta de comunicados, circulares y avisos urgentes</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Consulta de comunicados, archivos y avisos urgentes</span>
                     </li>
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Descarga de formatos, planeaciones e instrumentos de evaluación</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Descarga de formatos, planeaciones, hojas de cálculo, etc</span>
                     </li>
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Revisión de calendario institucional y cronograma de exámenes</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Revisión de calendario institucional y dia de exámenes</span>
                     </li>
                 </ul>
             </div>
-            <!-- Rol 2: Jefes de Depto. -->
             <div class="tarjeta_rol" id="rol_jefe_depto">
                 <div class="encabezado_rol">
                     <div class="icono_rol">
-                        <i data-lucide="briefcase" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                     </div>
                     <h3 class="titulo_rol">Jefes de Depto.</h3>
                 </div>
                 <ul class="lista_permisos">
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Publicación de avisos específicos a su academia respectiva</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Publicación de avisos específicos a su departamento respectivo</span>
                     </li>
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Subida y administración de actas y minutas colegiadas</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Subida y administración de documentos institucionales</span>
                     </li>
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         <span>Coordinación de fechas límites y recepción de evidencias</span>
                     </li>
                 </ul>
             </div>
-            <!-- Rol 3: Administradores -->
             <div class="tarjeta_rol" id="rol_administrador">
                 <div class="encabezado_rol">
                     <div class="icono_rol">
-                        <i data-lucide="shield" style="width: 24px; height: 24px;"></i>
+                        <svg class="icono_24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     </div>
                     <h3 class="titulo_rol">Administradores</h3>
                 </div>
                 <ul class="lista_permisos">
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Alta, edición y revocación de cuentas docentes y directivas</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Alta edición y revocación de roles en docentes</span>
                     </li>
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                         <span>Configuración general de departamentos y periodos escolares</span>
                     </li>
                     <li class="elemento_permiso">
-                        <i class="icono_permiso" data-lucide="check" style="width: 16px; height: 16px;"></i>
-                        <span>Control integral del repositorio y respaldos en base de datos</span>
+                        <svg class="icono_permiso icono_16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>Control integral del repositorio y respaldos locales</span>
                     </li>
                 </ul>
             </div>
         </div>
     </section>
+
     <!-- 7. Pie de Página Institucional -->
-    <footer class="pie_pagina" id="contacto_soporte">
-        <div class="contenedor_pie">
-            <div class="columna_pie">
-                <h4>OCID</h4>
-                <p>
-                    Organización y Comunicación Interna para Docentes. Sistema integral diseñado para centralizar la
-                    información escolar, agilizar la toma de decisiones y fortalecer la labor académica de la
-                    institución.
-                </p>
-            </div>
-            <div class="columna_pie">
-                <h4>Navegación Rápida</h4>
-                <ul class="enlaces_pie">
-                    <li><a class="enlace_pie_item" href="#como_funciona">¿Cómo Funciona?</a></li>
-                    <li><a class="enlace_pie_item" href="#modulos_sistema">Módulos del Sistema</a></li>
-                    <li><a class="enlace_pie_item" href="#roles_permisos">Roles y Privilegios</a></li>
-                    <li><a class="enlace_pie_item" href="#" onclick="redirigir_inicio_sesion()">Acceso a la Intranet</a>
-                    </li>
-                </ul>
-            </div>
-            <div class="columna_pie">
-                <h4>Soporte y Contacto</h4>
-                <p>Correo de atención: soporte@ocid.edu</p>
-                <p>Horario de servicio técnico: 08:00 a 18:00 hrs</p>
-                <p style="margin-top: 10px;">Gestión de incidencias y credenciales disponible a través del administrador
-                    de campus.</p>
-            </div>
-        </div>
-        <div class="barra_derechos">
-            <p>© 2025 OCID - Organización y Comunicación Interna para Docentes. Plataforma Institucional. Todos los
-                derechos reservados.</p>
-        </div>
-    </footer>
-    <!-- Lógica JavaScript en español con nomenclatura obligatoria de guiones bajos (_) -->
-    <script>
-        // Inicializar los iconos de Lucide
-        lucide.createIcons();
 
-        /**
-         * Función para desplazar suavemente la vista hacia una sección identificada en el documento
-         * @param {string} identificador_seccion - ID del elemento destino
-         */
-        function desplazar_a_seccion(identificador_seccion) {
-            const elemento_destino = document.getElementById(identificador_seccion);
-            if (elemento_destino) {
-                elemento_destino.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        }
-
-        /**
-         * Función para gestionar la redirección al módulo seguro de inicio de sesión
-         */
-        function redirigir_inicio_sesion() {
-            // Simula el acceso al módulo protegido con sesión HTTP-only
-            alert("Redirigiendo a la pantalla de Acceso Institucional OCID...");
-            window.location.href = "login.html"; // Redirección a la página de inicio de sesión
-        }
-
-        // Registro de confirmación de carga de la plataforma en la consola
-        console.log("Plataforma OCID - Organización y Comunicación Interna para Docentes inicializada correctamente.");
-    </script>
+    <!-- Script exclusivo al final del body -->
+    <script src="index.js"></script>
 </body>
-
 </html>
