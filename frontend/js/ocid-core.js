@@ -157,7 +157,7 @@
     setTimeout(() => toast.classList.add('visible', 'toast_visible'), 10);
     setTimeout(() => {
       toast.classList.remove('visible', 'toast_visible');
-      setTimeout(() => toast.remove(), 250);
+      setTimeout(() => toast.remove(), 300);
     }, duracion);
   }
 

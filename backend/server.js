@@ -22,6 +22,28 @@ const pool = new Pool({
 });
 
 // ==========================================
+// CONFIGURACIÓN DE CORS
+// ==========================================
+const corsOptions = {
+  origin(origin, callback) {
+    const origenPermitido = !origin ||
+      [
+        'https://ocid-nine.vercel.app',
+        'https://ocid.onrender.com'
+      ].includes(origin) ||
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    callback(null, origenPermitido);
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
+
+// ==========================================
 // CONFIGURACIÓN DE SEGURIDAD Y RATE LIMITING
 // ==========================================
 const limiter = rateLimit({
@@ -38,28 +60,6 @@ const authLimiter = rateLimit({
   max: 15,
   message: { success: false, error: 'Demasiados intentos de acceso. Intente nuevamente en 15 minutos.' }
 });
-
-// ==========================================
-// CONFIGURACIÓN DE CORS
-// ==========================================
-app.use(cors({
-  origin(origin, callback) {
-    const origenPermitido = !origin ||
-      [
-        'https://ocid-nine.vercel.app',
-        'https://ocid.onrender.com'
-      ].includes(origin) ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-
-    callback(null, origenPermitido);
-  },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Vital para responder de inmediato a las peticiones preflight del navegador:
-app.options('*', cors());
 
 app.use(express.json({ limit: '15mb' }));
 
@@ -790,13 +790,16 @@ app.get('/notificaciones', async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
     const usuarioResult = await pool.query(
-      `SELECT u.departamento_id, d.nombre AS departamento_nombre FROM usuarios u LEFT JOIN departamentos d ON d.id = u.departamento_id WHERE u.id = $1`,
+      `SELECT u.departamento_id, NULLIF(BTRIM(d.nombre), '') AS departamento_nombre
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       WHERE u.id = $1`,
       [usuarioId]
     );
     if (usuarioResult.rowCount === 0) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
 
     const departamentoNombre = usuarioResult.rows[0].departamento_nombre || null;
-    const correoUsuario = req.usuario.correo || '';
+    const correoUsuario = typeof req.usuario.correo === 'string' ? req.usuario.correo.trim() : '';
 
     const anunciosResult = await pool.query(
       `SELECT n.id, n.fecha, n.leida, 'anuncio' AS tipo, a.titulo, a.contenido, a.departamento_id
@@ -806,8 +809,14 @@ app.get('/notificaciones', async (req, res) => {
 
     const tareasResult = await pool.query(
       `SELECT t.id, t.fecha_creacion AS fecha, FALSE AS leida, 'tarea' AS tipo, t.titulo, t.descripcion AS contenido, t.departamento AS departamento_nombre
-       FROM tareas t WHERE t.estado = 'Pendiente' AND (($1 IS NOT NULL AND t.departamento = $1) OR t.asignado ILIKE $2) ORDER BY t.fecha_creacion DESC`,
-      [departamentoNombre, `%${correoUsuario}%`]
+       FROM tareas t
+       WHERE t.estado = 'Pendiente'
+         AND (
+           ($1::text IS NOT NULL AND NULLIF(BTRIM(t.departamento), '') = $1::text)
+           OR ($2::text <> '' AND t.asignado ILIKE '%' || $2::text || '%')
+         )
+       ORDER BY t.fecha_creacion DESC`,
+      [departamentoNombre, correoUsuario]
     );
 
     const notificaciones = [
@@ -817,6 +826,7 @@ app.get('/notificaciones', async (req, res) => {
 
     res.json({ success: true, notificaciones });
   } catch (error) {
+    console.error('Error al cargar notificaciones:', error.message);
     res.status(500).json({ success: false, error: 'No se pudieron cargar las notificaciones' });
   }
 });
