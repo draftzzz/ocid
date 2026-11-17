@@ -38,20 +38,6 @@
       avatar.style.fontWeight = '700';
     }
 
-    if (usuario && usuario.id) {
-      window.OCID.apiFetch('/notificaciones?usuario_id=' + encodeURIComponent(usuario.id))
-        .then(datos => {
-          const noLeidas = Array.isArray(datos) ? datos.filter(n => !n.leida).length : 0;
-          document.querySelectorAll(
-            '.badge_campana, .insignia_notificacion, .etiqueta_notificaciones, #indicador_notificaciones'
-          ).forEach(insignia => {
-            insignia.textContent = noLeidas;
-            insignia.style.display = noLeidas === 0 ? 'none' : '';
-          });
-        })
-        .catch(error => console.error('Error al actualizar notificaciones:', error));
-    }
-
   }
 
   if (document.readyState === 'loading') {
@@ -76,42 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const campoFecha = document.getElementById('input_dia_evento');
 
   function mostrarToastCalendario(mensaje, tipo = 'exito') {
-    let contenedor = document.getElementById('contenedor_toast');
-    if (!contenedor) {
-      contenedor = document.createElement('div');
-      contenedor.id = 'contenedor_toast';
-      contenedor.className = 'contenedor_toast_flotante';
-      document.body.appendChild(contenedor);
-    }
-
-    let avisoAntiguo = document.getElementById('aviso_calendario');
-    if (avisoAntiguo) avisoAntiguo.style.display = 'none';
-
-    let textoFinal = mensaje;
-    if (mensaje && (mensaje.toLowerCase().includes('failed to fetch') || mensaje.toLowerCase().includes('networkerror'))) {
-      textoFinal = 'No se pudo conectar con el servidor';
-    }
-
-    const toast = document.createElement('div');
-    let claseTipo = tipo === 'error' ? 'toast_error' : (tipo === 'advertencia' ? 'toast_advertencia' : 'toast_exito');
-    let iconoSVG = tipo === 'error'
-      ? '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>'
-      : (tipo === 'advertencia'
-        ? '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
-        : '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>');
-
-    toast.className = `toast_mensaje ${claseTipo}`;
-    toast.innerHTML = `
-      <div class="toast_icono">${iconoSVG}</div>
-      <div class="toast_texto">${String(textoFinal)}</div>
-    `;
-
-    contenedor.appendChild(toast);
-    setTimeout(() => toast.classList.add('toast_visible'), 10);
-    setTimeout(() => {
-      toast.classList.remove('toast_visible');
-      setTimeout(() => toast.remove(), 300);
-    }, 4000);
+    window.OCID.mostrarToast(mensaje, tipo);
   }
 
   function fechaClave(fecha) {

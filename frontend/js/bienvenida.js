@@ -37,12 +37,12 @@ document.getElementById('form_unirse_codigo').addEventListener('submit', async (
         localStorage.setItem('usuario_ocid', JSON.stringify({ ...usuario, ...datos.usuario }));
         window.location.href = 'inicio.html';
     } catch (err) {
-        alert(err.message);
+        window.OCID.mostrarToast(err.message, 'error');
     }
 });
 
 document.getElementById('boton_cerrar_sesion').addEventListener('click', (e) => {
     e.preventDefault();
-    localStorage.removeItem('usuario_ocid');
+    window.OCID.limpiarSesion();
     window.location.href = 'login.html';
 });

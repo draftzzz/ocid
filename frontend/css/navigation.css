@@ -105,6 +105,119 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+.boton_campana {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+
+.boton_campana:hover,
+.boton_campana:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.boton_campana > i {
+  font-size: 18px;
+}
+
+.boton_campana .punto_notificacion {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: inline-flex;
+  min-width: 17px;
+  height: 17px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #0d1527;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.contenedor_toast_flotante {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(390px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast_mensaje {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #10b981;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  color: #1e293b;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateX(16px);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: auto;
+}
+
+.toast_mensaje.visible,
+.toast_mensaje.toast_visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast_mensaje.toast_error {
+  border-left-color: #ef4444;
+}
+
+.toast_mensaje.toast_advertencia {
+  border-left-color: #f59e0b;
+}
+
+.toast_icono {
+  flex: 0 0 auto;
+  font-size: 16px;
+}
+
+.toast_exito .toast_icono {
+  color: #059669;
+}
+
+.toast_error .toast_icono {
+  color: #dc2626;
+}
+
+.toast_advertencia .toast_icono {
+  color: #d97706;
+}
+
+.toast_texto {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .fondo_menu_movil {
   display: none;
   position: fixed;

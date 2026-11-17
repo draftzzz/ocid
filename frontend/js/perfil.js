@@ -41,20 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
     avatar.style.fontWeight = '700';
   }
 
-  // Notificaciones de la barra superior
-  if (usuario && usuario.id) {
-    window.OCID.apiFetch(`/notificaciones?usuario_id=${encodeURIComponent(usuario.id)}`)
-      .then(datos => {
-        const noLeidas = Array.isArray(datos) ? datos.filter(n => !n.leida).length : 0;
-        const indicador = document.getElementById('indicador_notificaciones') || document.querySelector('.insignia_notificacion');
-        if (indicador) {
-          indicador.textContent = noLeidas;
-          indicador.style.display = noLeidas === 0 ? 'none' : '';
-        }
-      })
-      .catch(error => console.error('Error al cargar notificaciones:', error));
-  }
-
   // Cerrar sesión
   barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
     if (enlace.textContent.toLowerCase().includes('cerrar sesión')) {
@@ -85,42 +71,7 @@ async function peticionServidor(ruta, opciones) {
 
 // Sistema de avisos insertado exactamente debajo de la cabecera ("Administra tu cuenta...")
 function mostrarAviso(mensaje, esError = true) {
-  let aviso = document.getElementById('aviso_configuracion');
-  if (!aviso) {
-    aviso = document.createElement('div');
-    aviso.id = 'aviso_configuracion';
-    aviso.setAttribute('role', 'alert');
-    
-    // Buscar la cabecera de la página para colocarlo justo abajo
-    const cabeceraPagina = document.querySelector('.cabecera_pagina');
-    if (cabeceraPagina) {
-      cabeceraPagina.after(aviso);
-    } else {
-      const contenedorPrincipal = document.querySelector('.contenido_principal');
-      if (contenedorPrincipal) contenedorPrincipal.prepend(aviso);
-    }
-  }
-
-  // Limpiar temporizador anterior para reiniciar los 7 segundos correctamente
-  if (window.temporizadorAviso) {
-    clearTimeout(window.temporizadorAviso);
-    window.temporizadorAviso = null;
-  }
-
-  if (esError) {
-    aviso.className = 'aviso_docentes aviso_docentes_error';
-  } else {
-    aviso.className = 'aviso_docentes aviso_docentes_exito';
-  }
-
-  aviso.textContent = mensaje;
-  aviso.style.display = 'flex';
-  aviso.hidden = false;
-
-  window.temporizadorAviso = setTimeout(() => {
-    aviso.hidden = true;
-    aviso.style.display = 'none';
-  }, 7000);
+  window.OCID.mostrarToast(mensaje, esError ? 'error' : 'exito');
 }
 
 // Cargar campos de perfil y selector de departamentos

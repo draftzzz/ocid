@@ -6,7 +6,6 @@
     if (window.OCID) {
       window.OCID.configurarCierreSesion();
       window.OCID.actualizarCabeceraUsuario();
-      window.OCID.actualizarContadorNotificaciones();
     }
   }
 
@@ -33,7 +32,7 @@ function escaparHTML(valor) {
 
 function mostrarErrorAnuncios(mensaje, tipo = 'error') {
   if (window.OCID && window.OCID.mostrarToast) {
-    window.OCID.mostrarToast(mensaje, tipo === 'error');
+    window.OCID.mostrarToast(mensaje, tipo);
   }
 }
 

@@ -37,12 +37,12 @@ document.getElementById('form_crear_departamento').addEventListener('submit', as
         // Redirigir a inicio ya con acceso completo
         window.location.href = 'inicio.html';
     } catch (err) {
-        alert(err.message);
+        window.OCID.mostrarToast(err.message, 'error');
     }
 });
 
 document.getElementById('boton_cerrar_sesion').addEventListener('click', (e) => {
     e.preventDefault();
-    localStorage.removeItem('usuario_ocid');
+    window.OCID.limpiarSesion();
     window.location.href = 'login.html';
 });

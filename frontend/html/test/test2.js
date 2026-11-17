@@ -27,17 +27,7 @@ function obtenerLista(datos) {
 }
 
 function mostrarMensaje(texto, esError = false) {
-    const caja = $("aviso_notificacion");
-    const textoCaja = $("texto_aviso_notificacion");
-    const icono = $("icono_aviso_notificacion");
-    if (!caja || !textoCaja) { (esError ? console.error : console.log)(texto); return; }
-    textoCaja.textContent = texto;
-    if (icono) {
-        icono.className = esError ? "fa-solid fa-circle-exclamation" : "fa-solid fa-circle-check";
-        icono.style.color = esError ? "#ef4444" : "#22c55e";
-    }
-    caja.classList.add("visible");
-    setTimeout(() => caja.classList.remove("visible"), 3500);
+    window.OCID.mostrarToast(texto, esError ? 'error' : 'exito');
 }
 
 function inicializarSesion() {
@@ -49,7 +39,7 @@ function inicializarSesion() {
 }
 
 function cerrarSesion() {
-    localStorage.removeItem("usuario_ocid");
+    window.OCID.limpiarSesion();
     usuario = null;
     inicializarSesion();
     mostrarMensaje("Sesión cerrada.");
@@ -83,7 +73,7 @@ async function cargarAnuncios() {
 
 function actualizarContadorAnuncios(cantidad) {
     const valor = cantidad === null || cantidad === 0 ? "—" : String(cantidad);
-    ["conteo_anu", "badge_conteo_anuncios", "indicador_notificaciones"].forEach(id => { if ($(id)) $(id).textContent = valor; });
+    ["conteo_anu", "badge_conteo_anuncios"].forEach(id => { if ($(id)) $(id).textContent = valor; });
 }
 
 function renderizarAnunciosUI(anuncios = listaAnunciosGlobal) {

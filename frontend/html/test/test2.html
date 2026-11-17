@@ -94,11 +94,10 @@
                 </div>
             </div>
             <div class="seccion_superior_derecha">
-                <button class="boton_notificaciones"
-                    onclick="mostrarMensaje('Tienes notificaciones del sistema', false)"
+                <button class="boton_notificaciones boton_campana" type="button"
                     title="Notificaciones del sistema">
                     <i class="fa-regular fa-bell"></i>
-                    <span class="punto_notificacion" id="indicador_notificaciones">3</span>
+                    <span class="punto_notificacion" id="indicador_notificaciones" aria-live="polite">0</span>
                 </button>
                 <div class="perfil_usuario_barra" onclick="abrirModalLogin()">
                     <div class="avatar_usuario" id="avatar_usuario_circulo">
@@ -307,12 +306,6 @@
                 </div>
             </form>
         </div>
-    </div>
-
-    <!-- Toast Notificador -->
-    <div class="toast_alerta" id="aviso_notificacion">
-        <i class="fa-solid fa-circle-check" id="icono_aviso_notificacion" style="color: #22c55e;"></i>
-        <span id="texto_aviso_notificacion">Operación ejecutada con éxito</span>
     </div>
 
     <script src="../../js/ocid-core.js"></script>

@@ -222,8 +222,8 @@
     obtenerElemento(id)?.classList.remove('visible');
   };
 
-  window.mostrarMensaje = function (mensaje, esError) {
-    window.OCID.mostrarToast(mensaje, Boolean(esError));
+  window.mostrarMensaje = function (mensaje, tipo = 'exito') {
+    window.OCID.mostrarToast(mensaje, tipo);
   };
 
   window.publicarAnuncio = async function (evento) {

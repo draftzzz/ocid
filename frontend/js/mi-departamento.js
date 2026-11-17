@@ -314,7 +314,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     window.OCID.actualizarCabeceraUsuario();
     window.OCID.configurarCierreSesion();
-    window.OCID.actualizarContadorNotificaciones();
     configurarModales();
     configurarContacto();
     cargarDatosDepartamento();

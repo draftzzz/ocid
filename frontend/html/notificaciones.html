@@ -62,7 +62,7 @@
             <a class="enlace_navegacion activo" href="notificaciones.html">
                 <i class="fa-solid fa-bell icono_nav"></i>
                 <span>Notificaciones</span>
-                <span class="insignia_notificacion" id="badge_lateral">3</span>
+                <span class="insignia_notificacion" id="badge_lateral">0</span>
             </a>
             <a class="enlace_navegacion" href="papelera.html">
                 <i class="fa-solid fa-trash-arrow-up icono_nav"></i>
@@ -94,9 +94,9 @@
                 </div>
             </div>
             <div class="seccion_superior_derecha">
-                <button class="boton_notificaciones" title="Notificaciones del sistema">
+                <button class="boton_notificaciones boton_campana" type="button" title="Notificaciones del sistema">
                     <i class="fa-regular fa-bell"></i>
-                    <span class="punto_notificacion" id="indicador_notificaciones">3</span>
+                    <span class="punto_notificacion" id="indicador_notificaciones" aria-live="polite">0</span>
                 </button>
                 <div class="perfil_usuario_barra">
                     <div class="avatar_usuario" id="avatar_usuario_circulo">
@@ -117,10 +117,10 @@
             <section class="cabecera_seccion_notificaciones">
                 <div class="titulos_seccion_notificaciones">
                     <h1>Notificaciones</h1>
-                    <p>Mantente al día con las novedades del sistema.</p>
+                    <p>Los anuncios se marcan como leídos; las tareas pendientes se administran desde Tareas.</p>
                 </div>
                 <button id="boton_marcar_leidas" class="boton_marcar_todas_leidas" onclick="marcarTodasLeidas()">
-                    Marcar todas como leídas
+                    Marcar anuncios como leídos
                 </button>
             </section>
 

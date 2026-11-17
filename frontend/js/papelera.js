@@ -19,14 +19,6 @@
   function iniciarInterfaz() {
     window.OCID.actualizarCabeceraUsuario();
     window.OCID.configurarCierreSesion();
-    window.OCID.actualizarContadorNotificaciones();
-
-    document.querySelectorAll('.boton_notificaciones').forEach(boton => {
-      boton.addEventListener('click', () => {
-        window.location.href = 'notificaciones.html';
-      });
-    });
-
   }
 
   window.cambiarSeccionPapelera = function (seccion) {
