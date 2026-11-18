@@ -4,6 +4,10 @@
   --ocid-header-height: 72px;
 }
 
+textarea {
+  resize: none;
+}
+
 .barra_lateral {
   position: fixed !important;
   inset: 0 auto 0 0 !important;
@@ -119,10 +123,6 @@
   background: transparent;
   color: #cbd5e1;
   cursor: pointer;
-}
-
-.pagina_bienvenida .area_principal .boton_campana {
-  display: none !important;
 }
 
 .boton_campana:hover,

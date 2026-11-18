@@ -740,7 +740,6 @@ textarea {
     height: auto;
     min-height: 80px;
     padding: 10px 12px;
-    resize: vertical;
 }
 
 .pie_modal {

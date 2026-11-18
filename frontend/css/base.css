@@ -503,7 +503,6 @@ textarea.input_campo_modal,
 textarea.campo_texto {
   min-height: 100px;
   padding: var(--espaciado-sm);
-  resize: vertical;
 }
 
 select {

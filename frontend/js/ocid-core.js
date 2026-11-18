@@ -302,9 +302,16 @@
     configurarCierreSesion();
     configurarMenuMovil();
     configurarBloqueoScrollModal();
-    configurarCampanaGlobal();
-    actualizarContadorNotificaciones();
-    if (!intervaloNotificaciones && obtenerBarraSuperiorAplicacion()) {
+    const usuario = obtenerUsuarioSesion();
+    const tieneDepartamento = tieneDepartamentoAsignado(usuario);
+    if (tieneDepartamento) {
+      configurarCampanaGlobal();
+      actualizarContadorNotificaciones();
+    } else {
+      document.querySelectorAll('.boton_campana, .panel_notificaciones_global')
+        .forEach(elemento => elemento.remove());
+    }
+    if (!intervaloNotificaciones && tieneDepartamento && obtenerBarraSuperiorAplicacion()) {
       intervaloNotificaciones = setInterval(() => {
         if (document.visibilityState !== 'hidden') {
           actualizarContadorNotificaciones();
@@ -319,6 +326,8 @@
   }
 
   function configurarCampanaGlobal() {
+    if (!tieneDepartamentoAsignado(obtenerUsuarioSesion())) return;
+
     const barraSuperior = obtenerBarraSuperiorAplicacion();
     if (!barraSuperior) return;
 
@@ -473,7 +482,9 @@
 
   function actualizarContadorNotificaciones() {
     const usuario = obtenerUsuarioSesion();
-    if (!obtenerBarraSuperiorAplicacion()) return Promise.resolve();
+    if (!obtenerBarraSuperiorAplicacion() || !tieneDepartamentoAsignado(usuario)) {
+      return Promise.resolve();
+    }
     if (!usuario || !usuario.id || !obtenerToken()) {
       document.querySelectorAll('#indicador_notificaciones').forEach(indicador => {
         indicador.textContent = '0';
