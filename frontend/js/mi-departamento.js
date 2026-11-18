@@ -4,6 +4,41 @@
   let departamentoActual = null;
   let miembrosActuales = [];
   let rolesDepartamento = [];
+  let rolesDepartamentoDetalle = [];
+  const COLOR_ROL_JEFE = '#B91C1C';
+  const FRASE_CONFIRMACION_BAJA = 'Confirmar eliminacion';
+
+  function esMiembroJefe(miembro) {
+    return Boolean(miembro && departamentoActual &&
+      (Number(miembro.id) === Number(departamentoActual.jefe_id) ||
+        miembro.es_jefe === true || miembro.es_jefe === 't'));
+  }
+
+  function nombreRolMiembro(miembro) {
+    return esMiembroJefe(miembro) ? 'Jefe de Departamento' : (miembro.rol || 'Docente');
+  }
+
+  function crearEtiquetaRol(nombre) {
+    const etiqueta = document.createElement('span');
+    etiqueta.className = 'badge_rol_departamento';
+    etiqueta.textContent = nombre;
+
+    const nombreNormalizado = normalizar(nombre);
+    if (nombreNormalizado === 'jefe de departamento' || nombreNormalizado === 'jefe') {
+      etiqueta.classList.add('badge_rol_jefe');
+      etiqueta.style.backgroundColor = COLOR_ROL_JEFE;
+    } else if (nombreNormalizado === 'administrador general') {
+      etiqueta.style.backgroundColor = '#6D28D9';
+    } else if (nombreNormalizado === 'docente') {
+      etiqueta.style.backgroundColor = '#475569';
+    } else {
+      const detalle = rolesDepartamentoDetalle.find(rol => normalizar(rol.nombre) === nombreNormalizado);
+      if (detalle && /^#[0-9A-Fa-f]{6}$/.test(detalle.color || '')) {
+        etiqueta.style.backgroundColor = detalle.color;
+      }
+    }
+    return etiqueta;
+  }
 
   function esJefeDepartamento(usuario) {
     return Boolean(usuario && departamentoActual &&
@@ -43,10 +78,15 @@
     if (botonBaja) botonBaja.hidden = !esJefe;
     if (selectorJefe && departamentoActual) {
       selectorJefe.replaceChildren(new Option('Selecciona un integrante', ''));
-      miembrosActuales
-        .filter(miembro => Number(miembro.id) !== Number(departamentoActual.jefe_id))
+      const candidatos = miembrosActuales
+        .filter(miembro =>
+          Number(miembro.id) !== Number(departamentoActual.jefe_id) &&
+          Number(miembro.id) !== Number(usuario && usuario.id) &&
+          miembro.estado !== 'Inactivo'
+        );
+      candidatos
         .forEach(miembro => selectorJefe.add(new Option(miembro.nombre || miembro.correo, String(miembro.id))));
-      selectorJefe.disabled = miembrosActuales.length < 2;
+      selectorJefe.disabled = candidatos.length === 0;
       const botonTransferir = obtenerElemento('form_transferir_jefatura')?.querySelector('[type="submit"]');
       if (botonTransferir) botonTransferir.disabled = selectorJefe.disabled || !puedeEditar;
     } else if (selectorJefe) {
@@ -92,11 +132,74 @@
       nombre.textContent = miembro.nombre || miembro.correo || 'Usuario';
       const correo = document.createElement('span');
       correo.textContent = miembro.correo || 'Correo no disponible';
-      const rol = document.createElement('span');
-      rol.className = 'rol_integrante_modal';
-      rol.textContent = miembro.rol || 'Docente';
+      const rol = crearEtiquetaRol(nombreRolMiembro(miembro));
+      rol.classList.add('rol_integrante_modal');
       elemento.append(nombre, correo, rol);
       lista.appendChild(elemento);
+    });
+  }
+
+  function renderizarModalRoles() {
+    const lista = obtenerElemento('lista_roles_asignacion');
+    if (!lista) return;
+    lista.replaceChildren();
+
+    const grupos = [
+      {
+        nombre: 'Jefe de Departamento',
+        integrantes: miembrosActuales.filter(esMiembroJefe)
+      },
+      {
+        nombre: 'Administrador General',
+        integrantes: miembrosActuales.filter(miembro =>
+          !esMiembroJefe(miembro) && normalizar(miembro.rol) === 'administrador general'
+        )
+      },
+      {
+        nombre: 'Docente',
+        integrantes: miembrosActuales.filter(miembro =>
+          !esMiembroJefe(miembro) && normalizar(miembro.rol) === 'docente'
+        )
+      },
+      ...rolesDepartamentoDetalle.map(rol => ({
+        ...rol,
+        integrantes: miembrosActuales.filter(miembro =>
+          !esMiembroJefe(miembro) && normalizar(miembro.rol) === normalizar(rol.nombre)
+        )
+      }))
+    ];
+
+    grupos.forEach(rol => {
+      const tarjeta = document.createElement('section');
+      tarjeta.className = 'tarjeta_rol_asignacion';
+      const cabecera = document.createElement('div');
+      cabecera.className = 'cabecera_rol_asignacion';
+      const etiqueta = crearEtiquetaRol(rol.nombre);
+      const conteo = document.createElement('span');
+      conteo.className = 'conteo_rol_asignacion';
+      conteo.textContent = `${rol.integrantes.length} integrante${rol.integrantes.length === 1 ? '' : 's'}`;
+      cabecera.append(etiqueta, conteo);
+
+      const integrantes = document.createElement('ul');
+      integrantes.className = 'integrantes_rol_asignacion';
+      if (rol.integrantes.length) {
+        rol.integrantes.forEach(miembro => {
+          const fila = document.createElement('li');
+          const nombre = document.createElement('strong');
+          nombre.textContent = miembro.nombre || miembro.correo || 'Usuario';
+          const correo = document.createElement('span');
+          correo.textContent = miembro.correo || 'Correo no disponible';
+          fila.append(nombre, correo);
+          integrantes.appendChild(fila);
+        });
+      } else {
+        const vacio = document.createElement('li');
+        vacio.className = 'vacio_rol_asignacion';
+        vacio.textContent = 'Sin integrantes asignados';
+        integrantes.appendChild(vacio);
+      }
+      tarjeta.append(cabecera, integrantes);
+      lista.appendChild(tarjeta);
     });
   }
 
@@ -138,7 +241,7 @@
       celdaNombre.appendChild(nombre);
 
       const celdaPuesto = document.createElement('td');
-      celdaPuesto.textContent = miembro.rol || 'Docente';
+      celdaPuesto.appendChild(crearEtiquetaRol(nombreRolMiembro(miembro)));
 
       const celdaEstado = document.createElement('td');
       const estado = miembro.estado === 'Inactivo' ? 'Inactivo' : 'Activo';
@@ -366,8 +469,12 @@
           throw new Error(datosRoles.error || 'No se pudieron cargar los roles del departamento.');
         }
         rolesDepartamento = datosRoles.roles;
+        rolesDepartamentoDetalle = Array.isArray(datosRoles.roles_detalle)
+          ? datosRoles.roles_detalle
+          : [];
       } else {
         rolesDepartamento = [];
+        rolesDepartamentoDetalle = [];
       }
 
       renderizarDepartamento(departamento || null, usuarios, archivos, tareas);
@@ -385,8 +492,14 @@
     const modalIntegrantes = obtenerElemento('modal_todos_integrantes');
     const enlaceVerTodos = document.querySelector('.enlace_ver_todos[aria-controls="modal_todos_integrantes"]');
     const botonCerrarIntegrantes = obtenerElemento('cerrar_modal_todos_integrantes');
+    const modalRoles = obtenerElemento('modal_roles_departamento');
+    const botonVerRoles = obtenerElemento('boton_ver_roles_departamento');
+    const botonCerrarRoles = obtenerElemento('cerrar_modal_roles_departamento');
     const cerrarModalEdicion = () => {
       if (modalEdicion) modalEdicion.classList.remove('modal_activo');
+    };
+    const cerrarModalRoles = () => {
+      if (modalRoles) modalRoles.classList.remove('modal_activo');
     };
 
     const cerrarModalIntegrantes = () => {
@@ -414,6 +527,21 @@
       });
     }
     if (botonCerrarIntegrantes) botonCerrarIntegrantes.addEventListener('click', cerrarModalIntegrantes);
+
+    if (botonVerRoles && modalRoles) {
+      botonVerRoles.addEventListener('click', () => {
+        renderizarModalRoles();
+        modalRoles.classList.add('modal_activo');
+        botonCerrarRoles?.focus();
+      });
+      modalRoles.addEventListener('click', evento => {
+        if (evento.target === modalRoles) cerrarModalRoles();
+      });
+      document.addEventListener('keydown', evento => {
+        if (evento.key === 'Escape' && modalRoles.classList.contains('modal_activo')) cerrarModalRoles();
+      });
+    }
+    if (botonCerrarRoles) botonCerrarRoles.addEventListener('click', cerrarModalRoles);
 
     if (botonOpciones && menuDepartamento) {
       botonOpciones.addEventListener('click', evento => {
@@ -548,6 +676,11 @@
         window.OCID.mostrarToast('Escribe el nombre del rol.', 'advertencia');
         return;
       }
+      if (rolesDepartamento.some(rol => normalizar(rol) === normalizar(nombre))) {
+        window.OCID.mostrarToast('Ya existe un rol con ese nombre en este departamento.', 'advertencia');
+        obtenerElemento('nombre_rol_departamento').focus();
+        return;
+      }
       boton.disabled = true;
       try {
         const resultado = await window.OCID.apiFetch(`/departamentos/${Number(departamentoActual.id)}/roles`, {
@@ -558,11 +691,20 @@
           throw new Error(resultado.error || 'No se pudo crear el rol.');
         }
         rolesDepartamento = [...new Set([...rolesDepartamento, resultado.rol.nombre])];
+        rolesDepartamentoDetalle = [...rolesDepartamentoDetalle, {
+          ...resultado.rol,
+          integrantes: []
+        }];
         obtenerElemento('nombre_rol_departamento').value = '';
         renderizarMiembros(miembrosActuales);
         window.OCID.mostrarToast('Rol creado correctamente.', 'exito');
       } catch (error) {
-        window.OCID.mostrarToast(error.message || 'No se pudo crear el rol.', 'error');
+        const esDuplicado = /ya existe/i.test(error.message || '');
+        window.OCID.mostrarToast(
+          esDuplicado ? 'Ya existe un rol con ese nombre en este departamento.' : (error.message || 'No se pudo crear el rol.'),
+          esDuplicado ? 'advertencia' : 'error'
+        );
+        if (esDuplicado) obtenerElemento('nombre_rol_departamento').focus();
       } finally {
         boton.disabled = false;
       }
@@ -596,7 +738,7 @@
     const validarConfirmacionBaja = () => {
       if (!botonConfirmarBaja || !departamentoActual) return;
       botonConfirmarBaja.disabled =
-        inputConfirmacion.value !== 'sí' ||
+        inputConfirmacion.value !== FRASE_CONFIRMACION_BAJA ||
         inputNombre.value !== departamentoActual.nombre;
     };
     if (inputConfirmacion) inputConfirmacion.addEventListener('input', validarConfirmacionBaja);
@@ -650,13 +792,12 @@
           `/departamentos/${departamentoActual.id}/transferir-jefatura`,
           { method: 'PATCH', body: JSON.stringify({ nuevo_jefe_id: nuevoJefeId }) }
         );
-        if (!resultado.success) throw new Error(resultado.error || 'No se pudo transferir la jefatura.');
-        if (resultado.usuario) {
-          localStorage.setItem('usuario_ocid', JSON.stringify({ ...usuario, ...resultado.usuario }));
-          window.OCID.actualizarCabeceraUsuario();
+        if (!resultado.success || !resultado.usuario || !resultado.departamento) {
+          throw new Error(resultado.error || 'El servidor no confirmó la transferencia de jefatura.');
         }
+        window.OCID.guardarSesion({ ...usuario, ...resultado.usuario });
         window.OCID.mostrarToast('La jefatura se transfirió correctamente.');
-        await cargarDatosDepartamento();
+        window.setTimeout(() => window.location.reload(), 600);
       } catch (error) {
         console.error('Error al transferir la jefatura:', error);
         window.OCID.mostrarToast(error.message || 'No se pudo transferir la jefatura.', true);

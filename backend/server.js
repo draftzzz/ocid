@@ -25,6 +25,37 @@ const pool = new Pool({
 const CODIGO_DIGITOS = '0123456789';
 const CODIGO_MAYUSCULAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const CODIGO_MINUSCULAS = 'abcdefghijklmnopqrstuvwxyz';
+const COLORES_ROLES = [
+  '#2563EB', '#D97706', '#059669', '#7C3AED', '#DB2777', '#0891B2',
+  '#65A30D', '#EA580C', '#4F46E5', '#0F766E', '#BE185D', '#9333EA',
+  '#B45309', '#047857', '#C026D3', '#0369A1'
+];
+
+function hslAHex(tono, saturacion, luminosidad) {
+  const c = (1 - Math.abs(2 * luminosidad - 1)) * saturacion;
+  const x = c * (1 - Math.abs((tono / 60) % 2 - 1));
+  const m = luminosidad - c / 2;
+  let rgb;
+  if (tono < 60) rgb = [c, x, 0];
+  else if (tono < 120) rgb = [x, c, 0];
+  else if (tono < 180) rgb = [0, c, x];
+  else if (tono < 240) rgb = [0, x, c];
+  else if (tono < 300) rgb = [x, 0, c];
+  else rgb = [c, 0, x];
+  return `#${rgb.map(valor => Math.round((valor + m) * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+}
+
+function generarColorRol(coloresExistentes) {
+  const existentes = new Set(coloresExistentes.map(color => String(color).toUpperCase()));
+  const disponibles = COLORES_ROLES.filter(color => !existentes.has(color));
+  if (disponibles.length) return disponibles[crypto.randomInt(disponibles.length)];
+
+  for (let intento = 0; intento < 360; intento += 1) {
+    const color = hslAHex(crypto.randomInt(360), 0.72, 0.42);
+    if (!existentes.has(color)) return color;
+  }
+  throw new Error('No se pudo generar un color único para el rol');
+}
 
 function generarCodigoDepartamento() {
   const caracteres = [
@@ -126,8 +157,47 @@ const migracionEsquema = pool.query(`
     creado_en TIMESTAMP NOT NULL DEFAULT NOW()
   );
 
+  ALTER TABLE roles_departamento
+  ADD COLUMN IF NOT EXISTS color VARCHAR(7);
+
+  DO $$
+  DECLARE
+    rol RECORD;
+    color_generado TEXT;
+  BEGIN
+    FOR rol IN
+      SELECT actual.id, actual.departamento_id
+      FROM roles_departamento actual
+      WHERE actual.color IS NULL
+         OR actual.color !~ '^#[0-9A-Fa-f]{6}$'
+         OR EXISTS (
+           SELECT 1
+           FROM roles_departamento duplicado
+           WHERE duplicado.departamento_id = actual.departamento_id
+             AND LOWER(duplicado.color) = LOWER(actual.color)
+             AND duplicado.id < actual.id
+         )
+      ORDER BY actual.departamento_id, actual.id
+    LOOP
+      LOOP
+        color_generado := '#' || SUBSTRING(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT || rol.id::TEXT) FROM 1 FOR 6);
+        EXIT WHEN NOT EXISTS (
+          SELECT 1 FROM roles_departamento
+          WHERE departamento_id = rol.departamento_id
+            AND LOWER(color) = LOWER(color_generado)
+            AND id <> rol.id
+        );
+      END LOOP;
+      UPDATE roles_departamento SET color = color_generado WHERE id = rol.id;
+    END LOOP;
+  END $$;
+
+  ALTER TABLE roles_departamento ALTER COLUMN color SET NOT NULL;
+
   CREATE UNIQUE INDEX IF NOT EXISTS roles_departamento_nombre_unico_idx
   ON roles_departamento (departamento_id, LOWER(BTRIM(nombre)));
+  CREATE UNIQUE INDEX IF NOT EXISTS roles_departamento_color_unico_idx
+  ON roles_departamento (departamento_id, LOWER(color));
 
   CREATE TABLE IF NOT EXISTS notificaciones (
     id SERIAL PRIMARY KEY,
@@ -452,13 +522,39 @@ app.get('/departamentos/:id/roles', async (req, res) => {
       return res.status(403).json({ success: false, error: 'No tienes acceso a los roles de este departamento' });
     }
 
-    const resultado = await pool.query(
-      'SELECT nombre FROM roles_departamento WHERE departamento_id = $1 ORDER BY LOWER(nombre), nombre',
-      [departamentoId]
-    );
+    const [resultado, detalles] = await Promise.all([
+      pool.query(
+        'SELECT nombre FROM roles_departamento WHERE departamento_id = $1 ORDER BY LOWER(nombre), nombre',
+        [departamentoId]
+      ),
+      pool.query(
+        `SELECT rd.id, rd.nombre, rd.color,
+                COALESCE(
+                  JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                      'id', u.id,
+                      'nombre', u.nombre,
+                      'correo', u.correo,
+                      'estado', COALESCE(u.estado, 'Activo')
+                    )
+                    ORDER BY LOWER(u.nombre), u.id
+                  ) FILTER (WHERE u.id IS NOT NULL),
+                  '[]'::JSON
+                ) AS integrantes
+         FROM roles_departamento rd
+         LEFT JOIN usuarios u
+           ON u.departamento_id = rd.departamento_id
+          AND LOWER(BTRIM(COALESCE(u.rol, ''))) = LOWER(BTRIM(rd.nombre))
+         WHERE rd.departamento_id = $1
+         GROUP BY rd.id, rd.nombre, rd.color
+         ORDER BY LOWER(rd.nombre), rd.nombre`,
+        [departamentoId]
+      )
+    ]);
     res.json({
       success: true,
-      roles: ['Docente', ...resultado.rows.map(fila => fila.nombre)]
+      roles: ['Docente', ...resultado.rows.map(fila => fila.nombre)],
+      roles_detalle: detalles.rows
     });
   } catch (error) {
     console.error('Error al cargar roles del departamento:', error.message);
@@ -487,16 +583,36 @@ app.post('/departamentos/:id/roles', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede crear roles' });
     }
 
+    const coloresUsados = await pool.query(
+      'SELECT color FROM roles_departamento WHERE departamento_id = $1',
+      [departamentoId]
+    );
+    const color = generarColorRol(coloresUsados.rows.map(fila => fila.color));
     const resultado = await pool.query(
-      `INSERT INTO roles_departamento (departamento_id, nombre, creado_por)
-       VALUES ($1, $2, $3)
-       RETURNING id, nombre`,
-      [departamentoId, nombre, req.usuario.id]
+      `INSERT INTO roles_departamento (departamento_id, nombre, color, creado_por)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, nombre, color`,
+      [departamentoId, nombre, color, req.usuario.id]
     );
     res.status(201).json({ success: true, rol: resultado.rows[0] });
   } catch (error) {
     if (error.code === '23505') {
-      return res.status(409).json({ success: false, error: 'Ya existe un rol con ese nombre en este departamento' });
+      try {
+        const duplicado = await pool.query(
+          `SELECT 1 FROM roles_departamento
+           WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = LOWER(BTRIM($2))
+           LIMIT 1`,
+          [departamentoId, nombre]
+        );
+        if (duplicado.rowCount) {
+          return res.status(409).json({ success: false, error: 'Ya existe un rol con ese nombre en este departamento' });
+        }
+      } catch (consultaError) {
+        console.error('Error al comprobar el rol duplicado:', consultaError.message);
+        return res.status(500).json({ success: false, error: 'No se pudo comprobar si el rol ya existe' });
+      }
+      console.error('Colisión al guardar el color del rol:', error.message);
+      return res.status(409).json({ success: false, error: 'No se pudo asignar un color único al rol. Intenta de nuevo.' });
     }
     console.error('Error al crear rol de departamento:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo crear el rol' });
@@ -1639,7 +1755,7 @@ app.patch('/departamentos/:id/transferir-jefatura', async (req, res) => {
     }
 
     const candidato = await client.query(
-      `SELECT id, rol FROM usuarios
+      `SELECT id, rol, estado FROM usuarios
        WHERE id = $1 AND departamento_id = $2
        FOR UPDATE`,
       [nuevoJefeId, departamentoId]
@@ -1647,6 +1763,10 @@ app.patch('/departamentos/:id/transferir-jefatura', async (req, res) => {
     if (candidato.rowCount === 0) {
       await client.query('ROLLBACK');
       return res.status(400).json({ success: false, error: 'El nuevo jefe debe pertenecer al mismo departamento' });
+    }
+    if (candidato.rows[0].estado === 'Inactivo') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'El nuevo jefe debe ser un integrante activo' });
     }
 
     await client.query(
@@ -1675,16 +1795,26 @@ app.patch('/departamentos/:id/transferir-jefatura', async (req, res) => {
        RETURNING id, nombre, descripcion, jefe_id, codigo`,
       [nuevoJefeId, departamentoId]
     );
+    if (departamentoActualizado.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
     const usuarioActualizado = await client.query(
       `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe
        FROM usuarios u WHERE u.id = $1`,
       [usuarioId]
     );
+    const nuevoJefeActualizado = await client.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe
+       FROM usuarios u WHERE u.id = $1`,
+      [nuevoJefeId]
+    );
     await client.query('COMMIT');
     res.json({
       success: true,
       departamento: departamentoActualizado.rows[0],
-      usuario: usuarioActualizado.rows[0]
+      usuario: usuarioActualizado.rows[0],
+      nuevo_jefe: nuevoJefeActualizado.rows[0]
     });
   } catch (error) {
     if (client) await client.query('ROLLBACK');
@@ -1715,7 +1845,8 @@ app.delete('/departamentos/:id', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(403).json({ success: false, error: 'Solo el jefe asignado puede borrar el departamento' });
     }
-    if (req.body.confirmacion !== 'sí' || req.body.nombre_departamento !== acceso.departamento.nombre) {
+    if (req.body.confirmacion !== 'Confirmar eliminacion' ||
+        req.body.nombre_departamento !== acceso.departamento.nombre) {
       await client.query('ROLLBACK');
       return res.status(400).json({ success: false, error: 'La confirmación no coincide con el departamento' });
     }

@@ -253,7 +253,11 @@
                         <div class="fila_transferencia">
                             <input class="modal_input_custom" id="nombre_rol_departamento" maxlength="60"
                                 placeholder="Ej. Coordinación académica" required type="text" />
-                            <button class="boton_guardar_custom" type="submit">Crear rol</button>
+                            <div class="acciones_roles_departamento">
+                                <button class="boton_guardar_custom" type="submit">Crear rol</button>
+                                <button class="boton_ver_roles_departamento" id="boton_ver_roles_departamento"
+                                    type="button">Ver roles asignados</button>
+                            </div>
                         </div>
                     </form>
                 </section>
@@ -278,6 +282,21 @@
             </header>
             <div class="modal_formulario_custom">
                 <ul class="lista_todos_integrantes" id="lista_todos_integrantes"></ul>
+            </div>
+        </section>
+    </div>
+
+    <div class="modal_contacto" id="modal_roles_departamento" role="dialog" aria-modal="true"
+        aria-labelledby="titulo_modal_roles_departamento">
+        <section class="caja_modal modal_caja_roles_departamento">
+            <header class="modal_cabecera_custom">
+                <h2 class="modal_titulo_custom" id="titulo_modal_roles_departamento">Roles y asignaciones</h2>
+                <button class="boton_cerrar_custom" id="cerrar_modal_roles_departamento" type="button"
+                    aria-label="Cerrar">×</button>
+            </header>
+            <div class="modal_formulario_custom">
+                <p class="subtitulo_roles_departamento">Roles del departamento y sus integrantes asignados.</p>
+                <div class="lista_roles_asignacion" id="lista_roles_asignacion"></div>
             </div>
         </section>
     </div>
@@ -339,9 +358,10 @@
                 <button class="boton_cerrar_custom" id="cerrar_modal_baja" type="button" aria-label="Cerrar">✕</button>
             </div>
             <div class="modal_formulario_custom">
-                <p class="texto_confirmacion_baja">Para continuar, escribe <strong>sí</strong> y después el nombre exacto del departamento.</p>
+                <p class="texto_confirmacion_baja">Escribe exactamente <strong>Confirmar eliminacion</strong> y el nombre exacto del departamento.</p>
                 <label class="modal_label_custom" for="confirmacion_baja_texto">Confirmación</label>
-                <input class="modal_input_custom" id="confirmacion_baja_texto" type="text" autocomplete="off" />
+                <input class="modal_input_custom" id="confirmacion_baja_texto" type="text"
+                    placeholder="Confirmar eliminacion" autocomplete="off" />
                 <label class="modal_label_custom" for="nombre_baja_texto">Nombre del departamento</label>
                 <input class="modal_input_custom" id="nombre_baja_texto" type="text" autocomplete="off" />
                 <div class="modal_botones_custom">

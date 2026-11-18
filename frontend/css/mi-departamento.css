@@ -1122,6 +1122,29 @@ textarea {
     gap: 8px;
 }
 
+.acciones_roles_departamento {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.boton_ver_roles_departamento {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.boton_ver_roles_departamento:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
 .select_rol_integrante {
     width: 100%;
     min-width: 150px;
@@ -1140,6 +1163,95 @@ textarea {
     color: #64748b;
     font-size: 11px;
     font-weight: 600;
+}
+
+.badge_rol_departamento {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #475569;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 15px;
+    white-space: normal;
+}
+
+.badge_rol_jefe {
+    background: #b91c1c;
+}
+
+.modal_caja_roles_departamento {
+    width: min(660px, 100%);
+    max-height: calc(100dvh - 48px);
+}
+
+.subtitulo_roles_departamento {
+    margin-bottom: 12px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.lista_roles_asignacion {
+    display: grid;
+    gap: 10px;
+    max-height: min(62vh, 520px);
+    padding: 2px 6px 16px 2px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.tarjeta_rol_asignacion {
+    display: grid;
+    gap: 9px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.cabecera_rol_asignacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.conteo_rol_asignacion {
+    color: #64748b;
+    font-size: 11px;
+}
+
+.integrantes_rol_asignacion {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.integrantes_rol_asignacion li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    padding-top: 7px;
+    border-top: 1px solid #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+}
+
+.integrantes_rol_asignacion li span {
+    color: #64748b;
+    overflow-wrap: anywhere;
+}
+
+.vacio_rol_asignacion {
+    color: #94a3b8;
+    font-size: 12px;
+    font-style: italic;
 }
 
 .acciones_gestion_departamento {
@@ -1251,8 +1363,8 @@ textarea {
 }
 
 .elemento_integrante_modal .rol_integrante_modal {
-    color: #1d4ed8;
-    font-weight: 600;
+    color: #ffffff;
+    font-weight: 700;
 }
 
 .elemento_integrante_vacio {
