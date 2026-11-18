@@ -1165,10 +1165,10 @@ app.post('/departamentos', async (req, res) => {
       if (codigoExistente.rowCount > 0) continue;
 
       const resultado = await client.query(
-        `INSERT INTO departamentos (id, nombre, descripcion, jefe_id, codigo)
+        `INSERT INTO departamentos (id, nombre, descripcion, codigo, jefe_id)
          VALUES (COALESCE((SELECT MAX(id) FROM departamentos), 0) + 1, $1, $2, $3, $4)
-         RETURNING id, nombre, descripcion, jefe_id, codigo`,
-        [nombreFinal, descripcionFinal, jefeId, codigoFinal]
+         RETURNING *`,
+        [nombreFinal, descripcionFinal, codigoFinal, jefeId]
       );
       departamento = resultado.rows[0];
     }

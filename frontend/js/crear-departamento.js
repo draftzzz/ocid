@@ -13,10 +13,13 @@ if (!usuario || !usuario.id) {
 }
 
 // Envío del formulario para crear el departamento
-document.getElementById('form_crear_departamento').addEventListener('submit', async (e) => {
+const formularioCrearDepartamento = document.getElementById('form_crear_departamento');
+formularioCrearDepartamento.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nombre = document.getElementById('nombre_depto').value.trim();
     const descripcion = document.getElementById('descripcion_depto').value.trim();
+    const botonEnviar = formularioCrearDepartamento.querySelector('button[type="submit"]');
+    botonEnviar.disabled = true;
 
     try {
         const datos = await window.OCID.apiFetch('/departamentos', {
@@ -31,12 +34,19 @@ document.getElementById('form_crear_departamento').addEventListener('submit', as
         }
 
         usuario = { ...usuario, ...datos.usuario };
-        window.OCID.guardarSesion(usuario);
+        window.OCID.guardarSesion(usuario, window.OCID.obtenerToken());
 
-        // Redirigir a inicio ya con acceso completo
-        window.location.href = 'inicio.html';
+        const codigo = datos.departamento.codigo;
+        if (typeof codigo !== 'string' || !/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])[A-Za-z0-9]{7}$/.test(codigo)) {
+            throw new Error('El departamento se creó, pero el código recibido no es válido.');
+        }
+
+        document.getElementById('codigo_departamento_generado').textContent = codigo;
+        document.getElementById('resultado_creacion_departamento').hidden = false;
+        formularioCrearDepartamento.hidden = true;
     } catch (err) {
         window.OCID.mostrarToast(err.message, 'error');
+        botonEnviar.disabled = false;
     }
 });
 
