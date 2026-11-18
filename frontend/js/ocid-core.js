@@ -96,10 +96,7 @@
   }
 
   function limpiarSesion() {
-    localStorage.removeItem(USER_KEY);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('token');
-    localStorage.removeItem('ocid_token');
+    localStorage.clear();
     sessionStorage.clear();
   }
 
@@ -219,7 +216,7 @@
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         limpiarSesion();
-        window.location.href = 'login.html';
+        window.location.href = btn.getAttribute('href') || 'login.html';
       });
     });
   }
@@ -302,6 +299,7 @@
 
   function iniciarNavegacionCompartida() {
     actualizarCabeceraUsuario();
+    configurarCierreSesion();
     configurarMenuMovil();
     configurarBloqueoScrollModal();
     configurarCampanaGlobal();

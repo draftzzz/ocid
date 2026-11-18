@@ -136,6 +136,9 @@ const migracionEsquema = pool.query(`
   ALTER TABLE departamentos
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE;
 
+  ALTER TABLE departamentos
+  ADD COLUMN IF NOT EXISTS roles_base_inicializados BOOLEAN NOT NULL DEFAULT FALSE;
+
   ALTER TABLE usuarios
   ADD COLUMN IF NOT EXISTS estado VARCHAR(10) DEFAULT 'Activo';
 
@@ -198,6 +201,48 @@ const migracionEsquema = pool.query(`
   ON roles_departamento (departamento_id, LOWER(BTRIM(nombre)));
   CREATE UNIQUE INDEX IF NOT EXISTS roles_departamento_color_unico_idx
   ON roles_departamento (departamento_id, LOWER(color));
+
+  DO $$
+  DECLARE
+    departamento RECORD;
+    rol_base RECORD;
+    color_final TEXT;
+  BEGIN
+    FOR departamento IN
+      SELECT id
+      FROM departamentos
+      WHERE eliminado = FALSE AND roles_base_inicializados = FALSE
+      ORDER BY id
+    LOOP
+      FOR rol_base IN
+        SELECT * FROM (VALUES
+          ('Docente'::TEXT, '#475569'::TEXT),
+          ('Administrador General'::TEXT, '#6D28D9'::TEXT)
+        ) AS roles(nombre, color)
+      LOOP
+        IF NOT EXISTS (
+          SELECT 1 FROM roles_departamento
+          WHERE departamento_id = departamento.id
+            AND LOWER(BTRIM(nombre)) = LOWER(BTRIM(rol_base.nombre))
+        ) THEN
+          color_final := rol_base.color;
+          LOOP
+            EXIT WHEN NOT EXISTS (
+              SELECT 1 FROM roles_departamento
+              WHERE departamento_id = departamento.id
+                AND LOWER(color) = LOWER(color_final)
+            );
+            color_final := '#' || SUBSTRING(MD5(RANDOM()::TEXT || CLOCK_TIMESTAMP()::TEXT) FROM 1 FOR 6);
+          END LOOP;
+          INSERT INTO roles_departamento (departamento_id, nombre, color)
+          VALUES (departamento.id, rol_base.nombre, color_final);
+        END IF;
+      END LOOP;
+      UPDATE departamentos
+      SET roles_base_inicializados = TRUE
+      WHERE id = departamento.id;
+    END LOOP;
+  END $$;
 
   CREATE TABLE IF NOT EXISTS notificaciones (
     id SERIAL PRIMARY KEY,
@@ -306,6 +351,8 @@ app.post('/registro', authLimiter, async (req, res) => {
     return res.status(400).json({ success: false, error: 'Nombre, correo y contraseña son obligatorios' });
   }
 
+  let client;
+  let transaccionAbierta = false;
   try {
     const existente = await pool.query('SELECT id FROM usuarios WHERE correo = $1 LIMIT 1', [correo.trim()]);
     if (existente.rowCount > 0) {
@@ -332,22 +379,63 @@ app.post('/registro', authLimiter, async (req, res) => {
       if (resDepto.rowCount > 0) departamentoId = resDepto.rows[0].id;
     }
 
+    client = await pool.connect();
+    await client.query('BEGIN');
+    transaccionAbierta = true;
+    if (departamentoId) {
+      const departamentoActual = await client.query(
+        'SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE FOR KEY SHARE',
+        [departamentoId]
+      );
+      if (!departamentoActual.rowCount) {
+        await client.query('ROLLBACK');
+        transaccionAbierta = false;
+        return res.status(409).json({ success: false, error: 'El departamento ya no está disponible' });
+      }
+
+      const rolDocenteDisponible = await client.query(
+        `SELECT 1 FROM roles_departamento
+         WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = 'docente'
+         FOR KEY SHARE`,
+        [departamentoId]
+      );
+      if (!rolDocenteDisponible.rowCount) {
+        await client.query('ROLLBACK');
+        transaccionAbierta = false;
+        return res.status(409).json({
+          success: false,
+          error: 'El departamento no acepta registros con el rol Docente actualmente'
+        });
+      }
+    }
+
     const rolFinal = 'Docente';
 
-    const resultado = await pool.query(
+    const resultado = await client.query(
       `INSERT INTO usuarios (nombre, correo, password, rol, departamento_id, es_jefe)
        VALUES ($1, $2, $3, $4, $5, FALSE)
        RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
       [nombre.trim(), correo.trim(), hashedPassword, rolFinal, departamentoId]
     );
 
+    await client.query('COMMIT');
+    transaccionAbierta = false;
     res.status(201).json({ success: true, usuario: resultado.rows[0] });
   } catch (error) {
+    if (client && transaccionAbierta) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error al revertir el registro del usuario:', rollbackError.message);
+      }
+    }
     console.error('Error al registrar usuario:', error.message);
     if (error.code === '23505') {
       return res.status(409).json({ success: false, error: 'Ese correo ya está registrado' });
     }
     res.status(500).json({ success: false, error: 'No se pudo registrar el usuario.' });
+  } finally {
+    if (client) client.release();
   }
 });
 
@@ -553,7 +641,7 @@ app.get('/departamentos/:id/roles', async (req, res) => {
     ]);
     res.json({
       success: true,
-      roles: ['Docente', ...resultado.rows.map(fila => fila.nombre)],
+      roles: resultado.rows.map(fila => fila.nombre),
       roles_detalle: detalles.rows
     });
   } catch (error) {
@@ -566,9 +654,7 @@ app.post('/departamentos/:id/roles', async (req, res) => {
   const departamentoId = Number(req.params.id);
   const nombre = typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '';
   const nombreNormalizado = normalizarRol(nombre);
-  const rolesReservados = new Set([
-    'docente', 'jefe', 'jefe de departamento', 'administrador', 'administrador general'
-  ]);
+  const rolesReservados = new Set(['jefe', 'jefe de departamento']);
   if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0 || !nombre || nombre.length > 60) {
     return res.status(400).json({ success: false, error: 'El nombre del rol debe tener entre 1 y 60 caracteres' });
   }
@@ -656,6 +742,10 @@ app.delete('/departamentos/:id/roles/:rolId', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, error: 'El rol no existe en este departamento' });
     }
+    if (['jefe', 'jefe de departamento'].includes(normalizarRol(rol.rows[0].nombre))) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'El rol Jefe de Departamento está protegido' });
+    }
 
     const asignaciones = await client.query(
       `SELECT 1
@@ -738,24 +828,17 @@ app.patch('/usuarios/:id/rol', async (req, res) => {
       return res.status(409).json({ success: false, error: 'Transfiere primero la jefatura de este docente' });
     }
 
-    let rolFinal;
-    if (rolNormalizado === 'docente') {
-      rolFinal = 'Docente';
-    } else if (ROLES_ADMINISTRATIVOS.has(rolNormalizado)) {
-      rolFinal = 'Administrador General';
-    } else {
-      const rolPersonalizado = await client.query(
-        `SELECT nombre FROM roles_departamento
-         WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = LOWER(BTRIM($2))
-         FOR KEY SHARE`,
-        [departamentoId, rolSolicitado]
-      );
-      if (rolPersonalizado.rowCount === 0) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ success: false, error: 'El rol no existe en este departamento' });
-      }
-      rolFinal = rolPersonalizado.rows[0].nombre;
+    const rolCatalogo = await client.query(
+      `SELECT nombre FROM roles_departamento
+       WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = LOWER(BTRIM($2))
+       FOR KEY SHARE`,
+      [departamentoId, rolSolicitado]
+    );
+    if (rolCatalogo.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'El rol no existe en este departamento' });
     }
+    const rolFinal = rolCatalogo.rows[0].nombre;
 
     await client.query(
       `UPDATE usuarios SET rol = $1, es_jefe = FALSE
@@ -1722,6 +1805,17 @@ app.post('/departamentos', departmentCreationLimiter, async (req, res) => {
     }
 
     await client.query(
+      `INSERT INTO roles_departamento (departamento_id, nombre, color, creado_por)
+       VALUES ($1, 'Docente', '#475569', $2),
+              ($1, 'Administrador General', '#6D28D9', $2)`,
+      [departamento.id, jefeId]
+    );
+    await client.query(
+      'UPDATE departamentos SET roles_base_inicializados = TRUE WHERE id = $1',
+      [departamento.id]
+    );
+
+    await client.query(
       `UPDATE usuarios
        SET departamento_id = $1, rol = 'Jefe de Departamento', es_jefe = TRUE
        WHERE id = $2`,
@@ -1849,6 +1943,17 @@ app.patch('/departamentos/:id/transferir-jefatura', async (req, res) => {
     if (candidato.rows[0].estado === 'Inactivo') {
       await client.query('ROLLBACK');
       return res.status(400).json({ success: false, error: 'El nuevo jefe debe ser un integrante activo' });
+    }
+
+    const rolDocente = await client.query(
+      `SELECT 1 FROM roles_departamento
+       WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = 'docente'
+       FOR KEY SHARE`,
+      [departamentoId]
+    );
+    if (!rolDocente.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'Crea o restablece el rol Docente antes de transferir la jefatura' });
     }
 
     await client.query(

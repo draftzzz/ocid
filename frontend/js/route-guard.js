@@ -48,7 +48,12 @@
     return;
   }
 
-  if (paginaActual === 'login.html' || paginaActual === 'registro.html') return;
+  if (paginaActual === 'login.html' || paginaActual === 'registro.html') {
+    window.location.replace(tieneDepartamento
+      ? `${rutaBase}inicio.html`
+      : `${rutaBase}bienvenida.html`);
+    return;
+  }
 
   if (paginaBienvenida) {
     if (tieneDepartamento) window.location.href = `${rutaBase}inicio.html`;

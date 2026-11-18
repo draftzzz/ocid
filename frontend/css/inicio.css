@@ -385,10 +385,10 @@ textarea {
 }
 
 .saludo_titulo {
-    font-size: 26px;
-    font-weight: 800;
+    font-size: 22px;
+    font-weight: 700;
     color: #0f172a;
-    letter-spacing: -0.4px;
+    line-height: 28px;
     margin-bottom: 4px;
 }
 
@@ -564,6 +564,13 @@ textarea {
     min-height: 360px;
 }
 
+.bloque_blanco_anuncios {
+    display: flex;
+    flex-direction: column;
+    height: 360px;
+    max-height: 360px;
+}
+
 .encabezado_bloque_anuncios {
     display: flex;
     align-items: center;
@@ -588,8 +595,13 @@ textarea {
 
 .lista_tarjetas_anuncios {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 4px 8px 0;
 }
 
 /* ==========================================================================
@@ -597,6 +609,7 @@ textarea {
    ========================================================================== */
 .tarjeta_item_anuncio {
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: space-between;
     padding: 13px 14px;
@@ -724,9 +737,12 @@ textarea {
     gap: 10px;
     padding: 13px 18px;
     border-radius: 11px;
+    border: none;
     color: #ffffff;
     font-size: 13.5px;
     font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .boton_azul_morado {

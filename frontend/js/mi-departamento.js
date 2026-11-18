@@ -27,14 +27,14 @@
     if (nombreNormalizado === 'jefe de departamento' || nombreNormalizado === 'jefe') {
       etiqueta.classList.add('badge_rol_jefe');
       etiqueta.style.backgroundColor = COLOR_ROL_JEFE;
-    } else if (nombreNormalizado === 'administrador general') {
-      etiqueta.style.backgroundColor = '#6D28D9';
-    } else if (nombreNormalizado === 'docente') {
-      etiqueta.style.backgroundColor = '#475569';
     } else {
       const detalle = rolesDepartamentoDetalle.find(rol => normalizar(rol.nombre) === nombreNormalizado);
       if (detalle && /^#[0-9A-Fa-f]{6}$/.test(detalle.color || '')) {
         etiqueta.style.backgroundColor = detalle.color;
+      } else if (nombreNormalizado === 'administrador general') {
+        etiqueta.style.backgroundColor = '#6D28D9';
+      } else if (nombreNormalizado === 'docente') {
+        etiqueta.style.backgroundColor = '#475569';
       }
     }
     return etiqueta;
@@ -153,24 +153,14 @@
         nombre: 'Jefe de Departamento',
         integrantes: miembrosActuales.filter(esMiembroJefe)
       },
-      {
-        nombre: 'Administrador General',
-        integrantes: miembrosActuales.filter(miembro =>
-          !esMiembroJefe(miembro) && normalizar(miembro.rol) === 'administrador general'
-        )
-      },
-      {
-        nombre: 'Docente',
-        integrantes: miembrosActuales.filter(miembro =>
-          !esMiembroJefe(miembro) && normalizar(miembro.rol) === 'docente'
-        )
-      },
-      ...rolesDepartamentoDetalle.map(rol => ({
+      ...rolesDepartamentoDetalle
+        .filter(rol => !['jefe', 'jefe de departamento'].includes(normalizar(rol.nombre)))
+        .map(rol => ({
         ...rol,
         integrantes: miembrosActuales.filter(miembro =>
           !esMiembroJefe(miembro) && normalizar(miembro.rol) === normalizar(rol.nombre)
         )
-      }))
+        }))
     ];
 
     grupos.forEach(rol => {
@@ -183,7 +173,8 @@
       conteo.className = 'conteo_rol_asignacion';
       conteo.textContent = `${rol.integrantes.length} integrante${rol.integrantes.length === 1 ? '' : 's'}`;
       cabecera.append(etiqueta, conteo);
-      if (rol.id && puedeEliminarRoles) {
+      if (rol.id && puedeEliminarRoles &&
+          !['jefe', 'jefe de departamento'].includes(normalizar(rol.nombre))) {
         const botonEliminar = document.createElement('button');
         botonEliminar.className = 'boton_eliminar_rol';
         botonEliminar.type = 'button';
@@ -352,7 +343,7 @@
           etiquetaRol.appendChild(document.createTextNode('Rol'));
           const selectorRol = document.createElement('select');
           selectorRol.className = 'select_rol_integrante';
-          [...new Set(['Docente', 'Administrador General', ...rolesDepartamento, miembro.rol || 'Docente'])].forEach(rol => {
+          [...new Set([...rolesDepartamento, miembro.rol || 'Docente'])].forEach(rol => {
             selectorRol.add(new Option(rol, rol));
           });
           selectorRol.value = miembro.rol || 'Docente';

@@ -58,7 +58,7 @@
             </a>
             <a class="enlace_navegacion" href="tareas.html" id="nav_asistente">
                 <svg aria-hidden="true" class="icono_nav" fill="none" height="20" stroke="currentColor"
-                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20">
+                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24" width="20">
                     <path d="M9 6h12M9 12h12M9 18h12"></path>
                     <path d="m3.5 5.5 1 1 2-2M3.5 11.5l1 1 2-2M3.5 17.5l1 1 2-2"></path>
                 </svg>
@@ -77,7 +77,7 @@
                 <i class="fa-solid fa-user icono_nav"></i>
                 <span>Mi perfil</span>
             </a>
-            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion">
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
                 <span>Cerrar sesión</span>
             </a>
@@ -108,7 +108,6 @@
                         <strong id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
-                    <i class="fa-solid fa-chevron-down icono_dropdown"></i>
                 </div>
             </div>
         </header>
@@ -129,7 +128,6 @@
                         <div class="etiqueta_departamento">Tu departamento:</div>
                         <div class="nombre_departamento_texto" id="etiqueta_nombre_departamento">Cargando...</div>
                     </div>
-                    <i class="fa-solid fa-chevron-down" style="color: #94a3b8; font-size: 12px; margin-left: 6px;"></i>
                 </div>
             </section>
 
@@ -200,23 +198,22 @@
                 <article class="bloque_blanco_acciones">
                     <h2 class="titulo_bloque">Acceso rápido</h2>
                     <div class="contenedor_botones_acciones">
-                        <button class="boton_accion_rapida boton_azul_morado" onclick="abrirModalCrearAnuncio()">
+                        <a class="boton_accion_rapida boton_azul_morado" href="anuncios.html">
                             <i class="fa-solid fa-bullhorn"></i>
                             <span>Crear anuncio</span>
-                        </button>
-                        <button class="boton_accion_rapida boton_azul_cian" onclick="abrirModalSubirArchivo()">
+                        </a>
+                        <a class="boton_accion_rapida boton_azul_cian" href="archivos.html">
                             <i class="fa-solid fa-cloud-arrow-up"></i>
                             <span>Subir archivo</span>
-                        </button>
-                        <button class="boton_accion_rapida boton_verde_esmeralda" onclick="abrirModalDocentes()">
+                        </a>
+                        <a class="boton_accion_rapida boton_verde_esmeralda" href="docentes.html">
                             <i class="fa-solid fa-users"></i>
                             <span>Ver docentes</span>
-                        </button>
-                        <button class="boton_accion_rapida boton_oscuro"
-                            onclick="window.location.href='mi-perfil.html'">
+                        </a>
+                        <a class="boton_accion_rapida boton_oscuro" href="mi-perfil.html">
                             <i class="fa-solid fa-gear"></i>
                             <span>Configuración</span>
-                        </button>
+                        </a>
                     </div>
                 </article>
 
