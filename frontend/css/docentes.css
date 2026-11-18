@@ -447,6 +447,10 @@ body.menu_movil_abierto .fondo_menu_movil {
     transition: background-color 0.2s;
 }
 
+.boton_nuevo_docente[hidden] {
+    display: none;
+}
+
 .boton_nuevo_docente:hover {
     background-color: #1d4ed8;
 }

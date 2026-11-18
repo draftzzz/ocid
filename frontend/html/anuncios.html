@@ -163,44 +163,11 @@
                 <!-- Columna Derecha: Paneles laterales de resumen -->
                 <aside class="columna_lateral_derecha">
                     <div class="tarjeta_lateral_panel" data-purpose="resumen_por_departamento">
-                        <h2 class="titulo_bloque_lateral">Por departamento</h2>
-                        <div class="lista_conteo_departamentos">
-                            <div class="fila_conteo_departamento">
-                                <span class="indicador_con_nombre">
-                                    <span class="punto_departamento punto_servicios"></span>
-                                    Servicios Escolares
-                                </span>
-                                <span class="cifra_departamento" id="conteo_servicios">3</span>
-                            </div>
-                            <div class="fila_conteo_departamento">
-                                <span class="indicador_con_nombre">
-                                    <span class="punto_departamento punto_control"></span>
-                                    Control Escolar
-                                </span>
-                                <span class="cifra_departamento" id="conteo_control">2</span>
-                            </div>
-                            <div class="fila_conteo_departamento">
-                                <span class="indicador_con_nombre">
-                                    <span class="punto_departamento punto_academico"></span>
-                                    Académico
-                                </span>
-                                <span class="cifra_departamento" id="conteo_academico">1</span>
-                            </div>
-                            <div class="fila_conteo_departamento">
-                                <span class="indicador_con_nombre">
-                                    <span class="punto_departamento punto_vinculacion"></span>
-                                    Vinculación
-                                </span>
-                                <span class="cifra_departamento" id="conteo_vinculacion">1</span>
-                            </div>
-                            <div class="fila_conteo_departamento">
-                                <span class="indicador_con_nombre">
-                                    <span class="punto_departamento punto_orientacion"></span>
-                                    Orientación
-                                </span>
-                                <span class="cifra_departamento" id="conteo_orientacion">1</span>
-                            </div>
+                        <div class="encabezado_conteo_departamentos">
+                            <h2 class="titulo_bloque_lateral">Por departamento</h2>
+                            <button class="boton_ver_todo_conteo" id="boton_ver_todo_departamentos" type="button">Ver todo</button>
                         </div>
+                        <div class="lista_conteo_departamentos" id="lista_conteo_departamentos"></div>
                     </div>
 
                     <div class="tarjeta_lateral_panel" data-purpose="resumen_ultimos_anuncios">
@@ -257,6 +224,16 @@
                     <button class="boton_guardar_modal" type="submit">Publicar anuncio</button>
                 </div>
             </form>
+        </div>
+    </div>
+    <div class="fondo_oscuro_modal" id="modal_conteo_departamentos" role="dialog" aria-modal="true"
+        aria-labelledby="titulo_modal_conteo_departamentos">
+        <div class="caja_modal modal_conteo_departamentos">
+            <div class="cabecera_modal">
+                <h3 class="titulo_modal" id="titulo_modal_conteo_departamentos">Elementos por departamento</h3>
+                <button class="boton_cerrar_modal" id="cerrar_modal_conteo_departamentos" type="button" aria-label="Cerrar">×</button>
+            </div>
+            <div class="cuerpo_modal cuerpo_conteo_departamentos" id="contenido_conteo_departamentos"></div>
         </div>
     </div>
     <!-- Contenedor global de Toasts -->

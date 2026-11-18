@@ -192,6 +192,27 @@
                 <p class="texto_parrafo_desc" id="parrafo_descripcion"></p>
             </div>
 
+            <section class="tarjeta_gestion_departamento" id="panel_gestion_departamento" hidden>
+                <div>
+                    <h2 class="titulo_seccion_bloque">Gestionar Departamento</h2>
+                    <p class="subtitulo_gestion_departamento">Administra la jefatura y los permisos del equipo.</p>
+                </div>
+                <form class="formulario_transferencia" id="form_transferir_jefatura">
+                    <label class="modal_label_custom" for="select_nuevo_jefe">Transferir jefatura</label>
+                    <div class="fila_transferencia">
+                        <select class="modal_input_custom" id="select_nuevo_jefe" required>
+                            <option value="">Selecciona un integrante</option>
+                        </select>
+                        <button class="boton_guardar_custom" type="submit">Transferir propiedad</button>
+                    </div>
+                </form>
+                <div class="acciones_gestion_departamento">
+                    <p>La baja lógica conserva el registro y desvincula a los integrantes.</p>
+                    <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento"
+                        type="button" hidden>Borrar departamento</button>
+                </div>
+            </section>
+
             <!-- Sección de Tabla de Integrantes del Departamento -->
             <div class="tarjeta_integrantes" data-purpose="bloque_integrantes">
                 <div class="cabecera_integrantes">
@@ -270,6 +291,29 @@
         </div>
     </div>
     <!-- END: ModalEditarDepartamento -->
+
+    <div class="modal_contacto" id="modal_baja_departamento" role="dialog" aria-modal="true"
+        aria-labelledby="titulo_baja_departamento">
+        <div class="caja_modal">
+            <div class="modal_cabecera_custom">
+                <h3 class="modal_titulo_custom" id="titulo_baja_departamento">Confirmar baja del departamento</h3>
+                <button class="boton_cerrar_custom" id="cerrar_modal_baja" type="button" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="modal_formulario_custom">
+                <p class="texto_confirmacion_baja">Para continuar, escribe <strong>sí</strong> y después el nombre exacto del departamento.</p>
+                <label class="modal_label_custom" for="confirmacion_baja_texto">Confirmación</label>
+                <input class="modal_input_custom" id="confirmacion_baja_texto" type="text" autocomplete="off" />
+                <label class="modal_label_custom" for="nombre_baja_texto">Nombre del departamento</label>
+                <input class="modal_input_custom" id="nombre_baja_texto" type="text" autocomplete="off" />
+                <div class="modal_botones_custom">
+                    <button class="boton_cancelar_custom" id="cancelar_baja_departamento" type="button">Cancelar</button>
+                    <button class="boton_peligro_departamento" id="confirmar_baja_departamento" type="button" disabled>
+                        Confirmar baja lógica
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Menú desplegable para los tres puntitos del departamento -->
     <div id="menu_opciones_departamento" class="menu_desplegable_opciones">

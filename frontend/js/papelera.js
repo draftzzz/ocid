@@ -174,8 +174,12 @@
         window.OCID.apiFetch('/anuncios/papelera')
       ]);
 
-      archivosEliminados = Array.isArray(dataArchivos.archivos) ? dataArchivos.archivos : [];
-      anunciosEliminados = Array.isArray(dataAnuncios.anuncios) ? dataAnuncios.anuncios : [];
+      if (!dataArchivos.success || !Array.isArray(dataArchivos.archivos) ||
+          !dataAnuncios.success || !Array.isArray(dataAnuncios.anuncios)) {
+        throw new Error(dataArchivos.error || dataAnuncios.error || 'La respuesta de la papelera no es válida.');
+      }
+      archivosEliminados = dataArchivos.archivos;
+      anunciosEliminados = dataAnuncios.anuncios;
 
       renderizarContenidoActual();
     } catch (error) {
@@ -198,7 +202,7 @@
   };
 
   window.eliminarDefinitivoArchivo = async function (id) {
-    if (!confirm('¿Eliminar este archivo de forma permanente?')) return;
+    if (!window.confirm('¿Eliminar este archivo de forma permanente?')) return;
     try {
       const data = await window.OCID.apiFetch(`/archivos/${id}/permanente`, { method: 'DELETE' });
       if (!data.success) throw new Error('No se pudo eliminar el archivo.');
@@ -225,7 +229,7 @@
   };
 
   window.eliminarDefinitivoAnuncio = async function (id) {
-    if (!confirm('¿Eliminar este anuncio de forma permanente?')) return;
+    if (!window.confirm('¿Eliminar este anuncio de forma permanente?')) return;
     try {
       const data = await window.OCID.apiFetch(`/anuncios/${id}/permanente`, { method: 'DELETE' });
       if (!data.success) throw new Error('No se pudo eliminar el anuncio.');

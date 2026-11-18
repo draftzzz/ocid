@@ -90,9 +90,9 @@ const authLimiter = rateLimit({
 app.use(express.json({ limit: '15mb' }));
 
 // ==========================================
-// MIGRACIÓN AUTOMÁTICA PARA PAPELERA
+// PREPARAR EL ESQUEMA COMPARTIDO
 // ==========================================
-pool.query(`
+const migracionEsquema = pool.query(`
   ALTER TABLE archivos
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
@@ -100,7 +100,25 @@ pool.query(`
   ALTER TABLE anuncios
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
-`).catch(err => console.error('Aviso migración papelera:', err.message));
+
+  ALTER TABLE departamentos
+  ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE;
+
+  UPDATE departamentos SET eliminado = FALSE WHERE eliminado IS NULL;
+  ALTER TABLE departamentos ALTER COLUMN eliminado SET DEFAULT FALSE;
+  ALTER TABLE departamentos ALTER COLUMN eliminado SET NOT NULL;
+
+  CREATE TABLE IF NOT EXISTS roles_departamento (
+    id SERIAL PRIMARY KEY,
+    departamento_id INTEGER NOT NULL REFERENCES departamentos(id) ON DELETE CASCADE,
+    nombre VARCHAR(60) NOT NULL,
+    creado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    creado_en TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS roles_departamento_nombre_unico_idx
+  ON roles_departamento (departamento_id, LOWER(BTRIM(nombre)));
+`);
 
 // ==========================================
 // COMPROBAR SERVIDOR Y BASE DE DATOS (RAÍZ)
@@ -135,18 +153,30 @@ app.post('/login', authLimiter, async (req, res) => {
     const resultado = await pool.query(
       `SELECT u.id, u.nombre, u.correo, u.password,
               CASE
-                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) = 'administrador' THEN 'Administrador'
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
                 WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
-                ELSE COALESCE(NULLIF(BTRIM(u.rol), ''), 'Docente')
+                WHEN EXISTS (
+                  SELECT 1 FROM roles_departamento rd
+                  WHERE rd.departamento_id = d.id
+                    AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+                ) THEN BTRIM(u.rol)
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) = 'docente' THEN 'Docente'
+                ELSE 'Docente'
               END AS rol,
-              u.departamento_id, u.es_jefe,
+              EXISTS (
+                SELECT 1 FROM roles_departamento rd
+                WHERE rd.departamento_id = d.id
+                  AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+              ) AS rol_personalizado_valido,
+              CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
+              CASE WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,
               CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
                 'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
                 'jefe_id', d.jefe_id, 'codigo', d.codigo
               ) END AS departamento_objeto
        FROM usuarios u
-       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
        WHERE u.correo = $1
        LIMIT 1`,
       [correo.trim()]
@@ -180,7 +210,7 @@ app.post('/login', authLimiter, async (req, res) => {
 
 // Registrar usuario
 app.post('/registro', authLimiter, async (req, res) => {
-  const { nombre, correo, password, rol, departamento, departamento_id } = req.body;
+  const { nombre, correo, password, departamento, departamento_id } = req.body;
 
   if (!nombre || !correo || !password) {
     return res.status(400).json({ success: false, error: 'Nombre, correo y contraseña son obligatorios' });
@@ -199,27 +229,26 @@ app.post('/registro', authLimiter, async (req, res) => {
     if (departamento_id !== undefined && departamento_id !== null && departamento_id !== '' && !isNaN(Number(departamento_id))) {
       const numId = Number(departamento_id);
       if (numId > 0) {
-        const deptoExiste = await pool.query('SELECT id FROM departamentos WHERE id = $1', [numId]);
+        const deptoExiste = await pool.query('SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE', [numId]);
         if (deptoExiste.rowCount > 0) departamentoId = numId;
       }
     }
 
     if (!departamentoId && departamento && String(departamento).trim()) {
       const resDepto = await pool.query(
-        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) LIMIT 1',
+        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) AND eliminado = FALSE LIMIT 1',
         [String(departamento).trim()]
       );
       if (resDepto.rowCount > 0) departamentoId = resDepto.rows[0].id;
     }
 
-    const rolFinal = rol || 'Docente';
-    const esJefeBool = rolFinal.toLowerCase() === 'jefe';
+    const rolFinal = 'Docente';
 
     const resultado = await pool.query(
       `INSERT INTO usuarios (nombre, correo, password, rol, departamento_id, es_jefe)
-       VALUES ($1, $2, $3, $4, $5, $6)
+       VALUES ($1, $2, $3, $4, $5, FALSE)
        RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
-      [nombre.trim(), correo.trim(), hashedPassword, rolFinal, departamentoId, esJefeBool]
+      [nombre.trim(), correo.trim(), hashedPassword, rolFinal, departamentoId]
     );
 
     res.status(201).json({ success: true, usuario: resultado.rows[0] });
@@ -258,6 +287,45 @@ function autenticarJWT(req, res, next) {
 
 app.use(autenticarJWT);
 
+const ROLES_ADMINISTRATIVOS = new Set(['administrador', 'administrador general']);
+
+function normalizarRol(rol) {
+  return String(rol || '').trim().toLocaleLowerCase('es-MX');
+}
+
+function esFlagActivo(valor) {
+  return valor === true || valor === 't' || valor === 'true';
+}
+
+function esRolAdministrador(rol) {
+  return ROLES_ADMINISTRATIVOS.has(normalizarRol(rol));
+}
+
+async function obtenerPermisosDepartamento(db, usuarioId, departamentoId, bloquear) {
+  const bloqueo = bloquear ? 'FOR UPDATE OF d, u' : '';
+  const resultado = await db.query(
+    `SELECT d.id, d.nombre, d.jefe_id, u.id AS usuario_id, u.rol AS usuario_rol,
+            u.es_jefe, u.departamento_id AS usuario_departamento_id
+     FROM departamentos d
+     JOIN usuarios u ON u.id = $2
+     WHERE d.id = $1 AND d.eliminado = FALSE
+     ${bloqueo}`,
+    [departamentoId, usuarioId]
+  );
+  if (resultado.rowCount === 0) return null;
+
+  const datos = resultado.rows[0];
+  const esJefe = Number(datos.jefe_id) === Number(usuarioId) ||
+    (esFlagActivo(datos.es_jefe) && Number(datos.usuario_departamento_id) === Number(departamentoId));
+  const esAdministrador = esRolAdministrador(datos.usuario_rol);
+  return {
+    departamento: datos,
+    esJefe,
+    esAdministrador,
+    puedeGestionar: esJefe || esAdministrador
+  };
+}
+
 
 // ==========================================
 // RUTAS PROTEGIDAS CON JWT
@@ -267,9 +335,27 @@ app.use(autenticarJWT);
 app.get('/usuarios', async (req, res) => {
   try {
     const resultado = await pool.query(
-      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe, d.nombre AS departamento_nombre
+      `SELECT u.id, u.nombre, u.correo,
+              CASE
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
+                WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
+                WHEN EXISTS (
+                  SELECT 1 FROM roles_departamento rd
+                  WHERE rd.departamento_id = d.id
+                    AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+                ) THEN BTRIM(u.rol)
+                ELSE 'Docente'
+              END AS rol,
+              EXISTS (
+                SELECT 1 FROM roles_departamento rd
+                WHERE rd.departamento_id = d.id
+                  AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+              ) AS rol_personalizado_valido,
+              CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
+              CASE WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN TRUE ELSE FALSE END AS es_jefe,
+              d.nombre AS departamento_nombre
        FROM usuarios u
-       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
        ORDER BY u.id DESC`
     );
     res.json(resultado.rows);
@@ -281,24 +367,219 @@ app.get('/usuarios', async (req, res) => {
 
 app.get('/docentes', async (req, res) => {
   try {
+    const usuarioActual = await pool.query(
+      'SELECT departamento_id FROM usuarios WHERE id = $1',
+      [req.usuario.id]
+    );
+    if (usuarioActual.rowCount === 0) {
+      return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+    }
+
+    const departamentoId = usuarioActual.rows[0].departamento_id;
+    if (!departamentoId) return res.json([]);
+
     const resultado = await pool.query(
-      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
-              d.nombre AS departamento, d.nombre AS departamento_nombre
-       FROM usuarios u LEFT JOIN departamentos d ON d.id = u.departamento_id ORDER BY u.id DESC`
+      `SELECT u.id, u.nombre, u.correo, u.departamento_id,
+              CASE WHEN u.es_jefe IS TRUE OR d.jefe_id = u.id THEN TRUE ELSE FALSE END AS es_jefe,
+              d.nombre AS departamento, d.nombre AS departamento_nombre,
+              CASE
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
+                WHEN u.es_jefe IS TRUE OR d.jefe_id = u.id THEN 'Jefe de Departamento'
+                WHEN EXISTS (
+                  SELECT 1 FROM roles_departamento rd
+                  WHERE rd.departamento_id = d.id
+                    AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+                ) THEN BTRIM(u.rol)
+                ELSE 'Docente'
+              END AS rol,
+              EXISTS (
+                SELECT 1 FROM roles_departamento rd
+                WHERE rd.departamento_id = d.id
+                  AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+              ) AS rol_personalizado_valido
+       FROM usuarios u
+       JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
+       WHERE u.departamento_id = $1
+       ORDER BY u.id DESC`,
+      [departamentoId]
     );
     res.json(resultado.rows);
   } catch (error) {
+    console.error('Error al cargar docentes:', error.message);
     res.status(500).json({ success: false, error: 'Error al cargar docentes' });
+  }
+});
+
+app.get('/departamentos/:id/roles', async (req, res) => {
+  const departamentoId = Number(req.params.id);
+  if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0) {
+    return res.status(400).json({ success: false, error: 'ID de departamento inválido' });
+  }
+
+  try {
+    const acceso = await obtenerPermisosDepartamento(pool, req.usuario.id, departamentoId, false);
+    if (!acceso) return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    const esIntegrante = Number(acceso.departamento.usuario_departamento_id) === departamentoId;
+    if (!esIntegrante && !acceso.esAdministrador) {
+      return res.status(403).json({ success: false, error: 'No tienes acceso a los roles de este departamento' });
+    }
+
+    const resultado = await pool.query(
+      'SELECT nombre FROM roles_departamento WHERE departamento_id = $1 ORDER BY LOWER(nombre), nombre',
+      [departamentoId]
+    );
+    res.json({
+      success: true,
+      roles: ['Docente', 'Administrador General', ...resultado.rows.map(fila => fila.nombre)]
+    });
+  } catch (error) {
+    console.error('Error al cargar roles del departamento:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudieron cargar los roles' });
+  }
+});
+
+app.post('/departamentos/:id/roles', async (req, res) => {
+  const departamentoId = Number(req.params.id);
+  const nombre = typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '';
+  const nombreNormalizado = normalizarRol(nombre);
+  const rolesReservados = new Set([
+    'docente', 'jefe', 'jefe de departamento', 'administrador', 'administrador general'
+  ]);
+  if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0 || !nombre || nombre.length > 60) {
+    return res.status(400).json({ success: false, error: 'El nombre del rol debe tener entre 1 y 60 caracteres' });
+  }
+  if (rolesReservados.has(nombreNormalizado)) {
+    return res.status(400).json({ success: false, error: 'Ese nombre está reservado por el sistema' });
+  }
+
+  try {
+    const acceso = await obtenerPermisosDepartamento(pool, req.usuario.id, departamentoId, false);
+    if (!acceso) return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    if (!acceso.puedeGestionar) {
+      return res.status(403).json({ success: false, error: 'Solo jefes o administradores pueden crear roles' });
+    }
+
+    const resultado = await pool.query(
+      `INSERT INTO roles_departamento (departamento_id, nombre, creado_por)
+       VALUES ($1, $2, $3)
+       RETURNING id, nombre`,
+      [departamentoId, nombre, req.usuario.id]
+    );
+    res.status(201).json({ success: true, rol: resultado.rows[0] });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Ya existe un rol con ese nombre en este departamento' });
+    }
+    console.error('Error al crear rol de departamento:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo crear el rol' });
+  }
+});
+
+app.patch('/usuarios/:id/rol', async (req, res) => {
+  const id = Number(req.params.id);
+  const rolSolicitado = typeof req.body.rol === 'string' ? req.body.rol.trim() : '';
+  const rolNormalizado = normalizarRol(rolSolicitado);
+  if (!Number.isSafeInteger(id) || id <= 0 || !rolSolicitado) {
+    return res.status(400).json({ success: false, error: 'Usuario y rol son obligatorios' });
+  }
+  if (['jefe', 'jefe de departamento'].includes(rolNormalizado)) {
+    return res.status(400).json({ success: false, error: 'La jefatura se asigna mediante la transferencia de propiedad' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const objetivoInicial = await client.query(
+      'SELECT departamento_id FROM usuarios WHERE id = $1',
+      [id]
+    );
+    if (objetivoInicial.rowCount === 0 || !objetivoInicial.rows[0].departamento_id) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El docente no pertenece a un departamento activo' });
+    }
+    const departamentoId = Number(objetivoInicial.rows[0].departamento_id);
+    const acceso = await obtenerPermisosDepartamento(client, req.usuario.id, departamentoId, true);
+    if (!acceso) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+    if (!acceso.puedeGestionar) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'No tienes permiso para asignar roles' });
+    }
+
+    const objetivo = await client.query(
+      `SELECT id, departamento_id, rol, es_jefe
+       FROM usuarios WHERE id = $1 FOR UPDATE`,
+      [id]
+    );
+    if (objetivo.rowCount === 0 || Number(objetivo.rows[0].departamento_id) !== departamentoId) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'La pertenencia del docente al departamento cambió' });
+    }
+    if (Number(acceso.departamento.jefe_id) === id || esFlagActivo(objetivo.rows[0].es_jefe)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'Transfiere primero la jefatura de este docente' });
+    }
+
+    let rolFinal;
+    if (rolNormalizado === 'docente') {
+      rolFinal = 'Docente';
+    } else if (ROLES_ADMINISTRATIVOS.has(rolNormalizado)) {
+      rolFinal = 'Administrador General';
+    } else {
+      const rolPersonalizado = await client.query(
+        `SELECT nombre FROM roles_departamento
+         WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = LOWER(BTRIM($2))`,
+        [departamentoId, rolSolicitado]
+      );
+      if (rolPersonalizado.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ success: false, error: 'El rol no existe en este departamento' });
+      }
+      rolFinal = rolPersonalizado.rows[0].nombre;
+    }
+
+    await client.query(
+      `UPDATE usuarios SET rol = $1, es_jefe = FALSE
+       WHERE id = $2
+       RETURNING id`,
+      [rolFinal, id]
+    );
+    const actualizado = await client.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
+              EXISTS (
+                SELECT 1 FROM roles_departamento rd
+                WHERE rd.departamento_id = d.id
+                  AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+              ) AS rol_personalizado_valido
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
+       WHERE u.id = $1`,
+      [id]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true, usuario: actualizado.rows[0] });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al asignar rol:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo asignar el rol' });
+  } finally {
+    if (client) client.release();
   }
 });
 
 // Actualizar usuario
 app.put('/usuarios/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const { nombre, correo, departamento_id, departamento, rol } = req.body;
+  const { nombre, correo, departamento_id, departamento } = req.body;
 
   if (!Number.isInteger(id) || id <= 0 || !nombre || !correo) {
     return res.status(400).json({ success: false, error: 'Los datos del perfil no son válidos' });
+  }
+  if (id !== Number(req.usuario.id)) {
+    return res.status(403).json({ success: false, error: 'Solo puedes actualizar tu propio perfil' });
   }
 
   try {
@@ -306,29 +587,25 @@ app.put('/usuarios/:id', async (req, res) => {
     if (departamento_id !== null && departamento_id !== undefined && departamento_id !== '' && !isNaN(Number(departamento_id))) {
       const numId = Number(departamento_id);
       if (numId > 0) {
-        const depto = await pool.query('SELECT id FROM departamentos WHERE id = $1', [numId]);
+        const depto = await pool.query('SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE', [numId]);
         if (depto.rowCount > 0) departamentoId = numId;
       }
     }
 
     if (!departamentoId && departamento && String(departamento).trim()) {
       const deptoNom = await pool.query(
-        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) LIMIT 1',
+        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) AND eliminado = FALSE LIMIT 1',
         [String(departamento).trim()]
       );
       if (deptoNom.rowCount > 0) departamentoId = deptoNom.rows[0].id;
     }
 
-    const rolUsuario = rol ? String(rol).trim() : 'Docente';
-    const rolNormalizado = rolUsuario.toLocaleLowerCase('es-MX');
-    const esJefeBool = rolNormalizado === 'jefe' || rolNormalizado === 'jefe de departamento';
-
     const resultado = await pool.query(
       `UPDATE usuarios
-       SET nombre = $1, correo = $2, departamento_id = $3, rol = $4, es_jefe = $5
-       WHERE id = $6
+       SET nombre = $1, correo = $2, departamento_id = $3
+       WHERE id = $4
        RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
-      [nombre.trim(), correo.trim(), departamentoId, rolUsuario, esJefeBool, id]
+      [nombre.trim(), correo.trim(), departamentoId, id]
     );
 
     if (resultado.rowCount === 0) {
@@ -338,18 +615,29 @@ app.put('/usuarios/:id', async (req, res) => {
     const perfil = await pool.query(
       `SELECT u.id, u.nombre, u.correo,
               CASE
-                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) = 'administrador' THEN 'Administrador'
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
                 WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
-                ELSE COALESCE(NULLIF(BTRIM(u.rol), ''), 'Docente')
+                WHEN EXISTS (
+                  SELECT 1 FROM roles_departamento rd
+                  WHERE rd.departamento_id = d.id
+                    AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+                ) THEN BTRIM(u.rol)
+                ELSE 'Docente'
               END AS rol,
-              u.departamento_id, u.es_jefe,
+              EXISTS (
+                SELECT 1 FROM roles_departamento rd
+                WHERE rd.departamento_id = d.id
+                  AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+              ) AS rol_personalizado_valido,
+              CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
+              CASE WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,
               CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
                 'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
                 'jefe_id', d.jefe_id, 'codigo', d.codigo
               ) END AS departamento_objeto
        FROM usuarios u
-       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
        WHERE u.id = $1`,
       [id]
     );
@@ -401,16 +689,43 @@ app.delete('/usuarios/:id', async (req, res) => {
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ success: false, error: 'ID de usuario inválido' });
   }
+  if (id === Number(req.usuario.id)) {
+    return res.status(400).json({ success: false, error: 'No puedes eliminar tu propia cuenta desde esta vista' });
+  }
 
   let client;
   try {
     client = await pool.connect();
     await client.query('BEGIN');
 
-    const usuarioExiste = await client.query('SELECT id FROM usuarios WHERE id = $1 FOR UPDATE', [id]);
-    if (usuarioExiste.rowCount === 0) {
+    const objetivoInicial = await client.query('SELECT departamento_id FROM usuarios WHERE id = $1', [id]);
+    if (objetivoInicial.rowCount === 0 || !objetivoInicial.rows[0].departamento_id) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ success: false, error: 'El usuario no existe' });
+      return res.status(404).json({ success: false, error: 'El docente no pertenece a un departamento activo' });
+    }
+
+    const departamentoId = Number(objetivoInicial.rows[0].departamento_id);
+    const acceso = await obtenerPermisosDepartamento(client, req.usuario.id, departamentoId, true);
+    if (!acceso) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+    if (!acceso.puedeGestionar) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar docentes' });
+    }
+
+    const usuarioExiste = await client.query(
+      'SELECT id, departamento_id, es_jefe FROM usuarios WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+    if (usuarioExiste.rowCount === 0 || Number(usuarioExiste.rows[0].departamento_id) !== departamentoId) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'La pertenencia del docente al departamento cambió' });
+    }
+    if (Number(acceso.departamento.jefe_id) === id || esFlagActivo(usuarioExiste.rows[0].es_jefe)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'Transfiere primero la jefatura de este docente' });
     }
 
     await client.query('DELETE FROM notificaciones WHERE usuario_id = $1', [id]);
@@ -533,7 +848,7 @@ app.put('/anuncios/:id/restaurar', async (req, res) => {
     const resultado = await pool.query(
       `UPDATE anuncios
        SET eliminado = FALSE, fecha_eliminacion = NULL
-       WHERE id = $1 AND autor_id = $2
+       WHERE id = $1 AND autor_id = $2 AND eliminado = TRUE
        RETURNING id`,
       [id, usuarioId]
     );
@@ -591,9 +906,12 @@ app.get('/api/departamentos-con-conteo', async (req, res) => {
   try {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre,
-              COUNT(a.id) FILTER (WHERE a.eliminado = FALSE) AS anuncios_activos
+              COUNT(DISTINCT a.id) FILTER (WHERE COALESCE(a.eliminado, FALSE) = FALSE) AS anuncios_activos,
+              COUNT(DISTINCT f.id) FILTER (WHERE COALESCE(f.eliminado, FALSE) = FALSE) AS archivos_activos
        FROM departamentos d
-       LEFT JOIN anuncios a ON a.departamento_id = d.id AND a.eliminado = FALSE
+       LEFT JOIN anuncios a ON a.departamento_id = d.id AND COALESCE(a.eliminado, FALSE) = FALSE
+       LEFT JOIN archivos f ON f.departamento_id = d.id AND COALESCE(f.eliminado, FALSE) = FALSE
+       WHERE d.eliminado = FALSE
        GROUP BY d.id, d.nombre
        ORDER BY d.nombre ASC`
     );
@@ -680,7 +998,7 @@ app.put('/archivos/:id/restaurar', async (req, res) => {
     const resultado = await pool.query(
       `UPDATE archivos
        SET eliminado = FALSE, fecha_eliminacion = NULL
-       WHERE id = $1 AND autor_id = $2
+       WHERE id = $1 AND autor_id = $2 AND eliminado = TRUE
        RETURNING id`,
       [id, usuarioId]
     );
@@ -772,7 +1090,10 @@ app.get('/departamentos', async (req, res) => {
   try {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
-       FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id ORDER BY d.id ASC`
+       FROM departamentos d
+       LEFT JOIN usuarios u ON u.id = d.jefe_id
+       WHERE d.eliminado = FALSE
+       ORDER BY d.id ASC`
     );
     res.json(resultado.rows);
   } catch (error) {
@@ -786,7 +1107,8 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
        FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id
-       WHERE LOWER(BTRIM(d.codigo)) = LOWER(BTRIM($1)) LIMIT 1`,
+       WHERE LOWER(BTRIM(d.codigo)) = LOWER(BTRIM($1)) AND d.eliminado = FALSE
+       LIMIT 1`,
       [codigo.trim()]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Departamento no encontrado' });
@@ -819,13 +1141,18 @@ app.post('/departamentos', async (req, res) => {
     await client.query('SELECT pg_advisory_xact_lock(72653145)');
 
     const usuarioExistente = await client.query(
-      'SELECT id FROM usuarios WHERE id = $1 FOR UPDATE',
+      'SELECT id, departamento_id FROM usuarios WHERE id = $1 FOR UPDATE',
       [jefeId]
     );
     if (usuarioExistente.rowCount === 0) {
       await client.query('ROLLBACK');
       transaccionAbierta = false;
       return res.status(404).json({ success: false, error: 'El usuario creador no existe' });
+    }
+    if (usuarioExistente.rows[0].departamento_id) {
+      await client.query('ROLLBACK');
+      transaccionAbierta = false;
+      return res.status(409).json({ success: false, error: 'El usuario ya pertenece a un departamento' });
     }
 
     let departamento = null;
@@ -912,25 +1239,11 @@ app.put('/departamentos/:id', async (req, res) => {
   }
 
   try {
-    const permiso = await pool.query(
-      `SELECT d.id, d.jefe_id, u.id AS usuario_id, u.rol AS usuario_rol,
-              u.es_jefe, u.departamento_id AS usuario_departamento_id
-       FROM departamentos d
-       JOIN usuarios u ON u.id = $2
-       WHERE d.id = $1`,
-      [id, usuarioId]
-    );
-    if (permiso.rowCount === 0) {
+    const acceso = await obtenerPermisosDepartamento(pool, usuarioId, id, false);
+    if (!acceso) {
       return res.status(404).json({ success: false, error: 'El departamento no existe' });
     }
-
-    const datosPermiso = permiso.rows[0];
-    const rolUsuario = String(datosPermiso.usuario_rol || '').trim().toLocaleLowerCase('es-MX');
-    const esAdministrador = rolUsuario === 'administrador';
-    const esJefeAsignado =
-      Number(datosPermiso.jefe_id) === usuarioId ||
-      (datosPermiso.es_jefe === true && Number(datosPermiso.usuario_departamento_id) === id);
-    if (!esAdministrador && !esJefeAsignado) {
+    if (!acceso.puedeGestionar) {
       return res.status(403).json({
         success: false,
         error: 'No tienes permiso para modificar este departamento'
@@ -940,7 +1253,7 @@ app.put('/departamentos/:id', async (req, res) => {
     const resultado = await pool.query(
       `UPDATE departamentos
        SET nombre = $1, descripcion = $2
-       WHERE id = $3
+       WHERE id = $3 AND eliminado = FALSE
        RETURNING id, nombre, descripcion, jefe_id, codigo`,
       [nombreFinal, descripcionFinal, id]
     );
@@ -952,13 +1265,134 @@ app.put('/departamentos/:id', async (req, res) => {
   }
 });
 
-app.delete('/departamentos/:id', async (req, res) => {
+app.patch('/departamentos/:id/transferir-jefatura', async (req, res) => {
+  const departamentoId = Number(req.params.id);
+  const nuevoJefeId = Number(req.body.nuevo_jefe_id);
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0 ||
+      !Number.isSafeInteger(nuevoJefeId) || nuevoJefeId <= 0) {
+    return res.status(400).json({ success: false, error: 'Selecciona un docente válido' });
+  }
+  if (nuevoJefeId === usuarioId) {
+    return res.status(400).json({ success: false, error: 'El nuevo jefe debe ser otro integrante' });
+  }
+
+  let client;
   try {
-    const resultado = await pool.query('DELETE FROM departamentos WHERE id = $1 RETURNING id', [Number(req.params.id)]);
-    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const acceso = await obtenerPermisosDepartamento(client, usuarioId, departamentoId, true);
+    if (!acceso) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+    if (!acceso.puedeGestionar) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'No tienes permiso para transferir la jefatura' });
+    }
+
+    const candidato = await client.query(
+      `SELECT id, rol FROM usuarios
+       WHERE id = $1 AND departamento_id = $2
+       FOR UPDATE`,
+      [nuevoJefeId, departamentoId]
+    );
+    if (candidato.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'El nuevo jefe debe pertenecer al mismo departamento' });
+    }
+
+    await client.query(
+      `UPDATE usuarios
+       SET es_jefe = FALSE,
+           rol = CASE
+             WHEN LOWER(BTRIM(COALESCE(rol, ''))) IN ('jefe', 'jefe de departamento') THEN 'Docente'
+             ELSE rol
+           END
+       WHERE departamento_id = $1 AND id <> $2`,
+      [departamentoId, nuevoJefeId]
+    );
+    await client.query(
+      `UPDATE usuarios
+       SET es_jefe = TRUE,
+           rol = CASE
+             WHEN LOWER(BTRIM(COALESCE(rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
+             ELSE 'Jefe de Departamento'
+           END
+       WHERE id = $1 AND departamento_id = $2`,
+      [nuevoJefeId, departamentoId]
+    );
+    const departamentoActualizado = await client.query(
+      `UPDATE departamentos SET jefe_id = $1
+       WHERE id = $2 AND eliminado = FALSE
+       RETURNING id, nombre, descripcion, jefe_id, codigo`,
+      [nuevoJefeId, departamentoId]
+    );
+    const usuarioActualizado = await client.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe
+       FROM usuarios u WHERE u.id = $1`,
+      [usuarioId]
+    );
+    await client.query('COMMIT');
+    res.json({
+      success: true,
+      departamento: departamentoActualizado.rows[0],
+      usuario: usuarioActualizado.rows[0]
+    });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al transferir la jefatura:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo transferir la jefatura' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.delete('/departamentos/:id', async (req, res) => {
+  const departamentoId = Number(req.params.id);
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0) {
+    return res.status(400).json({ success: false, error: 'ID de departamento inválido' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const acceso = await obtenerPermisosDepartamento(client, usuarioId, departamentoId, true);
+    if (!acceso) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+    if (!acceso.esJefe) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'Solo el jefe asignado puede borrar el departamento' });
+    }
+    if (req.body.confirmacion !== 'sí' || req.body.nombre_departamento !== acceso.departamento.nombre) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ success: false, error: 'La confirmación no coincide con el departamento' });
+    }
+
+    await client.query(
+      'UPDATE departamentos SET eliminado = TRUE WHERE id = $1 AND eliminado = FALSE',
+      [departamentoId]
+    );
+    await client.query(
+      `UPDATE usuarios
+       SET departamento_id = NULL,
+           es_jefe = FALSE,
+           rol = 'Docente'
+       WHERE departamento_id = $1`,
+      [departamentoId]
+    );
+    await client.query('COMMIT');
     res.json({ success: true });
   } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al borrar lógicamente el departamento:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo eliminar el departamento' });
+  } finally {
+    if (client) client.release();
   }
 });
 
@@ -969,7 +1403,7 @@ app.get('/notificaciones', async (req, res) => {
     const usuarioResult = await pool.query(
       `SELECT u.departamento_id, NULLIF(BTRIM(d.nombre), '') AS departamento_nombre
        FROM usuarios u
-       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
        WHERE u.id = $1`,
       [usuarioId]
     );
@@ -1039,6 +1473,13 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Ruta no encontrada' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor OCID funcionando en el puerto ${PORT}`);
-});
+migracionEsquema
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Servidor OCID funcionando en el puerto ${PORT}`);
+    });
+  })
+  .catch(error => {
+    console.error('No se pudo preparar el esquema de base de datos:', error.message);
+    process.exit(1);
+  });

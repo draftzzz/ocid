@@ -1009,3 +1009,89 @@ textarea {
         font-size: 12.5px;
     }
 }
+
+.tarjeta_gestion_departamento {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 22px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.tarjeta_gestion_departamento[hidden] {
+    display: none;
+}
+
+.boton_acciones[hidden],
+.boton_opcion_dropdown[hidden],
+#boton_abrir_baja_departamento[hidden] {
+    display: none !important;
+}
+
+.subtitulo_gestion_departamento,
+.acciones_gestion_departamento p {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.formulario_transferencia {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fila_transferencia {
+    display: flex;
+    gap: 10px;
+}
+
+.fila_transferencia .modal_input_custom {
+    max-width: 420px;
+}
+
+.acciones_gestion_departamento {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid #fee2e2;
+}
+
+.boton_peligro_departamento {
+    border: 0;
+    border-radius: 6px;
+    padding: 9px 14px;
+    background: #b91c1c;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.boton_peligro_departamento:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.texto_confirmacion_baja {
+    margin-bottom: 4px;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+    .fila_transferencia,
+    .acciones_gestion_departamento {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .fila_transferencia .modal_input_custom {
+        max-width: none;
+    }
+}

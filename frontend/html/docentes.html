@@ -115,11 +115,11 @@
             <div class="cabecera_seccion">
                 <div>
                     <h1 class="titulo_docentes">Docentes</h1>
-                    <p class="subtitulo_docentes">Gestiona la información de los docentes del plantel.</p>
+                    <p class="subtitulo_docentes">Consulta a los docentes y administra los roles de tu departamento.</p>
                 </div>
-                <button class="boton_nuevo_docente" id="btn_abrir_modal" data-evento-pagina="evento-1">
+                <button class="boton_nuevo_docente" id="btn_crear_rol" type="button" hidden>
                     <i class="fa-solid fa-plus"></i>
-                    Nuevo docente
+                    Crear rol
                 </button>
             </div>
 
@@ -129,13 +129,10 @@
                     <div class="icono_buscador_filtro">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </div>
-                    <input class="input_filtro_nombre" id="filtro_nombre_input" data-evento-pagina="evento-2"
+                    <input class="input_filtro_nombre" id="filtro_nombre_input"
                         placeholder="Buscar por nombre..." type="text" />
                 </div>
-                <select class="select_filtro" id="filtro_departamento" data-evento-pagina="evento-3">
-                    <option value="todos">Todos los departamentos</option>
-                </select>
-                <select class="select_filtro" id="filtro_estado" data-evento-pagina="evento-4">
+                <select class="select_filtro" id="filtro_estado">
                     <option value="todos">Todos los estados</option>
                     <option value="Activo">Activo</option>
                     <option value="Inactivo">Inactivo</option>
@@ -149,7 +146,6 @@
                         <tr>
                             <th class="celda_encabezado">Nombre</th>
                             <th class="celda_encabezado">Correo</th>
-                            <th class="celda_encabezado">Departamento</th>
                             <th class="celda_encabezado">Rol</th>
                             <th class="celda_encabezado">Estado</th>
                             <th class="celda_encabezado">Acciones</th>
@@ -176,50 +172,25 @@
     </main>
     <!-- END: MainContentArea -->
 
-    <!-- BEGIN: ModalNuevoDocente -->
-    <div class="modal_overlay" id="modal_registro_docente">
+    <div class="modal_overlay" id="modal_rol_departamento">
         <div class="modal_contenedor">
             <div class="modal_cabecera">
-                <h3 class="modal_titulo">Registrar nuevo docente</h3>
-                <button class="modal_boton_cerrar">×</button>
+                <h3 class="modal_titulo">Crear rol del departamento</h3>
+                <button class="modal_boton_cerrar" id="cerrar_modal_rol" type="button">×</button>
             </div>
-            <form action="/registro" class="modal_formulario" id="formulario_docente" method="POST">
+            <form class="modal_formulario" id="formulario_crear_rol">
                 <div class="grupo_campo">
-                    <label class="label_campo" for="nombre_docente_input">Nombre completo</label>
-                    <input class="input_modal" id="nombre_docente_input" name="nombre"
-                        placeholder="Ej. Roberto Sánchez Gómez" required="" type="text" />
-                </div>
-                <div class="grupo_campo">
-                    <label class="label_campo" for="correo_docente_input">Correo institucional</label>
-                    <input class="input_modal" id="correo_docente_input" name="correo"
-                        placeholder="nombre.apellido@edu.mx" required="" type="email" />
-                </div>
-                <div class="grupo_campo">
-                    <label class="label_campo" for="password_docente_input">Contraseña inicial</label>
-                    <input class="input_modal" id="password_docente_input" name="password" placeholder="••••••••"
-                        required="" type="password" />
-                </div>
-                <div class="grupo_campo">
-                    <label class="label_campo" for="departamento_select">Departamento</label>
-                    <select class="select_modal" id="departamento_select" name="departamento" required="">
-                        <option value="">Cargando departamentos...</option>
-                    </select>
-                </div>
-                <div class="grupo_campo">
-                    <label class="label_campo" for="rol_select">Rol asignado</label>
-                    <select class="select_modal" id="rol_select" name="rol" required="">
-                        <option value="Docente">Docente</option>
-                        <option value="Jefe">Jefe</option>
-                    </select>
+                    <label class="label_campo" for="nombre_rol_input">Nombre del rol</label>
+                    <input class="input_modal" id="nombre_rol_input" maxlength="60"
+                        placeholder="Ej. Coordinación académica" required type="text" />
                 </div>
                 <div class="modal_pie">
-                    <button class="boton_cancelar_modal" type="button">Cancelar</button>
-                    <button class="boton_guardar_modal" type="submit">Guardar Docente</button>
+                    <button class="boton_cancelar_modal" id="cancelar_modal_rol" type="button">Cancelar</button>
+                    <button class="boton_guardar_modal" type="submit">Guardar rol</button>
                 </div>
             </form>
         </div>
     </div>
-    <!-- END: ModalNuevoDocente -->
 
     <script src="../js/ocid-core.js"></script>
     <script src="../js/docentes.js"></script>

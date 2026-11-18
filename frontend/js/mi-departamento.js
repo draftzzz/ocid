@@ -5,26 +5,54 @@
   let miembrosActuales = [];
   const estadosMiembros = new Map();
 
+  function esJefeDepartamento(usuario) {
+    return Boolean(usuario && departamentoActual && (
+      Number(departamentoActual.jefe_id) === Number(usuario.id) ||
+      ((usuario.es_jefe === true || usuario.es_jefe === 't') &&
+        Number(usuario.departamento_id) === Number(departamentoActual.id))
+    ));
+  }
+
+  function puedeGestionarDepartamento(usuario) {
+    const rol = normalizar(usuario && usuario.rol);
+    return esJefeDepartamento(usuario) ||
+      rol === 'administrador' || rol === 'administrador general';
+  }
+
   function puedeEditarDepartamento() {
     const usuario = window.OCID.obtenerUsuarioSesion();
     if (!usuario || !departamentoActual) return false;
-
-    const esAdministrador = normalizar(usuario.rol) === 'administrador';
-    const esJefeAsignado =
-      Number(departamentoActual.jefe_id) === Number(usuario.id) ||
-      (usuario.es_jefe === true && Number(usuario.departamento_id) === Number(departamentoActual.id));
-    return esAdministrador || esJefeAsignado;
+    return puedeGestionarDepartamento(usuario);
   }
 
   function actualizarControlesEdicion() {
     const puedeEditar = puedeEditarDepartamento();
+    const usuario = window.OCID.obtenerUsuarioSesion();
+    const esJefe = esJefeDepartamento(usuario);
     const botonOpciones = obtenerElemento('boton_opciones_departamento');
     const opcionEditar = obtenerElemento('opcion_editar_departamento');
     const menu = obtenerElemento('menu_opciones_departamento');
+    const panelGestion = obtenerElemento('panel_gestion_departamento');
+    const botonBaja = obtenerElemento('boton_abrir_baja_departamento');
+    const selectorJefe = obtenerElemento('select_nuevo_jefe');
 
     if (botonOpciones) botonOpciones.hidden = !puedeEditar;
     if (opcionEditar) opcionEditar.hidden = !puedeEditar;
     if (!puedeEditar && menu) menu.style.display = 'none';
+    if (panelGestion) panelGestion.hidden = !puedeEditar;
+    if (botonBaja) botonBaja.hidden = !esJefe;
+    if (selectorJefe && departamentoActual) {
+      selectorJefe.replaceChildren(new Option('Selecciona un integrante', ''));
+      miembrosActuales
+        .filter(miembro => Number(miembro.id) !== Number(departamentoActual.jefe_id))
+        .forEach(miembro => selectorJefe.add(new Option(miembro.nombre || miembro.correo, String(miembro.id))));
+      selectorJefe.disabled = miembrosActuales.length < 2;
+      const botonTransferir = obtenerElemento('form_transferir_jefatura')?.querySelector('[type="submit"]');
+      if (botonTransferir) botonTransferir.disabled = selectorJefe.disabled || !puedeEditar;
+    } else if (selectorJefe) {
+      selectorJefe.replaceChildren(new Option('Sin departamento', ''));
+      selectorJefe.disabled = true;
+    }
   }
 
   function obtenerElemento(id) {
@@ -93,6 +121,7 @@
       const celdaAcciones = document.createElement('td');
       celdaAcciones.style.textAlign = 'center';
       celdaAcciones.style.position = 'relative';
+      if (puedeGestionarDepartamento(window.OCID.obtenerUsuarioSesion())) {
       const botonMenu = document.createElement('button');
       botonMenu.type = 'button';
       botonMenu.className = 'boton_acciones boton_menu_integrante';
@@ -121,7 +150,12 @@
       botonEliminar.type = 'button';
       botonEliminar.className = 'btn_eliminar_integrante';
       botonEliminar.textContent = 'Eliminar';
+      const esJefeIntegrante = Number(departamentoActual && departamentoActual.jefe_id) === Number(miembro.id) ||
+        miembro.es_jefe === true || miembro.es_jefe === 't';
+      botonEliminar.disabled = esJefeIntegrante;
+      if (esJefeIntegrante) botonEliminar.title = 'Transfiere primero la jefatura';
       botonEliminar.addEventListener('click', async () => {
+        if (botonEliminar.disabled) return;
         const usuarioActual = window.OCID.obtenerUsuarioSesion();
         if (Number(usuarioActual && usuarioActual.id) === Number(miembro.id)) {
           window.OCID.mostrarToast('No puedes eliminar tu propia cuenta.', true);
@@ -149,6 +183,7 @@
       });
       menu.append(botonEstado, botonEliminar);
       celdaAcciones.append(botonMenu, menu);
+      }
       fila.append(celdaNombre, celdaPuesto, celdaEstado, celdaAcciones);
       cuerpo.appendChild(fila);
     });
@@ -165,12 +200,12 @@
 
   function renderizarDepartamento(departamento, usuarios, archivos, tareas) {
     departamentoActual = departamento;
-    actualizarControlesEdicion();
     const departamentoId = departamento ? Number(departamento.id) : null;
     const miembros = departamento
       ? usuarios.filter(usuario => Number(usuario.departamento_id) === departamentoId)
       : [];
     miembrosActuales = miembros;
+    actualizarControlesEdicion();
 
     texto('nombre_departamento_texto', departamento ? departamento.nombre : 'Sin departamento asignado');
     texto('detalle_departamento_texto', departamento && departamento.codigo
@@ -310,6 +345,103 @@
     if (busqueda) busqueda.addEventListener('input', filtrarMiembros);
   }
 
+  function configurarGestionDepartamento() {
+    const formTransferencia = obtenerElemento('form_transferir_jefatura');
+    const modalBaja = obtenerElemento('modal_baja_departamento');
+    const inputConfirmacion = obtenerElemento('confirmacion_baja_texto');
+    const inputNombre = obtenerElemento('nombre_baja_texto');
+    const botonConfirmarBaja = obtenerElemento('confirmar_baja_departamento');
+
+    const cerrarModalBaja = () => {
+      if (modalBaja) modalBaja.style.display = 'none';
+      if (inputConfirmacion) inputConfirmacion.value = '';
+      if (inputNombre) inputNombre.value = '';
+      if (botonConfirmarBaja) botonConfirmarBaja.disabled = true;
+    };
+
+    const botonAbrirBaja = obtenerElemento('boton_abrir_baja_departamento');
+    if (botonAbrirBaja) botonAbrirBaja.addEventListener('click', () => {
+      if (!esJefeDepartamento(window.OCID.obtenerUsuarioSesion()) || !departamentoActual) return;
+      if (modalBaja) modalBaja.style.display = 'flex';
+    });
+    ['cerrar_modal_baja', 'cancelar_baja_departamento'].forEach(id => {
+      const boton = obtenerElemento(id);
+      if (boton) boton.addEventListener('click', cerrarModalBaja);
+    });
+
+    const validarConfirmacionBaja = () => {
+      if (!botonConfirmarBaja || !departamentoActual) return;
+      botonConfirmarBaja.disabled =
+        String(inputConfirmacion.value || '').trim().toLocaleLowerCase('es-MX') !== 'sí' ||
+        inputNombre.value !== departamentoActual.nombre;
+    };
+    if (inputConfirmacion) inputConfirmacion.addEventListener('input', validarConfirmacionBaja);
+    if (inputNombre) inputNombre.addEventListener('input', validarConfirmacionBaja);
+
+    if (botonConfirmarBaja) botonConfirmarBaja.addEventListener('click', async () => {
+      if (botonConfirmarBaja.disabled || !departamentoActual || !esJefeDepartamento(window.OCID.obtenerUsuarioSesion())) return;
+      botonConfirmarBaja.disabled = true;
+      try {
+        const resultado = await window.OCID.apiFetch(`/departamentos/${departamentoActual.id}`, {
+          method: 'DELETE',
+          body: JSON.stringify({
+            confirmacion: 'sí',
+            nombre_departamento: inputNombre.value
+          })
+        });
+        if (!resultado.success) throw new Error(resultado.error || 'No se pudo borrar el departamento.');
+        const usuario = window.OCID.obtenerUsuarioSesion();
+        if (usuario) {
+          localStorage.setItem('usuario_ocid', JSON.stringify({
+            ...usuario,
+            departamento_id: null,
+            departamento: null,
+            departamento_nombre: null,
+            departamento_objeto: null,
+            es_jefe: false,
+            rol: 'Docente'
+          }));
+        }
+        window.OCID.mostrarToast('Departamento dado de baja correctamente.');
+        window.location.href = 'bienvenida.html';
+      } catch (error) {
+        console.error('Error al borrar el departamento:', error);
+        window.OCID.mostrarToast(error.message || 'No se pudo borrar el departamento.', true);
+        validarConfirmacionBaja();
+      }
+    });
+
+    if (formTransferencia) formTransferencia.addEventListener('submit', async evento => {
+      evento.preventDefault();
+      const usuario = window.OCID.obtenerUsuarioSesion();
+      const nuevoJefeId = Number(obtenerElemento('select_nuevo_jefe').value);
+      if (!departamentoActual || !puedeGestionarDepartamento(usuario) || !Number.isSafeInteger(nuevoJefeId) || nuevoJefeId <= 0) {
+        window.OCID.mostrarToast('Selecciona un integrante y verifica tus permisos.', true);
+        return;
+      }
+      const boton = formTransferencia.querySelector('[type="submit"]');
+      boton.disabled = true;
+      try {
+        const resultado = await window.OCID.apiFetch(
+          `/departamentos/${departamentoActual.id}/transferir-jefatura`,
+          { method: 'PATCH', body: JSON.stringify({ nuevo_jefe_id: nuevoJefeId }) }
+        );
+        if (!resultado.success) throw new Error(resultado.error || 'No se pudo transferir la jefatura.');
+        if (resultado.usuario) {
+          localStorage.setItem('usuario_ocid', JSON.stringify({ ...usuario, ...resultado.usuario }));
+          window.OCID.actualizarCabeceraUsuario();
+        }
+        window.OCID.mostrarToast('La jefatura se transfirió correctamente.');
+        await cargarDatosDepartamento();
+      } catch (error) {
+        console.error('Error al transferir la jefatura:', error);
+        window.OCID.mostrarToast(error.message || 'No se pudo transferir la jefatura.', true);
+      } finally {
+        boton.disabled = false;
+      }
+    });
+  }
+
   function configurarContacto() {
     const modal = obtenerElemento('modal_contacto');
     const abrir = obtenerElemento('boton_abrir_contacto');
@@ -342,6 +474,7 @@
     window.OCID.actualizarCabeceraUsuario();
     window.OCID.configurarCierreSesion();
     configurarModales();
+    configurarGestionDepartamento();
     configurarContacto();
     cargarDatosDepartamento();
   });

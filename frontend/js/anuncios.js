@@ -18,6 +18,8 @@
 
 let lista_de_anuncios = [];
 let departamentos_anuncios = [];
+let archivos_anuncios = [];
+let conteos_departamento = [];
 let anuncioEnEdicionId = null;
 
 function escaparHTML(valor) {
@@ -38,21 +40,29 @@ function mostrarErrorAnuncios(mensaje, tipo = 'error') {
 
 async function cargar_anuncios_desde_servidor() {
   try {
-    // Usamos apiFetch para enviar el token JWT automáticamente en ambas peticiones protegidas
-    const [datosAnuncios, datosDepartamentos] = await Promise.all([
+    const [datosAnuncios, datosDepartamentos, datosConteos, datosArchivos] = await Promise.all([
       window.OCID.apiFetch('/anuncios'),
-      window.OCID.apiFetch('/departamentos')
+      window.OCID.apiFetch('/departamentos'),
+      window.OCID.apiFetch('/api/departamentos-con-conteo'),
+      window.OCID.apiFetch('/archivos')
     ]);
 
-    lista_de_anuncios = (Array.isArray(datosAnuncios) ? datosAnuncios : (datosAnuncios.anuncios || [])).map(anuncio => ({
+    if (!Array.isArray(datosAnuncios) || !Array.isArray(datosDepartamentos) ||
+        !datosConteos.success || !Array.isArray(datosConteos.departamentos) ||
+        !Array.isArray(datosArchivos)) {
+      throw new Error('El servidor devolvió datos incompletos para los anuncios.');
+    }
+
+    lista_de_anuncios = datosAnuncios.map(anuncio => ({
       ...anuncio,
       tipo: anuncio.prioridad || 'Urgente',
       departamento: anuncio.departamento_nombre || 'General',
       autor: anuncio.autor_nombre || 'Coordinación',
       fecha: anuncio.fecha ? new Date(anuncio.fecha).toLocaleDateString('es-MX') : ''
     }));
-    
-    departamentos_anuncios = Array.isArray(datosDepartamentos) ? datosDepartamentos : (datosDepartamentos.departamentos || []);
+    departamentos_anuncios = datosDepartamentos;
+    conteos_departamento = datosConteos.departamentos;
+    archivos_anuncios = datosArchivos;
 
     const selectorDepartamento = document.getElementById('campo_departamento');
     if (selectorDepartamento) {
@@ -64,9 +74,20 @@ async function cargar_anuncios_desde_servidor() {
         selectorDepartamento.appendChild(opcion);
       });
     }
+
+    const filtroDepartamento = document.getElementById('filtro_departamento');
+    if (filtroDepartamento) {
+      filtroDepartamento.replaceChildren(new Option('Todos los departamentos', ''));
+      departamentos_anuncios.forEach(departamento => {
+        filtroDepartamento.add(new Option(departamento.nombre, departamento.nombre));
+      });
+    }
   } catch (error) {
     lista_de_anuncios = [];
-    mostrarErrorAnuncios('No se pudieron cargar los anuncios.', 'error');
+    departamentos_anuncios = [];
+    conteos_departamento = [];
+    archivos_anuncios = [];
+    mostrarErrorAnuncios(error.message || 'No se pudieron cargar los anuncios.', 'error');
   }
   renderizar_interfaz();
 }
@@ -246,25 +267,37 @@ async function eliminarAnuncio(id, esAutor) {
 }
 
 function actualizar_panel_lateral() {
-  const conteos = {
-    "Servicios Escolares": 0,
-    "Control Escolar": 0,
-    "Académico": 0,
-    "Vinculación": 0,
-    "Orientación": 0
-  };
+  const contenedorConteos = document.getElementById('lista_conteo_departamentos');
+  if (contenedorConteos) {
+    contenedorConteos.replaceChildren();
+    conteos_departamento.forEach((departamento, indice) => {
+      const anuncios = Number(departamento.anuncios_activos) || 0;
+      const archivos = Number(departamento.archivos_activos) || 0;
+      const fila = document.createElement('div');
+      fila.className = 'fila_conteo_departamento';
 
-  lista_de_anuncios.forEach(item => {
-    if (conteos[item.departamento] !== undefined) {
-      conteos[item.departamento]++;
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'indicador_con_nombre';
+      const punto = document.createElement('span');
+      punto.className = `punto_departamento punto_departamento_${indice % 5}`;
+      const nombre = document.createElement('span');
+      nombre.textContent = departamento.nombre;
+      etiqueta.append(punto, nombre);
+
+      const cifra = document.createElement('span');
+      cifra.className = 'cifra_departamento';
+      cifra.textContent = String(anuncios + archivos);
+      cifra.title = `${anuncios} anuncios y ${archivos} archivos`;
+      fila.append(etiqueta, cifra);
+      contenedorConteos.appendChild(fila);
+    });
+    if (!conteos_departamento.length) {
+      const vacio = document.createElement('p');
+      vacio.className = 'estado_conteo_vacio';
+      vacio.textContent = 'No hay departamentos activos.';
+      contenedorConteos.appendChild(vacio);
     }
-  });
-
-  if (document.getElementById('conteo_servicios')) document.getElementById('conteo_servicios').textContent = conteos['Servicios Escolares'];
-  if (document.getElementById('conteo_control')) document.getElementById('conteo_control').textContent = conteos['Control Escolar'];
-  if (document.getElementById('conteo_academico')) document.getElementById('conteo_academico').textContent = conteos['Académico'];
-  if (document.getElementById('conteo_vinculacion')) document.getElementById('conteo_vinculacion').textContent = conteos['Vinculación'];
-  if (document.getElementById('conteo_orientacion')) document.getElementById('conteo_orientacion').textContent = conteos['Orientación'];
+  }
 
   const contenedor_ultimos = document.getElementById('contenedor_ultimos_anuncios');
   if (!contenedor_ultimos) return;
@@ -287,6 +320,56 @@ function actualizar_panel_lateral() {
     item_div.appendChild(fechaDiv);
     contenedor_ultimos.appendChild(item_div);
   });
+}
+
+function mostrarTodosLosElementosDepartamento() {
+  const modal = document.getElementById('modal_conteo_departamentos');
+  const contenido = document.getElementById('contenido_conteo_departamentos');
+  if (!modal || !contenido) return;
+  contenido.replaceChildren();
+
+  conteos_departamento.forEach(departamento => {
+    const departamentoId = Number(departamento.id);
+    const anuncios = lista_de_anuncios.filter(item => Number(item.departamento_id) === departamentoId);
+    const archivos = archivos_anuncios.filter(item => Number(item.departamento_id) === departamentoId);
+    const seccion = document.createElement('section');
+    seccion.className = 'grupo_elementos_departamento';
+    const titulo = document.createElement('h4');
+    titulo.textContent = departamento.nombre;
+    const resumen = document.createElement('p');
+    resumen.className = 'resumen_elementos_departamento';
+    resumen.textContent = `${anuncios.length} anuncios · ${archivos.length} archivos`;
+    const lista = document.createElement('ul');
+    lista.className = 'lista_elementos_departamento';
+
+    [...anuncios.map(item => ({ tipo: 'Anuncio', nombre: item.titulo })),
+      ...archivos.map(item => ({ tipo: 'Archivo', nombre: item.nombre }))]
+      .forEach(item => {
+        const fila = document.createElement('li');
+        const tipo = document.createElement('span');
+        tipo.className = 'tipo_elemento_departamento';
+        tipo.textContent = item.tipo;
+        const nombre = document.createElement('span');
+        nombre.textContent = item.nombre || 'Sin título';
+        fila.append(tipo, nombre);
+        lista.appendChild(fila);
+      });
+
+    if (!lista.children.length) {
+      const filaVacia = document.createElement('li');
+      filaVacia.className = 'elementos_departamento_vacios';
+      filaVacia.textContent = 'No hay anuncios ni archivos activos.';
+      lista.appendChild(filaVacia);
+    }
+    seccion.append(titulo, resumen, lista);
+    contenido.appendChild(seccion);
+  });
+  modal.classList.add('modal_activo');
+}
+
+function cerrarModalConteoDepartamentos() {
+  const modal = document.getElementById('modal_conteo_departamentos');
+  if (modal) modal.classList.remove('modal_activo');
 }
 
 const modal_nuevo = document.getElementById('modal_nuevo_anuncio');
@@ -372,6 +455,21 @@ if (form_nuevo_anuncio) {
 if (document.getElementById('filtro_busqueda_titulo')) document.getElementById('filtro_busqueda_titulo').addEventListener('input', renderizar_interfaz);
 if (document.getElementById('filtro_departamento')) document.getElementById('filtro_departamento').addEventListener('change', renderizar_interfaz);
 if (document.getElementById('filtro_tipo')) document.getElementById('filtro_tipo').addEventListener('change', renderizar_interfaz);
+
+const botonVerTodoDepartamentos = document.getElementById('boton_ver_todo_departamentos');
+const botonCerrarConteoDepartamentos = document.getElementById('cerrar_modal_conteo_departamentos');
+const modalConteoDepartamentos = document.getElementById('modal_conteo_departamentos');
+if (botonVerTodoDepartamentos) {
+  botonVerTodoDepartamentos.addEventListener('click', mostrarTodosLosElementosDepartamento);
+}
+if (botonCerrarConteoDepartamentos) {
+  botonCerrarConteoDepartamentos.addEventListener('click', cerrarModalConteoDepartamentos);
+}
+if (modalConteoDepartamentos) {
+  modalConteoDepartamentos.addEventListener('click', evento => {
+    if (evento.target === modalConteoDepartamentos) cerrarModalConteoDepartamentos();
+  });
+}
 
 if (document.getElementById('boton_limpiar')) {
   document.getElementById('boton_limpiar').addEventListener('click', () => {

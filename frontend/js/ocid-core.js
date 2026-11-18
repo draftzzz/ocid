@@ -77,8 +77,14 @@
     }
 
     const rol = usuario.rol.trim();
-    const rolesValidos = ['docente', 'jefe', 'jefe de departamento', 'administrador'];
-    return rolesValidos.includes(rol.toLowerCase()) ? rol : 'Sin departamento';
+    const rolesValidos = [
+      'docente', 'jefe', 'jefe de departamento', 'administrador',
+      'administrador general'
+    ];
+    return rolesValidos.includes(rol.toLocaleLowerCase('es-MX')) ||
+      usuario.rol_personalizado_valido === true
+      ? rol
+      : 'Sin departamento';
   }
 
   function guardarSesion(usuario, tokenJwt = null) {
