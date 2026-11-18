@@ -1157,6 +1157,29 @@ app.get('/archivos', async (req, res) => {
   }
 });
 
+app.get('/archivos/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, error: 'ID de archivo inválido' });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `SELECT id, nombre, ruta, tipo
+       FROM archivos
+       WHERE id = $1 AND COALESCE(eliminado, FALSE) = FALSE`,
+      [id]
+    );
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'El archivo no existe o fue eliminado' });
+    }
+    res.json({ success: true, archivo: resultado.rows[0] });
+  } catch (error) {
+    console.error('Error al obtener el archivo para descargar:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo descargar el archivo' });
+  }
+});
+
 app.post('/archivos', async (req, res) => {
   const { nombre, contenido, tipo, tamano, autor_id, departamento_id } = req.body;
   try {

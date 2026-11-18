@@ -204,21 +204,32 @@ async function cargarArchivos() {
 async function descargarArchivo(id) {
   try {
     const datos = await window.OCID.apiFetch('/archivos/' + encodeURIComponent(id));
-    const archivo = datos.archivo;
-    const partes = archivo.ruta.split(',');
-    const binario = atob(partes[1]);
+    const archivo = datos && datos.archivo;
+    if (!archivo || typeof archivo.ruta !== 'string') {
+      throw new Error('El servidor no devolvió el contenido del archivo.');
+    }
+
+    const separador = archivo.ruta.indexOf(',');
+    const contenidoBase64 = separador >= 0 ? archivo.ruta.slice(separador + 1) : archivo.ruta;
+    if (!contenidoBase64) throw new Error('El archivo no contiene datos descargables.');
+
+    const binario = atob(contenidoBase64);
     const bytes = new Uint8Array(binario.length);
     for (let indice = 0; indice < binario.length; indice++) bytes[indice] = binario.charCodeAt(indice);
-    const url = URL.createObjectURL(new Blob([bytes], { type: archivo.tipo }));
+    const url = URL.createObjectURL(new Blob([bytes], { type: archivo.tipo || 'application/octet-stream' }));
     const enlace = document.createElement('a');
     enlace.href = url;
-    enlace.download = archivo.nombre;
+    enlace.download = archivo.nombre || `archivo-${id}`;
+    enlace.hidden = true;
+    document.body.appendChild(enlace);
     enlace.click();
-    URL.revokeObjectURL(url);
+    enlace.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 
     mostrarToastArchivos('Archivo descargado correctamente.', 'exito');
   } catch (error) {
-    mostrarToastArchivos('No se pudo descargar el archivo.', 'error');
+    console.error('Error al descargar archivo:', error);
+    mostrarToastArchivos(error.message || 'No se pudo descargar el archivo.', 'error');
   }
 }
 

@@ -73,6 +73,17 @@
     return Array.isArray(respuesta) ? respuesta : [];
   }
 
+  function renderizarListaRoles() {
+    const lista = obtenerElemento('lista_roles_departamento');
+    if (!lista) return;
+    lista.replaceChildren();
+    rolesDepartamento.filter(rol => normalizar(rol) !== 'docente').forEach(rol => {
+      const elemento = document.createElement('li');
+      elemento.textContent = rol;
+      lista.appendChild(elemento);
+    });
+  }
+
   function filtrarMiembros() {
     const termino = (obtenerElemento('campo_busqueda_general')?.value || '').trim().toLocaleLowerCase('es-MX');
     const visibles = miembrosActuales.filter(miembro =>
@@ -546,16 +557,6 @@
           return;
         }
 
-        function renderizarListaRoles() {
-          const lista = obtenerElemento('lista_roles_departamento');
-          if (!lista) return;
-          lista.replaceChildren();
-          rolesDepartamento.filter(rol => normalizar(rol) !== 'docente').forEach(rol => {
-            const elemento = document.createElement('li');
-            elemento.textContent = rol;
-            lista.appendChild(elemento);
-          });
-        }
         window.location.href = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
         ocultar();
       });
