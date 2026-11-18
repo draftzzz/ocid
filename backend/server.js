@@ -619,6 +619,77 @@ app.post('/departamentos/:id/roles', async (req, res) => {
   }
 });
 
+app.delete('/departamentos/:id/roles/:rolId', async (req, res) => {
+  const departamentoId = Number(req.params.id);
+  const rolId = Number(req.params.rolId);
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0 ||
+      !Number.isSafeInteger(rolId) || rolId <= 0) {
+    return res.status(400).json({ success: false, error: 'El departamento o rol no es válido' });
+  }
+  if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const acceso = await obtenerPermisosDepartamento(client, usuarioId, departamentoId, true);
+    if (!acceso) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+    if (!acceso.esJefe) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede eliminar roles' });
+    }
+
+    const rol = await client.query(
+      `SELECT id, departamento_id, nombre
+       FROM roles_departamento
+       WHERE id = $1 AND departamento_id = $2
+       FOR UPDATE`,
+      [rolId, departamentoId]
+    );
+    if (!rol.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El rol no existe en este departamento' });
+    }
+
+    const asignaciones = await client.query(
+      `SELECT 1
+       FROM usuarios
+       WHERE departamento_id = $1
+         AND LOWER(BTRIM(COALESCE(rol, ''))) = LOWER(BTRIM($2))
+       LIMIT 1`,
+      [departamentoId, rol.rows[0].nombre]
+    );
+    if (asignaciones.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        success: false,
+        error: 'Reasigna a los integrantes antes de eliminar este rol'
+      });
+    }
+
+    const eliminado = await client.query(
+      `DELETE FROM roles_departamento
+       WHERE id = $1 AND departamento_id = $2
+       RETURNING id, nombre, color`,
+      [rolId, departamentoId]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true, rol: eliminado.rows[0] });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al eliminar rol de departamento:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo eliminar el rol' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
 app.patch('/usuarios/:id/rol', async (req, res) => {
   const id = Number(req.params.id);
   const rolSolicitado = typeof req.body.rol === 'string' ? req.body.rol.trim() : '';
@@ -675,7 +746,8 @@ app.patch('/usuarios/:id/rol', async (req, res) => {
     } else {
       const rolPersonalizado = await client.query(
         `SELECT nombre FROM roles_departamento
-         WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = LOWER(BTRIM($2))`,
+         WHERE departamento_id = $1 AND LOWER(BTRIM(nombre)) = LOWER(BTRIM($2))
+         FOR KEY SHARE`,
         [departamentoId, rolSolicitado]
       );
       if (rolPersonalizado.rowCount === 0) {
@@ -1731,6 +1803,9 @@ app.put('/departamentos/:id', async (req, res) => {
     res.json({ success: true, departamento: resultado.rows[0] });
   } catch (error) {
     console.error('Error al actualizar el departamento:', error.message);
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Ya existe un departamento con ese nombre' });
+    }
     res.status(500).json({ success: false, error: 'No se pudo actualizar el departamento' });
   }
 });

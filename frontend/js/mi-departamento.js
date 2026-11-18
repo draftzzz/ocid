@@ -72,7 +72,10 @@
 
     if (botonOpciones) botonOpciones.hidden = !puedeEditar;
     if (opcionEditar) opcionEditar.hidden = !puedeEditar;
-    if (!puedeEditar && menu) menu.style.display = 'none';
+    if (!puedeEditar && menu) {
+      menu.style.display = 'none';
+      botonOpciones?.setAttribute('aria-expanded', 'false');
+    }
     if (panelGestion) panelGestion.hidden = !puedeEditar;
     if (panelRoles) panelRoles.hidden = !esJefe;
     if (botonBaja) botonBaja.hidden = !esJefe;
@@ -144,6 +147,7 @@
     if (!lista) return;
     lista.replaceChildren();
 
+    const puedeEliminarRoles = esJefeDepartamento(window.OCID.obtenerUsuarioSesion());
     const grupos = [
       {
         nombre: 'Jefe de Departamento',
@@ -179,6 +183,15 @@
       conteo.className = 'conteo_rol_asignacion';
       conteo.textContent = `${rol.integrantes.length} integrante${rol.integrantes.length === 1 ? '' : 's'}`;
       cabecera.append(etiqueta, conteo);
+      if (rol.id && puedeEliminarRoles) {
+        const botonEliminar = document.createElement('button');
+        botonEliminar.className = 'boton_eliminar_rol';
+        botonEliminar.type = 'button';
+        botonEliminar.textContent = 'Eliminar rol';
+        botonEliminar.setAttribute('aria-label', `Eliminar rol ${rol.nombre}`);
+        botonEliminar.addEventListener('click', () => eliminarRolDepartamento(rol, botonEliminar));
+        cabecera.appendChild(botonEliminar);
+      }
 
       const integrantes = document.createElement('ul');
       integrantes.className = 'integrantes_rol_asignacion';
@@ -201,6 +214,37 @@
       tarjeta.append(cabecera, integrantes);
       lista.appendChild(tarjeta);
     });
+  }
+
+  async function eliminarRolDepartamento(rol, boton) {
+    if (!esJefeDepartamento(window.OCID.obtenerUsuarioSesion()) || !departamentoActual) {
+      window.OCID.mostrarToast('Solo el jefe del departamento puede eliminar roles.', 'error');
+      return;
+    }
+    if (!window.confirm(`¿Deseas eliminar el rol "${rol.nombre}"? Los roles con integrantes asignados no se pueden eliminar.`)) {
+      return;
+    }
+
+    boton.disabled = true;
+    try {
+      const resultado = await window.OCID.apiFetch(
+        `/departamentos/${Number(departamentoActual.id)}/roles/${Number(rol.id)}`,
+        { method: 'DELETE' }
+      );
+      if (!resultado.success || !resultado.rol) {
+        throw new Error(resultado.error || 'No se pudo eliminar el rol.');
+      }
+      rolesDepartamento = rolesDepartamento.filter(nombre => normalizar(nombre) !== normalizar(rol.nombre));
+      rolesDepartamentoDetalle = rolesDepartamentoDetalle.filter(detalle => Number(detalle.id) !== Number(rol.id));
+      renderizarMiembros(miembrosActuales);
+      renderizarModalRoles();
+      window.OCID.mostrarToast('Rol eliminado correctamente.', 'exito');
+    } catch (error) {
+      console.error('Error al eliminar rol:', error);
+      window.OCID.mostrarToast(error.message || 'No se pudo eliminar el rol.', 'error');
+    } finally {
+      boton.disabled = false;
+    }
   }
 
   function filtrarMiembros() {
@@ -545,12 +589,38 @@
     }
     if (botonCerrarRoles) botonCerrarRoles.addEventListener('click', cerrarModalRoles);
 
+    const cerrarMenuDepartamento = () => {
+      if (menuDepartamento) menuDepartamento.style.display = 'none';
+      if (botonOpciones) botonOpciones.setAttribute('aria-expanded', 'false');
+    };
+
     if (botonOpciones && menuDepartamento) {
+      botonOpciones.setAttribute('aria-haspopup', 'menu');
+      botonOpciones.setAttribute('aria-expanded', 'false');
       botonOpciones.addEventListener('click', evento => {
         if (!puedeEditarDepartamento()) return;
         evento.stopPropagation();
         document.querySelectorAll('.menu_integrante').forEach(menu => { menu.hidden = true; });
-        menuDepartamento.style.display = menuDepartamento.style.display === 'block' ? 'none' : 'block';
+        if (menuDepartamento.style.display === 'block') {
+          cerrarMenuDepartamento();
+          return;
+        }
+
+        menuDepartamento.style.display = 'block';
+        const botonRect = botonOpciones.getBoundingClientRect();
+        const margen = 8;
+        const menuWidth = menuDepartamento.offsetWidth;
+        const menuHeight = menuDepartamento.offsetHeight;
+        const left = Math.max(margen, Math.min(
+          botonRect.right - menuWidth,
+          window.innerWidth - menuWidth - margen
+        ));
+        const top = botonRect.bottom + menuHeight + margen <= window.innerHeight
+          ? botonRect.bottom + margen
+          : Math.max(margen, botonRect.top - menuHeight - margen);
+        menuDepartamento.style.left = `${left}px`;
+        menuDepartamento.style.top = `${top}px`;
+        botonOpciones.setAttribute('aria-expanded', 'true');
       });
     }
 
@@ -564,7 +634,7 @@
           window.OCID.mostrarToast('No hay un departamento asignado para editar.', true);
           return;
         }
-        menuDepartamento.style.display = 'none';
+        cerrarMenuDepartamento();
         obtenerElemento('input_editar_nombre_depto').value = departamentoActual.nombre || '';
         obtenerElemento('input_editar_desc_depto').value = departamentoActual.descripcion || '';
         modalEdicion.classList.add('modal_activo');
@@ -597,25 +667,32 @@
           window.OCID.mostrarToast('El nombre del departamento no puede estar vacío.', true);
           return;
         }
+        guardar.disabled = true;
         try {
           const resultado = await window.OCID.apiFetch(`/departamentos/${departamentoActual.id}`, {
             method: 'PUT',
             body: JSON.stringify({ nombre, descripcion })
           });
-          if (!resultado.success) throw new Error(resultado.error || 'No se pudo actualizar el departamento.');
+          if (!resultado.success || !resultado.departamento) {
+            throw new Error(resultado.error || 'El servidor no devolvió el departamento actualizado.');
+          }
+          departamentoActual = resultado.departamento;
+          texto('nombre_departamento_texto', departamentoActual.nombre || '');
+          texto('parrafo_descripcion', departamentoActual.descripcion || 'Sin descripción disponible.');
           cerrarModalEdicion();
           window.OCID.mostrarToast('Departamento actualizado correctamente.');
-          await cargarDatosDepartamento();
         } catch (error) {
           console.error('Error al actualizar el departamento:', error);
           window.OCID.mostrarToast(error.message || 'No se pudo actualizar el departamento.', true);
+        } finally {
+          guardar.disabled = false;
         }
       });
     }
 
     window.addEventListener('click', evento => {
       if (menuDepartamento && !menuDepartamento.contains(evento.target) && evento.target !== botonOpciones) {
-        menuDepartamento.style.display = 'none';
+        cerrarMenuDepartamento();
       }
       if (!evento.target.closest('.menu_integrante, .boton_menu_integrante')) {
         document.querySelectorAll('.menu_integrante').forEach(menu => {
@@ -624,6 +701,13 @@
         });
       }
     });
+    window.addEventListener('keydown', evento => {
+      if (evento.key === 'Escape' && menuDepartamento?.style.display === 'block') {
+        cerrarMenuDepartamento();
+        botonOpciones?.focus();
+      }
+    });
+    window.addEventListener('scroll', cerrarMenuDepartamento, true);
 
     const busqueda = obtenerElemento('campo_busqueda_general');
     if (busqueda) busqueda.addEventListener('input', filtrarMiembros);

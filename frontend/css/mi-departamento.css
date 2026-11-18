@@ -874,13 +874,13 @@ textarea {
 
 .menu_desplegable_opciones {
     display: none;
-    position: absolute;
+    position: fixed;
     background: white;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 50;
-    width: 160px;
+    z-index: 70;
+    width: 190px;
     padding: 4px 0;
 }
 
@@ -1259,12 +1259,36 @@ textarea {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
 .conteo_rol_asignacion {
     color: #64748b;
     font-size: 11px;
+}
+
+.boton_eliminar_rol {
+    flex: 0 0 auto;
+    padding: 6px 9px;
+    border: 1px solid #fecaca;
+    border-radius: 7px;
+    background: #fff7f7;
+    color: #b91c1c;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.boton_eliminar_rol:hover:not(:disabled) {
+    border-color: #fca5a5;
+    background: #fee2e2;
+}
+
+.boton_eliminar_rol:disabled {
+    cursor: wait;
+    opacity: 0.6;
 }
 
 .integrantes_rol_asignacion {
