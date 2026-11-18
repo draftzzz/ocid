@@ -5,6 +5,28 @@
   let miembrosActuales = [];
   const estadosMiembros = new Map();
 
+  function puedeEditarDepartamento() {
+    const usuario = window.OCID.obtenerUsuarioSesion();
+    if (!usuario || !departamentoActual) return false;
+
+    const esAdministrador = normalizar(usuario.rol) === 'administrador';
+    const esJefeAsignado =
+      Number(departamentoActual.jefe_id) === Number(usuario.id) ||
+      (usuario.es_jefe === true && Number(usuario.departamento_id) === Number(departamentoActual.id));
+    return esAdministrador || esJefeAsignado;
+  }
+
+  function actualizarControlesEdicion() {
+    const puedeEditar = puedeEditarDepartamento();
+    const botonOpciones = obtenerElemento('boton_opciones_departamento');
+    const opcionEditar = obtenerElemento('opcion_editar_departamento');
+    const menu = obtenerElemento('menu_opciones_departamento');
+
+    if (botonOpciones) botonOpciones.hidden = !puedeEditar;
+    if (opcionEditar) opcionEditar.hidden = !puedeEditar;
+    if (!puedeEditar && menu) menu.style.display = 'none';
+  }
+
   function obtenerElemento(id) {
     return document.getElementById(id);
   }
@@ -143,6 +165,7 @@
 
   function renderizarDepartamento(departamento, usuarios, archivos, tareas) {
     departamentoActual = departamento;
+    actualizarControlesEdicion();
     const departamentoId = departamento ? Number(departamento.id) : null;
     const miembros = departamento
       ? usuarios.filter(usuario => Number(usuario.departamento_id) === departamentoId)
@@ -214,11 +237,12 @@
   function configurarModales() {
     const menuDepartamento = obtenerElemento('menu_opciones_departamento');
     const modalEdicion = obtenerElemento('modal_editar_departamento');
-    const botonOpciones = document.querySelector('.tarjeta_general .boton_acciones');
+    const botonOpciones = obtenerElemento('boton_opciones_departamento');
     const opcionEditar = obtenerElemento('opcion_editar_departamento');
 
     if (botonOpciones && menuDepartamento) {
       botonOpciones.addEventListener('click', evento => {
+        if (!puedeEditarDepartamento()) return;
         evento.stopPropagation();
         document.querySelectorAll('.menu_integrante').forEach(menu => { menu.hidden = true; });
         menuDepartamento.style.display = menuDepartamento.style.display === 'block' ? 'none' : 'block';
@@ -227,6 +251,10 @@
 
     if (opcionEditar && modalEdicion) {
       opcionEditar.addEventListener('click', () => {
+        if (!puedeEditarDepartamento()) {
+          window.OCID.mostrarToast('No tienes permiso para editar este departamento.', 'error');
+          return;
+        }
         if (!departamentoActual) {
           window.OCID.mostrarToast('No hay un departamento asignado para editar.', true);
           return;
@@ -248,6 +276,10 @@
       guardar.addEventListener('click', async () => {
         const nombre = obtenerElemento('input_editar_nombre_depto').value.trim();
         const descripcion = obtenerElemento('input_editar_desc_depto').value.trim();
+        if (!puedeEditarDepartamento()) {
+          window.OCID.mostrarToast('No tienes permiso para editar este departamento.', 'error');
+          return;
+        }
         if (!departamentoActual || !nombre) {
           window.OCID.mostrarToast('El nombre del departamento no puede estar vacío.', true);
           return;
@@ -255,12 +287,7 @@
         try {
           const resultado = await window.OCID.apiFetch(`/departamentos/${departamentoActual.id}`, {
             method: 'PUT',
-            body: JSON.stringify({
-              nombre,
-              descripcion,
-              jefe_id: departamentoActual.jefe_id,
-              codigo: departamentoActual.codigo
-            })
+            body: JSON.stringify({ nombre, descripcion })
           });
           if (!resultado.success) throw new Error(resultado.error || 'No se pudo actualizar el departamento.');
           modalEdicion.style.display = 'none';

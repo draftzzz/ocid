@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 
@@ -20,6 +21,31 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
+
+const CODIGO_DIGITOS = '0123456789';
+const CODIGO_MAYUSCULAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const CODIGO_MINUSCULAS = 'abcdefghijklmnopqrstuvwxyz';
+
+function generarCodigoDepartamento() {
+  const caracteres = [
+    CODIGO_DIGITOS[crypto.randomInt(CODIGO_DIGITOS.length)],
+    CODIGO_MAYUSCULAS[crypto.randomInt(CODIGO_MAYUSCULAS.length)],
+    CODIGO_MINUSCULAS[crypto.randomInt(CODIGO_MINUSCULAS.length)]
+  ];
+  const alfabeto = CODIGO_DIGITOS + CODIGO_MAYUSCULAS + CODIGO_MINUSCULAS;
+
+  while (caracteres.length < 7) {
+    caracteres.push(alfabeto[crypto.randomInt(alfabeto.length)]);
+  }
+
+  for (let indice = caracteres.length - 1; indice > 0; indice -= 1) {
+    const indiceAleatorio = crypto.randomInt(indice + 1);
+    [caracteres[indice], caracteres[indiceAleatorio]] =
+      [caracteres[indiceAleatorio], caracteres[indice]];
+  }
+
+  return caracteres.join('');
+}
 
 // ==========================================
 // CONFIGURACIÓN DE CORS
@@ -107,9 +133,21 @@ app.post('/login', authLimiter, async (req, res) => {
 
   try {
     const resultado = await pool.query(
-      `SELECT id, nombre, correo, password, rol, departamento_id, es_jefe
-       FROM usuarios
-       WHERE correo = $1
+      `SELECT u.id, u.nombre, u.correo, u.password,
+              CASE
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) = 'administrador' THEN 'Administrador'
+                WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
+                ELSE COALESCE(NULLIF(BTRIM(u.rol), ''), 'Docente')
+              END AS rol,
+              u.departamento_id, u.es_jefe,
+              d.nombre AS departamento, d.nombre AS departamento_nombre,
+              CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
+                'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
+                'jefe_id', d.jefe_id, 'codigo', d.codigo
+              ) END AS departamento_objeto
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       WHERE u.correo = $1
        LIMIT 1`,
       [correo.trim()]
     );
@@ -282,7 +320,8 @@ app.put('/usuarios/:id', async (req, res) => {
     }
 
     const rolUsuario = rol ? String(rol).trim() : 'Docente';
-    const esJefeBool = rolUsuario.toLowerCase() === 'jefe';
+    const rolNormalizado = rolUsuario.toLocaleLowerCase('es-MX');
+    const esJefeBool = rolNormalizado === 'jefe' || rolNormalizado === 'jefe de departamento';
 
     const resultado = await pool.query(
       `UPDATE usuarios
@@ -296,7 +335,26 @@ app.put('/usuarios/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'El usuario no existe' });
     }
 
-    res.json({ success: true, usuario: resultado.rows[0] });
+    const perfil = await pool.query(
+      `SELECT u.id, u.nombre, u.correo,
+              CASE
+                WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) = 'administrador' THEN 'Administrador'
+                WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
+                ELSE COALESCE(NULLIF(BTRIM(u.rol), ''), 'Docente')
+              END AS rol,
+              u.departamento_id, u.es_jefe,
+              d.nombre AS departamento, d.nombre AS departamento_nombre,
+              CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
+                'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
+                'jefe_id', d.jefe_id, 'codigo', d.codigo
+              ) END AS departamento_objeto
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id
+       WHERE u.id = $1`,
+      [id]
+    );
+
+    res.json({ success: true, usuario: perfil.rows[0] });
   } catch (error) {
     console.error('Error al actualizar perfil:', error.message);
     if (error.code === '23505') {
@@ -739,39 +797,157 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
 });
 
 app.post('/departamentos', async (req, res) => {
-  const { nombre, descripcion, jefe_id, codigo } = req.body;
-  if (!nombre || !nombre.trim()) return res.status(400).json({ success: false, error: 'El nombre del departamento es obligatorio' });
+  const { nombre, descripcion } = req.body;
+  const nombreFinal = typeof nombre === 'string' ? nombre.trim() : '';
+  const descripcionFinal = typeof descripcion === 'string' && descripcion.trim()
+    ? descripcion.trim()
+    : null;
+  const jefeId = Number(req.usuario && req.usuario.id);
+  if (!nombreFinal) {
+    return res.status(400).json({ success: false, error: 'El nombre del departamento es obligatorio' });
+  }
+  if (!Number.isSafeInteger(jefeId) || jefeId <= 0) {
+    return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+  }
 
-  const codigoFinal = codigo ? String(codigo).trim() : null;
-  const jefeId = (jefe_id !== null && jefe_id !== undefined && jefe_id !== '') ? Number(jefe_id) : null;
-
+  let client;
+  let transaccionAbierta = false;
   try {
-    const resultado = await pool.query(
-      `INSERT INTO departamentos (id, nombre, descripcion, jefe_id, codigo)
-       VALUES (COALESCE((SELECT MAX(id) FROM departamentos), 0) + 1, $1, $2, $3, $4)
-       RETURNING id, nombre, descripcion, jefe_id, codigo`,
-      [nombre.trim(), descripcion ? descripcion.trim() : null, jefeId, codigoFinal]
+    client = await pool.connect();
+    await client.query('BEGIN');
+    transaccionAbierta = true;
+    await client.query('SELECT pg_advisory_xact_lock(72653145)');
+
+    const usuarioExistente = await client.query(
+      'SELECT id FROM usuarios WHERE id = $1 FOR UPDATE',
+      [jefeId]
     );
-    res.status(201).json({ success: true, departamento: resultado.rows[0] });
+    if (usuarioExistente.rowCount === 0) {
+      await client.query('ROLLBACK');
+      transaccionAbierta = false;
+      return res.status(404).json({ success: false, error: 'El usuario creador no existe' });
+    }
+
+    let departamento = null;
+    for (let intento = 0; intento < 10 && !departamento; intento += 1) {
+      const codigoFinal = generarCodigoDepartamento();
+      const codigoExistente = await client.query(
+        'SELECT 1 FROM departamentos WHERE LOWER(BTRIM(codigo)) = LOWER($1) LIMIT 1',
+        [codigoFinal]
+      );
+      if (codigoExistente.rowCount > 0) continue;
+
+      const resultado = await client.query(
+        `INSERT INTO departamentos (id, nombre, descripcion, jefe_id, codigo)
+         VALUES (COALESCE((SELECT MAX(id) FROM departamentos), 0) + 1, $1, $2, $3, $4)
+         RETURNING id, nombre, descripcion, jefe_id, codigo`,
+        [nombreFinal, descripcionFinal, jefeId, codigoFinal]
+      );
+      departamento = resultado.rows[0];
+    }
+
+    if (!departamento) {
+      await client.query('ROLLBACK');
+      transaccionAbierta = false;
+      return res.status(503).json({ success: false, error: 'No se pudo generar un código único. Intenta de nuevo.' });
+    }
+
+    await client.query(
+      `UPDATE usuarios
+       SET departamento_id = $1, rol = 'Jefe de Departamento', es_jefe = TRUE
+       WHERE id = $2`,
+      [departamento.id, jefeId]
+    );
+    const perfil = await client.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
+              d.nombre AS departamento, d.nombre AS departamento_nombre,
+              json_build_object(
+                'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
+                'jefe_id', d.jefe_id, 'codigo', d.codigo
+              ) AS departamento_objeto
+       FROM usuarios u
+       JOIN departamentos d ON d.id = u.departamento_id
+       WHERE u.id = $1`,
+      [jefeId]
+    );
+
+    await client.query('COMMIT');
+    transaccionAbierta = false;
+    res.status(201).json({
+      success: true,
+      departamento,
+      usuario: perfil.rows[0]
+    });
   } catch (error) {
-    if (error.code === '23505') return res.status(409).json({ success: false, error: 'Ya existe un departamento con ese código o datos' });
+    if (client && transaccionAbierta) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error al revertir la creación del departamento:', rollbackError.message);
+      }
+    }
+    console.error('Error al crear el departamento:', error.message);
+    if (error.code === '23505') {
+      return res.status(409).json({ success: false, error: 'Ya existe un departamento con esos datos' });
+    }
     res.status(500).json({ success: false, error: 'No se pudo crear el departamento' });
+  } finally {
+    if (client) client.release();
   }
 });
 
 app.put('/departamentos/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const { nombre, descripcion, jefe_id, codigo } = req.body;
-  if (!nombre || !nombre.trim()) return res.status(400).json({ success: false, error: 'El nombre es obligatorio' });
+  const { nombre, descripcion } = req.body;
+  const nombreFinal = typeof nombre === 'string' ? nombre.trim() : '';
+  const descripcionFinal = typeof descripcion === 'string' && descripcion.trim()
+    ? descripcion.trim()
+    : null;
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!Number.isSafeInteger(id) || id <= 0 || !nombreFinal) {
+    return res.status(400).json({ success: false, error: 'Los datos del departamento no son válidos' });
+  }
+  if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+  }
 
   try {
+    const permiso = await pool.query(
+      `SELECT d.id, d.jefe_id, u.id AS usuario_id, u.rol AS usuario_rol,
+              u.es_jefe, u.departamento_id AS usuario_departamento_id
+       FROM departamentos d
+       JOIN usuarios u ON u.id = $2
+       WHERE d.id = $1`,
+      [id, usuarioId]
+    );
+    if (permiso.rowCount === 0) {
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+
+    const datosPermiso = permiso.rows[0];
+    const rolUsuario = String(datosPermiso.usuario_rol || '').trim().toLocaleLowerCase('es-MX');
+    const esAdministrador = rolUsuario === 'administrador';
+    const esJefeAsignado =
+      Number(datosPermiso.jefe_id) === usuarioId ||
+      (datosPermiso.es_jefe === true && Number(datosPermiso.usuario_departamento_id) === id);
+    if (!esAdministrador && !esJefeAsignado) {
+      return res.status(403).json({
+        success: false,
+        error: 'No tienes permiso para modificar este departamento'
+      });
+    }
+
     const resultado = await pool.query(
-      `UPDATE departamentos SET nombre = $1, descripcion = $2, jefe_id = $3, codigo = $4 WHERE id = $5 RETURNING *`,
-      [nombre.trim(), descripcion ? descripcion.trim() : null, jefe_id ? Number(jefe_id) : null, codigo ? String(codigo).trim() : null, id]
+      `UPDATE departamentos
+       SET nombre = $1, descripcion = $2
+       WHERE id = $3
+       RETURNING id, nombre, descripcion, jefe_id, codigo`,
+      [nombreFinal, descripcionFinal, id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El departamento no existe' });
     res.json({ success: true, departamento: resultado.rows[0] });
   } catch (error) {
+    console.error('Error al actualizar el departamento:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo actualizar el departamento' });
   }
 });

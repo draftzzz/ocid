@@ -23,16 +23,15 @@ document.getElementById('form_crear_departamento').addEventListener('submit', as
             method: 'POST',
             body: JSON.stringify({
                 nombre: nombre,
-                descripcion: descripcion,
-                jefe_id: usuario.id
+                descripcion: descripcion
             })
         });
-        if (!datos.success) throw new Error(datos.error || 'No se pudo crear el departamento');
+        if (!datos.success || !datos.departamento || !datos.usuario) {
+            throw new Error(datos.error || 'No se pudo crear el departamento');
+        }
 
-        // Actualizar la sesión local del usuario con su nuevo departamento y rol de jefe
-        usuario.departamento_id = datos.departamento.id;
-        usuario.rol = 'Jefe de Departamento';
-        localStorage.setItem('usuario_ocid', JSON.stringify(usuario));
+        usuario = { ...usuario, ...datos.usuario };
+        window.OCID.guardarSesion(usuario);
 
         // Redirigir a inicio ya con acceso completo
         window.location.href = 'inicio.html';

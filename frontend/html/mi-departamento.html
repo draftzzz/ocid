@@ -135,7 +135,12 @@
                             <h2 class="nombre_departamento" id="nombre_departamento_texto"></h2>
                             <div class="detalle_departamento" id="detalle_departamento_texto"></div>
                         </div>
-                        <button aria-label="Opciones de departamento" class="boton_acciones" type="button">
+                        <button
+                            aria-label="Opciones de departamento"
+                            class="boton_acciones"
+                            hidden
+                            id="boton_opciones_departamento"
+                            type="button">
                             <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
                         </button>
                     </div>
@@ -268,7 +273,7 @@
 
     <!-- Menú desplegable para los tres puntitos del departamento -->
     <div id="menu_opciones_departamento" class="menu_desplegable_opciones">
-        <button id="opcion_editar_departamento" class="boton_opcion_dropdown" type="button">
+        <button id="opcion_editar_departamento" class="boton_opcion_dropdown" hidden type="button">
             <i class="fa-solid fa-pen"></i> Editar departamento
         </button>
     </div>

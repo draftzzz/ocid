@@ -702,6 +702,11 @@ textarea {
     justify-content: center;
 }
 
+#boton_opciones_departamento[hidden],
+#opcion_editar_departamento[hidden] {
+    display: none !important;
+}
+
 .boton_acciones:hover {
     background-color: #f1f5f9;
     color: #0f172a;

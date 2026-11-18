@@ -19,6 +19,13 @@
     window.location.href = 'html/login.html';
   }
 
+  function redirigirSistema(usuario) {
+    const pagina = window.OCID.tieneDepartamentoAsignado(usuario)
+      ? 'html/inicio.html'
+      : 'html/bienvenida.html';
+    window.location.href = pagina;
+  }
+
   function inicializarIndexPublico() {
     let usuario = null;
     try {
@@ -26,6 +33,11 @@
     } catch (e) {
       usuario = null;
     }
+    const sesionValida = Boolean(
+      usuario &&
+      usuario.id &&
+      window.OCID.obtenerToken()
+    );
 
     const botonAcceder = document.getElementById('boton_acceder');
     const botonHeroLogin = document.getElementById('boton_hero_login');
@@ -40,7 +52,7 @@
       botonHeroExplorar.addEventListener('click', () => desplazarASeccion('modulos_sistema'));
     }
 
-    if (usuario && usuario.id) {
+    if (sesionValida) {
       if (botonAcceder) {
         botonAcceder.replaceChildren();
         const icono = document.createElement('i');
@@ -50,17 +62,13 @@
         texto.textContent = 'Ir al Sistema';
         botonAcceder.appendChild(icono);
         botonAcceder.appendChild(texto);
-        botonAcceder.addEventListener('click', () => {
-          window.location.href = 'html/inicio.html';
-        });
+        botonAcceder.addEventListener('click', () => redirigirSistema(usuario));
       }
 
       if (botonHeroLogin) {
         const spanHero = botonHeroLogin.querySelector('span');
         if (spanHero) spanHero.textContent = 'Ir a mi Panel Docente';
-        botonHeroLogin.addEventListener('click', () => {
-          window.location.href = 'html/inicio.html';
-        });
+        botonHeroLogin.addEventListener('click', () => redirigirSistema(usuario));
       }
     } else {
       if (botonAcceder) {

@@ -2,8 +2,12 @@
   'use strict';
 
   const rutaActual = window.location.pathname.toLowerCase();
-  const paginaBienvenida = rutaActual.endsWith('/bienvenida.html');
-  const paginaCrearDepartamento = rutaActual.endsWith('/crear-departamento.html');
+  const paginaActual = rutaActual.split('/').pop();
+  const paginaBienvenida = paginaActual === 'bienvenida.html';
+  const paginaCrearDepartamento = paginaActual === 'crear-departamento.html';
+  const paginasPublicas = ['index.html', 'login.html', 'registro.html'];
+  if (paginasPublicas.includes(paginaActual)) return;
+
   const rutaBase = document.currentScript?.dataset.routePrefix || '';
   let token;
   let usuario;
