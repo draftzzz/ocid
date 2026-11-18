@@ -212,8 +212,17 @@
                     </a>
                 </div>
                 <label class="busqueda_integrantes" for="campo_busqueda_general">
-                    Buscar integrantes
-                    <input id="campo_busqueda_general" placeholder="Nombre, correo o rol" type="search" />
+                    <span>Buscar integrantes</span>
+                    <span class="campo_busqueda_integrantes">
+                        <svg aria-hidden="true" fill="none" height="18" stroke="currentColor"
+                            stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                            viewBox="0 0 24 24" width="18">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <path d="m20 20-4-4"></path>
+                        </svg>
+                        <input id="campo_busqueda_general" placeholder="Buscar por nombre..." type="search"
+                            autocomplete="off" />
+                    </span>
                 </label>
                 <div class="contenedor_tabla_integrantes">
                     <table class="tabla_integrantes">

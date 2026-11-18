@@ -716,7 +716,14 @@ app.patch('/usuarios/:id/rol', async (req, res) => {
 
 app.patch('/usuarios/:id/estado', async (req, res) => {
   const id = Number(req.params.id);
-  const estado = typeof req.body.estado === 'string' ? req.body.estado.trim() : '';
+  const estadoSolicitado = typeof req.body.estado === 'string'
+    ? req.body.estado.trim().toLocaleLowerCase('es-MX')
+    : '';
+  const estado = estadoSolicitado === 'activo'
+    ? 'Activo'
+    : estadoSolicitado === 'inactivo'
+      ? 'Inactivo'
+      : '';
   if (!Number.isSafeInteger(id) || id <= 0 ||
       !['Activo', 'Inactivo'].includes(estado)) {
     return res.status(400).json({ success: false, error: 'El estado solicitado no es válido' });

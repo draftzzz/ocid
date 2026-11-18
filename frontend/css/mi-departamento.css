@@ -1062,12 +1062,55 @@ textarea {
 
 .busqueda_integrantes {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     max-width: 420px;
     margin: 0 0 14px;
     color: #64748b;
     font-size: 12px;
     font-weight: 600;
+}
+
+.campo_busqueda_integrantes {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 13px;
+    border: 1px solid #dbe3ee;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #94a3b8;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.campo_busqueda_integrantes:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.campo_busqueda_integrantes svg {
+    flex: 0 0 auto;
+}
+
+.campo_busqueda_integrantes input {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.campo_busqueda_integrantes input::placeholder {
+    color: #94a3b8;
+}
+
+.campo_busqueda_integrantes input:focus {
+    outline: none;
 }
 
 .boton_acciones[hidden],

@@ -206,9 +206,7 @@
   function filtrarMiembros() {
     const termino = (obtenerElemento('campo_busqueda_general')?.value || '').trim().toLocaleLowerCase('es-MX');
     const visibles = miembrosActuales.filter(miembro =>
-      [miembro.nombre, miembro.correo, miembro.rol].some(valor =>
-        String(valor || '').toLocaleLowerCase('es-MX').includes(termino)
-      )
+      String(miembro.nombre || '').toLocaleLowerCase('es-MX').includes(termino)
     );
     renderizarMiembros(visibles);
   }
@@ -273,7 +271,7 @@
         const botonEstado = document.createElement('button');
         botonEstado.type = 'button';
         botonEstado.className = 'btn_cambiar_estado';
-        botonEstado.textContent = estado === 'Activo' ? 'Hacer inactivo' : 'Hacer activo';
+        botonEstado.textContent = estado === 'Activo' ? 'Hacer inactivo' : 'Activar';
         botonEstado.disabled = esJefeIntegrante;
         if (esJefeIntegrante) botonEstado.title = 'No se puede cambiar el estado del jefe del departamento';
         botonEstado.addEventListener('click', async () => {
@@ -288,11 +286,15 @@
             if (!resultado.success || !resultado.usuario) {
               throw new Error(resultado.error || 'No se pudo cambiar el estado del integrante.');
             }
+            if (!['Activo', 'Inactivo'].includes(resultado.usuario.estado)) {
+              throw new Error('El servidor no devolvió un estado válido para el integrante.');
+            }
             miembro.estado = resultado.usuario.estado;
             renderizarTodosIntegrantes();
             filtrarMiembros();
             window.OCID.mostrarToast('Estado actualizado correctamente.', 'exito');
           } catch (error) {
+            console.error('Error al cambiar el estado del integrante:', error);
             window.OCID.mostrarToast(error.message || 'No se pudo cambiar el estado del integrante.', 'error');
           } finally {
             botonEstado.disabled = false;
