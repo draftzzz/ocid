@@ -183,8 +183,33 @@
     setTimeout(() => toast.classList.add('visible', 'toast_visible'), 10);
     setTimeout(() => {
       toast.classList.remove('visible', 'toast_visible');
+      toast.classList.add('toast_ocultando');
       setTimeout(() => toast.remove(), 300);
     }, duracion);
+  }
+
+  function configurarBloqueoScrollModal() {
+    if (!document.body || document.body.dataset.ocidModalLockConfigured === 'true') return;
+    document.body.dataset.ocidModalLockConfigured = 'true';
+    const selectorModales = [
+      '.modal_overlay', '.modal_fondo', '.fondo_modal', '.fondo_modal_oscuro',
+      '.fondo_oscuro_modal', '.modal_contacto', '.modal_unirse_fondo'
+    ].join(',');
+    const sincronizarBloqueo = () => {
+      const modalAbierto = Array.from(document.querySelectorAll(selectorModales)).some(modal => {
+        const estilo = window.getComputedStyle(modal);
+        return estilo.display !== 'none' && estilo.visibility !== 'hidden';
+      });
+      document.body.classList.toggle('modal_abierto', modalAbierto);
+    };
+    const observer = new MutationObserver(sincronizarBloqueo);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class', 'style', 'hidden'],
+      childList: true,
+      subtree: true
+    });
+    sincronizarBloqueo();
   }
 
   function configurarCierreSesion() {
@@ -278,11 +303,16 @@
   function iniciarNavegacionCompartida() {
     actualizarCabeceraUsuario();
     configurarMenuMovil();
+    configurarBloqueoScrollModal();
     configurarCampanaGlobal();
     actualizarContadorNotificaciones();
     if (!intervaloNotificaciones && obtenerBarraSuperiorAplicacion()) {
       intervaloNotificaciones = setInterval(() => {
-        if (document.visibilityState !== 'hidden') actualizarContadorNotificaciones();
+        if (document.visibilityState !== 'hidden') {
+          actualizarContadorNotificaciones();
+          const panel = document.querySelector('.panel_notificaciones_global:not([hidden])');
+          if (panel) cargarPanelNotificaciones(panel, false);
+        }
       }, 30000);
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') actualizarContadorNotificaciones();
@@ -312,6 +342,40 @@
       }));
     }
 
+    let panel = seccionDerecha.querySelector('.panel_notificaciones_global');
+    if (!panel) {
+      panel = crearElemento('section', {
+        className: 'panel_notificaciones_global',
+        attributes: { 'aria-label': 'Notificaciones recientes', role: 'region' }
+      });
+      panel.hidden = true;
+      const encabezado = crearElemento('div', { className: 'panel_notificaciones_encabezado' });
+      encabezado.appendChild(crearElemento('strong', { textContent: 'Notificaciones' }));
+      const cerrarPanel = crearElemento('button', {
+        className: 'panel_notificaciones_cerrar',
+        type: 'button',
+        textContent: '×',
+        attributes: { 'aria-label': 'Cerrar notificaciones' }
+      });
+      encabezado.appendChild(cerrarPanel);
+      panel.appendChild(encabezado);
+      panel.appendChild(crearElemento('div', {
+        className: 'panel_notificaciones_lista',
+        attributes: { 'aria-live': 'polite' }
+      }));
+      const verTodas = crearElemento('a', {
+        className: 'panel_notificaciones_ver_todas',
+        href: 'notificaciones.html',
+        textContent: 'Ver todas las notificaciones'
+      });
+      panel.appendChild(verTodas);
+      seccionDerecha.appendChild(panel);
+      cerrarPanel.addEventListener('click', () => {
+        panel.hidden = true;
+        boton.setAttribute('aria-expanded', 'false');
+      });
+    }
+
     let indicador = boton.querySelector('#indicador_notificaciones') ||
       seccionDerecha.querySelector('#indicador_notificaciones');
     if (!indicador) {
@@ -325,9 +389,87 @@
 
     if (boton.dataset.ocidCampanaConfigured !== 'true') {
       boton.dataset.ocidCampanaConfigured = 'true';
+      boton.setAttribute('aria-haspopup', 'true');
+      boton.setAttribute('aria-expanded', 'false');
       boton.addEventListener('click', () => {
-        window.location.href = 'notificaciones.html';
+        const abierto = panel.hidden;
+        panel.hidden = !abierto;
+        boton.setAttribute('aria-expanded', String(abierto));
+        if (abierto) cargarPanelNotificaciones(panel);
       });
+      document.addEventListener('click', evento => {
+        if (!panel.contains(evento.target) && evento.target !== boton && !boton.contains(evento.target)) {
+          panel.hidden = true;
+          boton.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', evento => {
+        if (evento.key === 'Escape') {
+          panel.hidden = true;
+          boton.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  }
+
+  async function cargarPanelNotificaciones(panel, mostrarCarga = true) {
+    const lista = panel.querySelector('.panel_notificaciones_lista');
+    if (!lista || panel.dataset.loading === 'true') return;
+    panel.dataset.loading = 'true';
+    if (mostrarCarga) lista.textContent = 'Cargando notificaciones...';
+    try {
+      const datos = await apiFetch('/notificaciones');
+      const notificaciones = Array.isArray(datos)
+        ? datos
+        : (Array.isArray(datos.notificaciones) ? datos.notificaciones : []);
+      lista.replaceChildren();
+      if (!notificaciones.length) {
+        lista.textContent = 'No hay notificaciones recientes.';
+        return;
+      }
+
+      notificaciones.slice(0, 5).forEach(item => {
+        const tarjeta = crearElemento('article', {
+          className: `panel_notificacion_item${item.leida ? '' : ' sin_leer'}`
+        });
+        const enlace = crearElemento('a', {
+          className: 'panel_notificacion_contenido',
+          href: item.tipo === 'tarea' ? 'tareas.html' : 'anuncios.html'
+        });
+        enlace.appendChild(crearElemento('strong', {
+          textContent: item.titulo || (item.tipo === 'tarea' ? 'Tarea pendiente' : 'Anuncio')
+        }));
+        enlace.appendChild(crearElemento('span', {
+          textContent: item.contenido || ''
+        }));
+        tarjeta.appendChild(enlace);
+
+        if (item.tipo === 'anuncio' && !item.leida && Number.isSafeInteger(Number(item.id))) {
+          const marcarLeida = crearElemento('button', {
+            className: 'panel_notificacion_marcar_leida',
+            type: 'button',
+            textContent: 'Marcar leída'
+          });
+          marcarLeida.addEventListener('click', async () => {
+            marcarLeida.disabled = true;
+            try {
+              await apiFetch(`/notificaciones/${Number(item.id)}/leer`, { method: 'PUT' });
+              await cargarPanelNotificaciones(panel, false);
+              actualizarContadorNotificaciones();
+            } catch (error) {
+              mostrarToast(error.message || 'No se pudo marcar como leída.', 'error');
+              marcarLeida.disabled = false;
+            }
+          });
+          tarjeta.appendChild(marcarLeida);
+        }
+        lista.appendChild(tarjeta);
+      });
+    } catch (error) {
+      console.error('Error al cargar las notificaciones recientes:', error);
+      lista.textContent = 'No se pudieron cargar las notificaciones.';
+    } finally {
+      panel.dataset.loading = 'false';
     }
   }
 

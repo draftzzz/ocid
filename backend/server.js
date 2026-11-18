@@ -72,19 +72,20 @@ app.use(cors(corsOptions));
 // ==========================================
 // CONFIGURACIÓN DE SEGURIDAD Y RATE LIMITING
 // ==========================================
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde.' }
-});
-app.use(limiter);
-
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { success: false, error: 'Demasiados intentos de acceso. Intente nuevamente en 15 minutos.' }
+});
+
+const departmentCreationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Se alcanzó el límite de creación de departamentos. Intenta más tarde.' }
 });
 
 app.use(express.json({ limit: '15mb' }));
@@ -118,6 +119,16 @@ const migracionEsquema = pool.query(`
 
   CREATE UNIQUE INDEX IF NOT EXISTS roles_departamento_nombre_unico_idx
   ON roles_departamento (departamento_id, LOWER(BTRIM(nombre)));
+
+  CREATE TABLE IF NOT EXISTS notificaciones (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    anuncio_id INTEGER REFERENCES anuncios(id) ON DELETE CASCADE,
+    leida BOOLEAN NOT NULL DEFAULT FALSE,
+    fecha TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS notificaciones_usuario_fecha_idx
+  ON notificaciones (usuario_id, fecha DESC);
 `);
 
 // ==========================================
@@ -154,7 +165,7 @@ app.post('/login', authLimiter, async (req, res) => {
       `SELECT u.id, u.nombre, u.correo, u.password,
               CASE
                 WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
-                WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
+                WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN 'Jefe de Departamento'
                 WHEN EXISTS (
                   SELECT 1 FROM roles_departamento rd
                   WHERE rd.departamento_id = d.id
@@ -169,7 +180,7 @@ app.post('/login', authLimiter, async (req, res) => {
                   AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
               ) AS rol_personalizado_valido,
               CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
-              CASE WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN TRUE ELSE FALSE END AS es_jefe,
+              CASE WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,
               CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
                 'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
@@ -315,8 +326,8 @@ async function obtenerPermisosDepartamento(db, usuarioId, departamentoId, bloque
   if (resultado.rowCount === 0) return null;
 
   const datos = resultado.rows[0];
-  const esJefe = Number(datos.jefe_id) === Number(usuarioId) ||
-    (esFlagActivo(datos.es_jefe) && Number(datos.usuario_departamento_id) === Number(departamentoId));
+  const esJefe = esFlagActivo(datos.es_jefe) &&
+    Number(datos.usuario_departamento_id) === Number(departamentoId);
   const esAdministrador = esRolAdministrador(datos.usuario_rol);
   return {
     departamento: datos,
@@ -338,7 +349,7 @@ app.get('/usuarios', async (req, res) => {
       `SELECT u.id, u.nombre, u.correo,
               CASE
                 WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
-                WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
+                WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN 'Jefe de Departamento'
                 WHEN EXISTS (
                   SELECT 1 FROM roles_departamento rd
                   WHERE rd.departamento_id = d.id
@@ -352,7 +363,7 @@ app.get('/usuarios', async (req, res) => {
                   AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
               ) AS rol_personalizado_valido,
               CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
-              CASE WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN TRUE ELSE FALSE END AS es_jefe,
+              CASE WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento_nombre
        FROM usuarios u
        LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
@@ -367,24 +378,31 @@ app.get('/usuarios', async (req, res) => {
 
 app.get('/docentes', async (req, res) => {
   try {
-    const usuarioActual = await pool.query(
-      'SELECT departamento_id FROM usuarios WHERE id = $1',
-      [req.usuario.id]
-    );
-    if (usuarioActual.rowCount === 0) {
-      return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+    let departamentoId;
+    if (req.query.departamento_id !== undefined) {
+      departamentoId = Number(req.query.departamento_id);
+      if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0) {
+        return res.status(400).json({ success: false, error: 'ID de departamento inválido' });
+      }
+    } else {
+      const usuarioActual = await pool.query(
+        'SELECT departamento_id FROM usuarios WHERE id = $1',
+        [req.usuario.id]
+      );
+      if (usuarioActual.rowCount === 0) {
+        return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+      }
+      departamentoId = Number(usuarioActual.rows[0].departamento_id);
+      if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0) return res.json([]);
     }
-
-    const departamentoId = usuarioActual.rows[0].departamento_id;
-    if (!departamentoId) return res.json([]);
 
     const resultado = await pool.query(
       `SELECT u.id, u.nombre, u.correo, u.departamento_id,
-              CASE WHEN u.es_jefe IS TRUE OR d.jefe_id = u.id THEN TRUE ELSE FALSE END AS es_jefe,
+              CASE WHEN u.es_jefe IS TRUE THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,
               CASE
                 WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
-                WHEN u.es_jefe IS TRUE OR d.jefe_id = u.id THEN 'Jefe de Departamento'
+                WHEN u.es_jefe IS TRUE THEN 'Jefe de Departamento'
                 WHEN EXISTS (
                   SELECT 1 FROM roles_departamento rd
                   WHERE rd.departamento_id = d.id
@@ -430,7 +448,7 @@ app.get('/departamentos/:id/roles', async (req, res) => {
     );
     res.json({
       success: true,
-      roles: ['Docente', 'Administrador General', ...resultado.rows.map(fila => fila.nombre)]
+      roles: ['Docente', ...resultado.rows.map(fila => fila.nombre)]
     });
   } catch (error) {
     console.error('Error al cargar roles del departamento:', error.message);
@@ -455,8 +473,8 @@ app.post('/departamentos/:id/roles', async (req, res) => {
   try {
     const acceso = await obtenerPermisosDepartamento(pool, req.usuario.id, departamentoId, false);
     if (!acceso) return res.status(404).json({ success: false, error: 'El departamento no existe' });
-    if (!acceso.puedeGestionar) {
-      return res.status(403).json({ success: false, error: 'Solo jefes o administradores pueden crear roles' });
+    if (!acceso.esJefe) {
+      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede crear roles' });
     }
 
     const resultado = await pool.query(
@@ -504,9 +522,9 @@ app.patch('/usuarios/:id/rol', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(404).json({ success: false, error: 'El departamento no existe' });
     }
-    if (!acceso.puedeGestionar) {
+    if (!acceso.esJefe) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ success: false, error: 'No tienes permiso para asignar roles' });
+      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede asignar roles' });
     }
 
     const objetivo = await client.query(
@@ -616,7 +634,7 @@ app.put('/usuarios/:id', async (req, res) => {
       `SELECT u.id, u.nombre, u.correo,
               CASE
                 WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
-                WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN 'Jefe de Departamento'
+                WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN 'Jefe de Departamento'
                 WHEN EXISTS (
                   SELECT 1 FROM roles_departamento rd
                   WHERE rd.departamento_id = d.id
@@ -630,7 +648,7 @@ app.put('/usuarios/:id', async (req, res) => {
                   AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
               ) AS rol_personalizado_valido,
               CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
-              CASE WHEN d.id IS NOT NULL AND (u.es_jefe IS TRUE OR d.jefe_id = u.id) THEN TRUE ELSE FALSE END AS es_jefe,
+              CASE WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,
               CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
                 'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
@@ -748,10 +766,21 @@ app.get('/anuncios/papelera', async (req, res) => {
     const usuarioId = req.usuario.id;
     const resultado = await pool.query(
       `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.fecha_eliminacion,
+              a.autor_id, a.departamento_id, u.nombre AS autor_nombre,
               d.nombre AS departamento_nombre
        FROM anuncios a
        LEFT JOIN departamentos d ON d.id = a.departamento_id
-       WHERE a.eliminado = TRUE AND a.autor_id = $1
+       LEFT JOIN usuarios u ON u.id = a.autor_id
+       WHERE a.eliminado = TRUE
+         AND (
+           a.autor_id = $1
+           OR EXISTS (
+             SELECT 1 FROM usuarios jefe
+             WHERE jefe.id = $1
+               AND jefe.es_jefe IS TRUE
+               AND jefe.departamento_id = a.departamento_id
+           )
+         )
        ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
       [usuarioId]
     );
@@ -763,14 +792,30 @@ app.get('/anuncios/papelera', async (req, res) => {
 
 app.get('/anuncios', async (req, res) => {
   try {
+    const usuario = await pool.query(
+      'SELECT id FROM usuarios WHERE id = $1',
+      [req.usuario.id]
+    );
+    if (usuario.rowCount === 0) {
+      return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+    }
+
     const resultado = await pool.query(
       `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.autor_id, a.departamento_id,
               u.nombre AS autor_nombre, d.nombre AS departamento_nombre
        FROM anuncios a
        LEFT JOIN usuarios u ON u.id = a.autor_id
-       LEFT JOIN departamentos d ON d.id = a.departamento_id
+       LEFT JOIN departamentos d ON d.id = a.departamento_id AND d.eliminado = FALSE
        WHERE COALESCE(a.eliminado, FALSE) = FALSE
-       ORDER BY a.fecha DESC, a.id DESC`
+         AND (
+           a.departamento_id IS NULL
+           OR EXISTS (
+             SELECT 1 FROM notificaciones n
+             WHERE n.anuncio_id = a.id AND n.usuario_id = $1
+           )
+         )
+       ORDER BY a.fecha DESC, a.id DESC`,
+      [req.usuario.id]
     );
     res.json(resultado.rows);
   } catch (error) {
@@ -779,44 +824,153 @@ app.get('/anuncios', async (req, res) => {
 });
 
 app.post('/anuncios', async (req, res) => {
-  const { titulo, contenido, prioridad, autor_id, departamento_id } = req.body;
-  if (!titulo || !contenido) return res.status(400).json({ success: false, error: 'Título y contenido obligatorios' });
-  
-  const autorId = Number(autor_id);
-  const cliente = await pool.connect();
+  const { titulo, contenido, prioridad } = req.body;
+  const departamentoRecibido = req.body.departamento_id;
+  const autorId = Number(req.usuario && req.usuario.id);
+  let departamentoId = null;
+  if (departamentoRecibido !== undefined && departamentoRecibido !== null &&
+      departamentoRecibido !== '' && departamentoRecibido !== 'general') {
+    departamentoId = Number(departamentoRecibido);
+    if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0) {
+      return res.status(400).json({ success: false, error: 'El departamento destino no es válido' });
+    }
+  }
+  if (typeof titulo !== 'string' || !titulo.trim() ||
+      typeof contenido !== 'string' || !contenido.trim()) {
+    return res.status(400).json({ success: false, error: 'Título y contenido obligatorios' });
+  }
+  if (!Number.isSafeInteger(autorId) || autorId <= 0) {
+    return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+  }
+
+  let cliente;
   try {
+    cliente = await pool.connect();
     await cliente.query('BEGIN');
+    if (departamentoId !== null) {
+      const departamento = await cliente.query(
+        'SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE',
+        [departamentoId]
+      );
+      if (departamento.rowCount === 0) {
+        await cliente.query('ROLLBACK');
+        return res.status(404).json({ success: false, error: 'El departamento destino no existe' });
+      }
+    }
+
     const resultado = await cliente.query(
       `INSERT INTO anuncios (titulo, contenido, prioridad, autor_id, departamento_id, fecha, eliminado)
        VALUES ($1, $2, $3, $4, $5, NOW(), FALSE) RETURNING *`,
-      [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamento_id || null]
+      [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamentoId]
     );
 
     await cliente.query(
       `INSERT INTO notificaciones (usuario_id, anuncio_id, leida, fecha)
-       SELECT id, $1, FALSE, NOW() FROM usuarios WHERE id <> $2`,
-      [resultado.rows[0].id, autorId]
+       SELECT id, $1, FALSE, NOW()
+       FROM usuarios
+       WHERE $2::INTEGER IS NULL OR departamento_id = $2`,
+      [resultado.rows[0].id, departamentoId]
     );
     await cliente.query('COMMIT');
     res.status(201).json({ success: true, anuncio: resultado.rows[0] });
   } catch (error) {
-    await cliente.query('ROLLBACK');
+    if (cliente) await cliente.query('ROLLBACK');
     console.error('Error al publicar anuncio:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo publicar el anuncio' });
   } finally {
-    cliente.release();
+    if (cliente) cliente.release();
   }
 });
+
+async function obtenerPermisoGestionAnuncio(usuarioId, anuncioId) {
+  const resultado = await pool.query(
+    `SELECT a.autor_id, a.departamento_id, COALESCE(a.eliminado, FALSE) AS eliminado,
+            u.departamento_id AS usuario_departamento_id, u.es_jefe,
+            d.jefe_id AS jefe_departamento_id
+     FROM anuncios a
+     JOIN usuarios u ON u.id = $2
+     LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
+     WHERE a.id = $1`,
+    [anuncioId, usuarioId]
+  );
+  if (resultado.rowCount === 0) return { existe: false, permitido: false };
+
+  const anuncio = resultado.rows[0];
+  const departamentoId = anuncio.usuario_departamento_id;
+  const esJefe = esFlagActivo(anuncio.es_jefe);
+  const mismoDepartamento = anuncio.departamento_id !== null &&
+    departamentoId !== null &&
+    Number(anuncio.departamento_id) === Number(departamentoId);
+  const anuncioGeneralPropio = anuncio.departamento_id === null &&
+    Number(anuncio.autor_id) === Number(usuarioId);
+
+  return {
+    existe: true,
+    permitido: !esFlagActivo(anuncio.eliminado) && esJefe &&
+      (mismoDepartamento || anuncioGeneralPropio)
+  };
+}
 
 app.put('/anuncios/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { titulo, contenido, prioridad, departamento_id } = req.body;
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!Number.isSafeInteger(id) || id <= 0 ||
+      typeof titulo !== 'string' || !titulo.trim() ||
+      typeof contenido !== 'string' || !contenido.trim()) {
+    return res.status(400).json({ success: false, error: 'Los datos del anuncio no son válidos' });
+  }
   try {
-    const resultado = await pool.query(
-      `UPDATE anuncios SET titulo = $1, contenido = $2, prioridad = $3, departamento_id = $4 WHERE id = $5 RETURNING *`,
-      [titulo.trim(), contenido.trim(), prioridad || 'Informativo', departamento_id || null, id]
-    );
-    if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El anuncio no existe' });
+    const acceso = await obtenerPermisoGestionAnuncio(usuarioId, id);
+    if (!acceso.existe) return res.status(404).json({ success: false, error: 'El anuncio no existe' });
+    if (!acceso.permitido) {
+      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede editar este anuncio' });
+    }
+
+    let departamentoId = null;
+    if (departamento_id !== undefined && departamento_id !== null &&
+        departamento_id !== '' && departamento_id !== 'general') {
+      departamentoId = Number(departamento_id);
+      if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0) {
+        return res.status(400).json({ success: false, error: 'El departamento destino no es válido' });
+      }
+    }
+    if (departamentoId !== null) {
+      const accesoDestino = await obtenerPermisosDepartamento(pool, usuarioId, departamentoId, false);
+      if (!accesoDestino || !accesoDestino.esJefe) {
+        return res.status(403).json({ success: false, error: 'Solo el jefe del departamento destino puede reasignar este anuncio' });
+      }
+    }
+    const client = await pool.connect();
+    let resultado;
+    try {
+      await client.query('BEGIN');
+      resultado = await client.query(
+        `UPDATE anuncios
+         SET titulo = $1, contenido = $2, prioridad = $3, departamento_id = $4
+         WHERE id = $5 AND COALESCE(eliminado, FALSE) = FALSE
+         RETURNING *`,
+        [titulo.trim(), contenido.trim(), prioridad || 'Informativo', departamentoId, id]
+      );
+      if (resultado.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ success: false, error: 'El anuncio no existe' });
+      }
+      await client.query('DELETE FROM notificaciones WHERE anuncio_id = $1', [id]);
+      await client.query(
+        `INSERT INTO notificaciones (usuario_id, anuncio_id, leida, fecha)
+         SELECT id, $1, FALSE, NOW()
+         FROM usuarios
+         WHERE $2::INTEGER IS NULL OR departamento_id = $2`,
+        [id, departamentoId]
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
     res.json({ success: true, anuncio: resultado.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo actualizar el anuncio' });
@@ -826,13 +980,21 @@ app.put('/anuncios/:id', async (req, res) => {
 app.delete('/anuncios/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const usuarioId = req.usuario.id;
+    const usuarioId = Number(req.usuario && req.usuario.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ success: false, error: 'ID de anuncio inválido' });
+    }
+    const acceso = await obtenerPermisoGestionAnuncio(usuarioId, id);
+    if (!acceso.existe) return res.status(404).json({ success: false, error: 'El anuncio no existe' });
+    if (!acceso.permitido) {
+      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede eliminar este anuncio' });
+    }
     const resultado = await pool.query(
       `UPDATE anuncios
        SET eliminado = TRUE, fecha_eliminacion = NOW()
-       WHERE id = $1 AND autor_id = $2
+       WHERE id = $1 AND COALESCE(eliminado, FALSE) = FALSE
        RETURNING id`,
-      [id, usuarioId]
+      [id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El anuncio no existe o no te pertenece' });
     res.json({ success: true, mensaje: 'Anuncio movido a la papelera' });
@@ -844,11 +1006,23 @@ app.delete('/anuncios/:id', async (req, res) => {
 app.put('/anuncios/:id/restaurar', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const usuarioId = req.usuario.id;
+    const usuarioId = Number(req.usuario.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ success: false, error: 'ID de anuncio inválido' });
+    }
     const resultado = await pool.query(
       `UPDATE anuncios
        SET eliminado = FALSE, fecha_eliminacion = NULL
-       WHERE id = $1 AND autor_id = $2 AND eliminado = TRUE
+       WHERE id = $1 AND eliminado = TRUE
+         AND (
+           autor_id = $2
+           OR EXISTS (
+             SELECT 1 FROM usuarios jefe
+             WHERE jefe.id = $2
+               AND jefe.es_jefe IS TRUE
+               AND jefe.departamento_id = anuncios.departamento_id
+           )
+         )
        RETURNING id`,
       [id, usuarioId]
     );
@@ -862,9 +1036,23 @@ app.put('/anuncios/:id/restaurar', async (req, res) => {
 app.delete('/anuncios/:id/permanente', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const usuarioId = req.usuario.id;
+    const usuarioId = Number(req.usuario.id);
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ success: false, error: 'ID de anuncio inválido' });
+    }
     const resultado = await pool.query(
-      'DELETE FROM anuncios WHERE id = $1 AND eliminado = TRUE AND autor_id = $2 RETURNING id',
+      `DELETE FROM anuncios a
+       WHERE a.id = $1 AND a.eliminado = TRUE
+         AND (
+           a.autor_id = $2
+           OR EXISTS (
+             SELECT 1 FROM usuarios jefe
+             WHERE jefe.id = $2
+               AND jefe.es_jefe IS TRUE
+               AND jefe.departamento_id = a.departamento_id
+           )
+         )
+       RETURNING a.id`,
       [id, usuarioId]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Anuncio no encontrado en la papelera' });
@@ -904,16 +1092,27 @@ app.get('/api/stats', async (req, res) => {
 // ==========================================
 app.get('/api/departamentos-con-conteo', async (req, res) => {
   try {
+    const usuarioId = Number(req.usuario && req.usuario.id);
+    if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+      return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+    }
     const resultado = await pool.query(
       `SELECT d.id, d.nombre,
-              COUNT(DISTINCT a.id) FILTER (WHERE COALESCE(a.eliminado, FALSE) = FALSE) AS anuncios_activos,
+              COUNT(DISTINCT a.id) FILTER (
+                WHERE COALESCE(a.eliminado, FALSE) = FALSE
+                  AND EXISTS (
+                    SELECT 1 FROM notificaciones n
+                    WHERE n.anuncio_id = a.id AND n.usuario_id = $1
+                  )
+              ) AS anuncios_activos,
               COUNT(DISTINCT f.id) FILTER (WHERE COALESCE(f.eliminado, FALSE) = FALSE) AS archivos_activos
        FROM departamentos d
        LEFT JOIN anuncios a ON a.departamento_id = d.id AND COALESCE(a.eliminado, FALSE) = FALSE
        LEFT JOIN archivos f ON f.departamento_id = d.id AND COALESCE(f.eliminado, FALSE) = FALSE
        WHERE d.eliminado = FALSE
        GROUP BY d.id, d.nombre
-       ORDER BY d.nombre ASC`
+       ORDER BY d.nombre ASC`,
+      [usuarioId]
     );
     res.json({ success: true, departamentos: resultado.rows });
   } catch (error) {
@@ -1118,7 +1317,7 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
   }
 });
 
-app.post('/departamentos', async (req, res) => {
+app.post('/departamentos', departmentCreationLimiter, async (req, res) => {
   const { nombre, descripcion } = req.body;
   const nombreFinal = typeof nombre === 'string' ? nombre.trim() : '';
   const descripcionFinal = typeof descripcion === 'string' && descripcion.trim()
@@ -1409,12 +1608,17 @@ app.get('/notificaciones', async (req, res) => {
     );
     if (usuarioResult.rowCount === 0) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
 
+    const departamentoId = usuarioResult.rows[0].departamento_id;
     const departamentoNombre = usuarioResult.rows[0].departamento_nombre || null;
     const correoUsuario = typeof req.usuario.correo === 'string' ? req.usuario.correo.trim() : '';
 
     const anunciosResult = await pool.query(
       `SELECT n.id, n.fecha, n.leida, 'anuncio' AS tipo, a.titulo, a.contenido, a.departamento_id
-       FROM notificaciones n LEFT JOIN anuncios a ON a.id = n.anuncio_id WHERE n.usuario_id = $1 ORDER BY n.fecha DESC`,
+       FROM notificaciones n
+       JOIN anuncios a ON a.id = n.anuncio_id
+       WHERE n.usuario_id = $1
+         AND COALESCE(a.eliminado, FALSE) = FALSE
+       ORDER BY n.fecha DESC`,
       [usuarioId]
     );
 

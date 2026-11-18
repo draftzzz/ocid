@@ -3,14 +3,13 @@
 
   let departamentoActual = null;
   let miembrosActuales = [];
+  let rolesDepartamento = [];
   const estadosMiembros = new Map();
 
   function esJefeDepartamento(usuario) {
-    return Boolean(usuario && departamentoActual && (
-      Number(departamentoActual.jefe_id) === Number(usuario.id) ||
-      ((usuario.es_jefe === true || usuario.es_jefe === 't') &&
-        Number(usuario.departamento_id) === Number(departamentoActual.id))
-    ));
+    return Boolean(usuario && departamentoActual &&
+      (usuario.es_jefe === true || usuario.es_jefe === 't') &&
+      Number(usuario.departamento_id) === Number(departamentoActual.id));
   }
 
   function puedeGestionarDepartamento(usuario) {
@@ -33,6 +32,7 @@
     const opcionEditar = obtenerElemento('opcion_editar_departamento');
     const menu = obtenerElemento('menu_opciones_departamento');
     const panelGestion = obtenerElemento('panel_gestion_departamento');
+    const panelRoles = obtenerElemento('gestion_roles_departamento');
     const botonBaja = obtenerElemento('boton_abrir_baja_departamento');
     const selectorJefe = obtenerElemento('select_nuevo_jefe');
 
@@ -40,6 +40,7 @@
     if (opcionEditar) opcionEditar.hidden = !puedeEditar;
     if (!puedeEditar && menu) menu.style.display = 'none';
     if (panelGestion) panelGestion.hidden = !puedeEditar;
+    if (panelRoles) panelRoles.hidden = !esJefe;
     if (botonBaja) botonBaja.hidden = !esJefe;
     if (selectorJefe && departamentoActual) {
       selectorJefe.replaceChildren(new Option('Selecciona un integrante', ''));
@@ -108,7 +109,42 @@
       celdaNombre.appendChild(nombre);
 
       const celdaPuesto = document.createElement('td');
-      celdaPuesto.textContent = miembro.rol || 'Docente';
+      const usuarioActual = window.OCID.obtenerUsuarioSesion();
+      const puedeAsignarRol = esJefeDepartamento(usuarioActual) &&
+        Number(miembro.id) !== Number(departamentoActual && departamentoActual.jefe_id);
+      if (puedeAsignarRol) {
+        const selectorRol = document.createElement('select');
+        selectorRol.className = 'select_rol_integrante';
+        [...new Set(['Docente', 'Administrador General', ...rolesDepartamento, miembro.rol || 'Docente'])].forEach(rol => {
+          const opcion = new Option(rol, rol);
+          selectorRol.add(opcion);
+        });
+        selectorRol.value = miembro.rol || 'Docente';
+        selectorRol.addEventListener('change', async () => {
+          const rolAnterior = miembro.rol || 'Docente';
+          selectorRol.disabled = true;
+          try {
+            const resultado = await window.OCID.apiFetch(`/usuarios/${Number(miembro.id)}/rol`, {
+              method: 'PATCH',
+              body: JSON.stringify({ rol: selectorRol.value })
+            });
+            if (!resultado.success || !resultado.usuario) {
+              throw new Error(resultado.error || 'No se pudo asignar el rol.');
+            }
+            miembro.rol = resultado.usuario.rol;
+            selectorRol.value = miembro.rol;
+            window.OCID.mostrarToast('Rol actualizado correctamente.', 'exito');
+          } catch (error) {
+            selectorRol.value = rolAnterior;
+            window.OCID.mostrarToast(error.message || 'No se pudo asignar el rol.', 'error');
+          } finally {
+            selectorRol.disabled = false;
+          }
+        });
+        celdaPuesto.appendChild(selectorRol);
+      } else {
+        celdaPuesto.textContent = miembro.rol || 'Docente';
+      }
 
       const celdaEstado = document.createElement('td');
       const estado = estadosMiembros.get(Number(miembro.id)) || 'Activo';
@@ -206,6 +242,7 @@
       : [];
     miembrosActuales = miembros;
     actualizarControlesEdicion();
+    renderizarListaRoles();
 
     texto('nombre_departamento_texto', departamento ? departamento.nombre : 'Sin departamento asignado');
     texto('detalle_departamento_texto', departamento && departamento.codigo
@@ -260,6 +297,15 @@
       );
       if (!departamento) {
         departamento = departamentos.find(item => Number(item.jefe_id) === Number(usuario.id));
+      }
+      if (departamento) {
+        const datosRoles = await window.OCID.apiFetch(`/departamentos/${Number(departamento.id)}/roles`);
+        if (!datosRoles.success || !Array.isArray(datosRoles.roles)) {
+          throw new Error(datosRoles.error || 'No se pudieron cargar los roles del departamento.');
+        }
+        rolesDepartamento = datosRoles.roles;
+      } else {
+        rolesDepartamento = [];
       }
 
       renderizarDepartamento(departamento || null, usuarios, archivos, tareas);
@@ -347,10 +393,45 @@
 
   function configurarGestionDepartamento() {
     const formTransferencia = obtenerElemento('form_transferir_jefatura');
+    const formCrearRol = obtenerElemento('form_crear_rol_departamento');
     const modalBaja = obtenerElemento('modal_baja_departamento');
     const inputConfirmacion = obtenerElemento('confirmacion_baja_texto');
     const inputNombre = obtenerElemento('nombre_baja_texto');
     const botonConfirmarBaja = obtenerElemento('confirmar_baja_departamento');
+
+    if (formCrearRol) formCrearRol.addEventListener('submit', async evento => {
+      evento.preventDefault();
+      const usuario = window.OCID.obtenerUsuarioSesion();
+      const nombre = obtenerElemento('nombre_rol_departamento').value.trim();
+      const boton = formCrearRol.querySelector('[type="submit"]');
+      if (!esJefeDepartamento(usuario) || !departamentoActual) {
+        window.OCID.mostrarToast('Solo el jefe del departamento puede crear roles.', 'error');
+        return;
+      }
+      if (!nombre) {
+        window.OCID.mostrarToast('Escribe el nombre del rol.', 'advertencia');
+        return;
+      }
+      boton.disabled = true;
+      try {
+        const resultado = await window.OCID.apiFetch(`/departamentos/${Number(departamentoActual.id)}/roles`, {
+          method: 'POST',
+          body: JSON.stringify({ nombre })
+        });
+        if (!resultado.success || !resultado.rol) {
+          throw new Error(resultado.error || 'No se pudo crear el rol.');
+        }
+        rolesDepartamento = [...new Set([...rolesDepartamento, resultado.rol.nombre])];
+        obtenerElemento('nombre_rol_departamento').value = '';
+        renderizarListaRoles();
+        renderizarMiembros(miembrosActuales);
+        window.OCID.mostrarToast('Rol creado correctamente.', 'exito');
+      } catch (error) {
+        window.OCID.mostrarToast(error.message || 'No se pudo crear el rol.', 'error');
+      } finally {
+        boton.disabled = false;
+      }
+    });
 
     const cerrarModalBaja = () => {
       if (modalBaja) modalBaja.style.display = 'none';
@@ -372,7 +453,7 @@
     const validarConfirmacionBaja = () => {
       if (!botonConfirmarBaja || !departamentoActual) return;
       botonConfirmarBaja.disabled =
-        String(inputConfirmacion.value || '').trim().toLocaleLowerCase('es-MX') !== 'sí' ||
+        inputConfirmacion.value !== 'sí' ||
         inputNombre.value !== departamentoActual.nombre;
     };
     if (inputConfirmacion) inputConfirmacion.addEventListener('input', validarConfirmacionBaja);
@@ -385,7 +466,7 @@
         const resultado = await window.OCID.apiFetch(`/departamentos/${departamentoActual.id}`, {
           method: 'DELETE',
           body: JSON.stringify({
-            confirmacion: 'sí',
+            confirmacion: inputConfirmacion.value,
             nombre_departamento: inputNombre.value
           })
         });
@@ -463,6 +544,17 @@
         if (!correo || !asunto || !mensaje || correo === 'Correo no disponible') {
           window.OCID.mostrarToast('Completa el asunto y el mensaje; verifica que el jefe tenga correo.', true);
           return;
+        }
+
+        function renderizarListaRoles() {
+          const lista = obtenerElemento('lista_roles_departamento');
+          if (!lista) return;
+          lista.replaceChildren();
+          rolesDepartamento.filter(rol => normalizar(rol) !== 'docente').forEach(rol => {
+            const elemento = document.createElement('li');
+            elemento.textContent = rol;
+            lista.appendChild(elemento);
+          });
         }
         window.location.href = `mailto:${correo}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensaje)}`;
         ocultar();

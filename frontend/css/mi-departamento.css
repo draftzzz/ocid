@@ -1025,6 +1025,16 @@ textarea {
     display: none;
 }
 
+.busqueda_integrantes {
+    display: grid;
+    gap: 6px;
+    max-width: 420px;
+    margin: 0 0 14px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .boton_acciones[hidden],
 .boton_opcion_dropdown[hidden],
 #boton_abrir_baja_departamento[hidden] {
@@ -1050,6 +1060,52 @@ textarea {
 
 .fila_transferencia .modal_input_custom {
     max-width: 420px;
+}
+
+.gestion_roles_departamento {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.gestion_roles_departamento[hidden] {
+    display: none !important;
+}
+
+.gestion_roles_departamento h3 {
+    color: #172033;
+    font-size: 15px;
+}
+
+.gestion_roles_departamento form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lista_roles_departamento {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+}
+
+.lista_roles_departamento li {
+    padding: 6px 10px;
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.select_rol_integrante {
+    min-width: 140px;
 }
 
 .acciones_gestion_departamento {

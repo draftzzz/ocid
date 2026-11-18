@@ -903,6 +903,82 @@ body.menu_movil_abierto .fondo_menu_movil {
         align-items: flex-start;
     }
 }
+
+.boton_gestionar_roles {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid #dbeafe;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.boton_gestionar_roles[hidden] {
+    display: none;
+}
+
+.tarjetas_departamento_docentes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 14px;
+}
+
+.tarjeta_departamento_docentes {
+    display: grid;
+    gap: 8px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    color: #172033;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tarjeta_departamento_docentes:hover,
+.tarjeta_departamento_docentes[aria-pressed="true"] {
+    transform: translateY(-1px);
+    border-color: #93c5fd;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.1);
+}
+
+.tarjeta_departamento_docentes strong {
+    font-size: 14px;
+}
+
+.tarjeta_departamento_docentes span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.estado_departamentos_docentes {
+    grid-column: 1 / -1;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.ayuda_seleccion_departamento {
+    padding: 24px;
+    color: #64748b;
+    text-align: center;
+}
+
+@media (max-width: 600px) {
+    .tarjetas_departamento_docentes {
+        grid-template-columns: 1fr;
+    }
+
+    .boton_gestionar_roles {
+        justify-content: center;
+        width: 100%;
+    }
+}
 /* ==========================================================================
    10. Componente Toast Flotante y Modales Difuminados (Blur)
    ========================================================================== */

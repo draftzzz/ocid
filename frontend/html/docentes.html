@@ -84,10 +84,6 @@
             <div class="seccion_superior_izquierda">
                 <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
                 </button>
-                <div class="contenedor_busqueda">
-                    <i class="fa-solid fa-magnifying-glass icono_busqueda"></i>
-                    <input class="campo_busqueda" placeholder="Buscar..." type="text" />
-                </div>
             </div>
             <div class="seccion_superior_derecha">
                 <button class="boton_notificaciones boton_campana" type="button"
@@ -117,11 +113,17 @@
                     <h1 class="titulo_docentes">Docentes</h1>
                     <p class="subtitulo_docentes">Consulta a los docentes y administra los roles de tu departamento.</p>
                 </div>
-                <button class="boton_nuevo_docente" id="btn_crear_rol" type="button" hidden>
+                <a class="boton_gestionar_roles" href="mi-departamento.html#gestion_roles_departamento"
+                    id="btn_crear_rol" hidden>
                     <i class="fa-solid fa-plus"></i>
-                    Crear rol
-                </button>
+                    Gestionar roles
+                </a>
             </div>
+
+            <section aria-label="Departamentos" class="tarjetas_departamento_docentes"
+                id="tarjetas_departamento_docentes">
+                <p class="estado_departamentos_docentes">Cargando departamentos...</p>
+            </section>
 
             <!-- Filtros y Búsqueda -->
             <div class="barra_filtros">
@@ -148,7 +150,6 @@
                             <th class="celda_encabezado">Correo</th>
                             <th class="celda_encabezado">Rol</th>
                             <th class="celda_encabezado">Estado</th>
-                            <th class="celda_encabezado">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpo_tabla_docentes">
@@ -171,26 +172,6 @@
         <!-- END: ContenidoPrincipal -->
     </main>
     <!-- END: MainContentArea -->
-
-    <div class="modal_overlay" id="modal_rol_departamento">
-        <div class="modal_contenedor">
-            <div class="modal_cabecera">
-                <h3 class="modal_titulo">Crear rol del departamento</h3>
-                <button class="modal_boton_cerrar" id="cerrar_modal_rol" type="button">×</button>
-            </div>
-            <form class="modal_formulario" id="formulario_crear_rol">
-                <div class="grupo_campo">
-                    <label class="label_campo" for="nombre_rol_input">Nombre del rol</label>
-                    <input class="input_modal" id="nombre_rol_input" maxlength="60"
-                        placeholder="Ej. Coordinación académica" required type="text" />
-                </div>
-                <div class="modal_pie">
-                    <button class="boton_cancelar_modal" id="cancelar_modal_rol" type="button">Cancelar</button>
-                    <button class="boton_guardar_modal" type="submit">Guardar rol</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script src="../js/ocid-core.js"></script>
     <script src="../js/docentes.js"></script>

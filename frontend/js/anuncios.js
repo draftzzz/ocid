@@ -38,6 +38,10 @@ function mostrarErrorAnuncios(mensaje, tipo = 'error') {
   }
 }
 
+function usuarioEsJefeDepartamento(usuario) {
+  return Boolean(usuario && (usuario.es_jefe === true || usuario.es_jefe === 't'));
+}
+
 async function cargar_anuncios_desde_servidor() {
   try {
     const [datosAnuncios, datosDepartamentos, datosConteos, datosArchivos] = await Promise.all([
@@ -67,12 +71,17 @@ async function cargar_anuncios_desde_servidor() {
     const selectorDepartamento = document.getElementById('campo_departamento');
     if (selectorDepartamento) {
       selectorDepartamento.replaceChildren();
+      selectorDepartamento.add(new Option('General (todos los departamentos)', 'general'));
       departamentos_anuncios.forEach(departamento => {
         const opcion = document.createElement('option');
         opcion.value = String(departamento.id);
         opcion.textContent = departamento.nombre;
         selectorDepartamento.appendChild(opcion);
       });
+      const usuario = window.OCID.obtenerUsuarioSesion();
+      if (usuario && usuario.departamento_id) {
+        selectorDepartamento.value = String(usuario.departamento_id);
+      }
     }
 
     const filtroDepartamento = document.getElementById('filtro_departamento');
@@ -81,6 +90,7 @@ async function cargar_anuncios_desde_servidor() {
       departamentos_anuncios.forEach(departamento => {
         filtroDepartamento.add(new Option(departamento.nombre, departamento.nombre));
       });
+      filtroDepartamento.add(new Option('General', 'General'));
     }
   } catch (error) {
     lista_de_anuncios = [];
@@ -121,7 +131,12 @@ function renderizar_interfaz() {
       if (anuncio.tipo === 'Urgente') clase_etiqueta = 'etiqueta_urgente';
       if (anuncio.tipo === 'Moderado') clase_etiqueta = 'etiqueta_moderado';
 
-      const esAutor = usuarioActual && (Number(usuarioActual.id) === Number(anuncio.autor_id));
+      const mismoDepartamento = Number(usuarioActual && usuarioActual.departamento_id) > 0 &&
+        Number(usuarioActual.departamento_id) === Number(anuncio.departamento_id);
+      const anuncioGeneralPropio = !anuncio.departamento_id &&
+        Number(usuarioActual && usuarioActual.id) === Number(anuncio.autor_id);
+      const puedeGestionar = usuarioEsJefeDepartamento(usuarioActual) &&
+        (mismoDepartamento || anuncioGeneralPropio);
 
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_anuncio';
@@ -139,34 +154,39 @@ function renderizar_interfaz() {
       spanTipo.appendChild(document.createTextNode(` ${anuncio.tipo}`));
       filaEtiqueta.appendChild(spanTipo);
 
-      const contenedorOpciones = document.createElement('div');
-      contenedorOpciones.style.position = 'relative';
+      if (puedeGestionar) {
+        const contenedorOpciones = document.createElement('div');
+        contenedorOpciones.style.position = 'relative';
 
-      const btnOpciones = document.createElement('button');
-      btnOpciones.className = 'boton_opciones_anuncio';
-      btnOpciones.title = 'Más opciones';
-      btnOpciones.innerHTML = '&#8942;';
-      btnOpciones.addEventListener('click', (e) => toggleMenuOpciones(e, anuncio.id));
-      contenedorOpciones.appendChild(btnOpciones);
+        const btnOpciones = document.createElement('button');
+        btnOpciones.className = 'boton_opciones_anuncio';
+        btnOpciones.type = 'button';
+        btnOpciones.title = 'Más opciones';
+        btnOpciones.setAttribute('aria-label', 'Editar o eliminar anuncio');
+        btnOpciones.innerHTML = '&#8942;';
+        btnOpciones.addEventListener('click', (e) => toggleMenuOpciones(e, anuncio.id));
+        contenedorOpciones.appendChild(btnOpciones);
 
-      const menuDesplegable = document.createElement('div');
-      menuDesplegable.id = `menu_opciones_${anuncio.id}`;
-      menuDesplegable.style.cssText = 'display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;';
+        const menuDesplegable = document.createElement('div');
+        menuDesplegable.id = `menu_opciones_${anuncio.id}`;
+        menuDesplegable.style.cssText = 'display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;';
 
-      const btnEditar = document.createElement('button');
-      btnEditar.style.cssText = `width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#0f172a' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;`;
-      btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
-      btnEditar.addEventListener('click', () => prepararEdicionAnuncio(anuncio.id, esAutor));
+        const btnEditar = document.createElement('button');
+        btnEditar.type = 'button';
+        btnEditar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; display: flex; align-items: center; gap: 8px;';
+        btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
+        btnEditar.addEventListener('click', () => prepararEdicionAnuncio(anuncio.id, puedeGestionar));
 
-      const btnEliminar = document.createElement('button');
-      btnEliminar.style.cssText = `width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#ef4444' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;`;
-      btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
-      btnEliminar.addEventListener('click', () => eliminarAnuncio(anuncio.id, esAutor));
+        const btnEliminar = document.createElement('button');
+        btnEliminar.type = 'button';
+        btnEliminar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; display: flex; align-items: center; gap: 8px;';
+        btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
+        btnEliminar.addEventListener('click', () => eliminarAnuncio(anuncio.id, puedeGestionar));
 
-      menuDesplegable.appendChild(btnEditar);
-      menuDesplegable.appendChild(btnEliminar);
-      contenedorOpciones.appendChild(menuDesplegable);
-      filaEtiqueta.appendChild(contenedorOpciones);
+        menuDesplegable.append(btnEditar, btnEliminar);
+        contenedorOpciones.appendChild(menuDesplegable);
+        filaEtiqueta.appendChild(contenedorOpciones);
+      }
       tarjeta.appendChild(filaEtiqueta);
 
       const h3Titulo = document.createElement('h3');
@@ -219,9 +239,9 @@ window.addEventListener('click', () => {
   });
 });
 
-function prepararEdicionAnuncio(id, esAutor) {
-  if (!esAutor) {
-    mostrarErrorAnuncios('No tienes permisos para editar este anuncio porque no eres el autor.', 'error');
+function prepararEdicionAnuncio(id, puedeGestionar) {
+  if (!puedeGestionar) {
+    mostrarErrorAnuncios('Solo el jefe del departamento puede editar este anuncio.', 'error');
     return;
   }
 
@@ -233,17 +253,16 @@ function prepararEdicionAnuncio(id, esAutor) {
   document.getElementById('campo_tipo').value = anuncio.prioridad || anuncio.tipo;
   document.getElementById('campo_contenido').value = anuncio.contenido;
   
-  const deptoEncontrado = departamentos_anuncios.find(d => d.nombre === anuncio.departamento);
-  if (deptoEncontrado) {
-    document.getElementById('campo_departamento').value = String(deptoEncontrado.id);
-  }
+  document.getElementById('campo_departamento').value = anuncio.departamento_id
+    ? String(anuncio.departamento_id)
+    : 'general';
 
   abrir_modal();
 }
 
-async function eliminarAnuncio(id, esAutor) {
-  if (!esAutor) {
-    mostrarErrorAnuncios('No tienes permisos para eliminar este anuncio porque no eres el autor.', 'error');
+async function eliminarAnuncio(id, puedeGestionar) {
+  if (!puedeGestionar) {
+    mostrarErrorAnuncios('Solo el jefe del departamento puede eliminar este anuncio.', 'error');
     return;
   }
 
@@ -413,14 +432,18 @@ if (form_nuevo_anuncio) {
       return;
     }
 
+    const departamentoSeleccionado = document.getElementById('campo_departamento').value;
     const objeto_anuncio = {
       titulo: document.getElementById('campo_titulo').value.trim(),
       prioridad: document.getElementById('campo_tipo').value,
-      departamento_id: Number(document.getElementById('campo_departamento').value),
+      departamento_id: departamentoSeleccionado === 'general' ? null : Number(departamentoSeleccionado),
       contenido: document.getElementById('campo_contenido').value.trim(),
       autor_id: Number(usuario.id)
     };
 
+    const botonEnviar = form_nuevo_anuncio.querySelector('[type="submit"]');
+    if (botonEnviar && botonEnviar.disabled) return;
+    if (botonEnviar) botonEnviar.disabled = true;
     try {
       let url = '/anuncios';
       let metodo = 'POST';
@@ -447,7 +470,9 @@ if (form_nuevo_anuncio) {
 
       await cargar_anuncios_desde_servidor();
     } catch (error) {
-      mostrarErrorAnuncios('Ocurrió un error al guardar el anuncio.', 'error');
+      mostrarErrorAnuncios(error.message || 'Ocurrió un error al guardar el anuncio.', 'error');
+    } finally {
+      if (botonEnviar) botonEnviar.disabled = false;
     }
   });
 }

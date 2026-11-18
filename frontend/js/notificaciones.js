@@ -3,6 +3,7 @@
 
   let notificaciones = [];
   let filtroActual = 'todas';
+  let cargaNotificacionesActiva = false;
 
   function escaparHTML(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
@@ -101,6 +102,8 @@
   }
 
   async function cargarNotificaciones(mostrarError = true) {
+    if (cargaNotificacionesActiva) return false;
+    cargaNotificacionesActiva = true;
     const contenedor = document.getElementById('contenedor_notificaciones');
     const vacio = document.getElementById('vacio_notificaciones');
     if (contenedor && mostrarError) {
@@ -123,6 +126,8 @@
         if (contenedor) contenedor.textContent = 'No se pudieron cargar las notificaciones.';
       }
       return false;
+    } finally {
+      cargaNotificacionesActiva = false;
     }
   }
 
@@ -215,5 +220,11 @@
   document.addEventListener('DOMContentLoaded', () => {
     configurarFiltros();
     cargarNotificaciones();
+    setInterval(() => {
+      if (document.visibilityState === 'visible') cargarNotificaciones(false);
+    }, 30000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') cargarNotificaciones(false);
+    });
   });
 })();

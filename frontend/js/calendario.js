@@ -432,7 +432,8 @@ async function cargarTareasDesdeDB() {
     });
   });
 
-  document.getElementById('boton_abrir_modal').addEventListener('click', () => {
+  const botonAbrirModal = document.getElementById('boton_abrir_modal');
+  if (botonAbrirModal) botonAbrirModal.addEventListener('click', () => {
     tareaEnEdicionId = null;
     const tituloModal = modal.querySelector('.modal_titulo');
     if (tituloModal) tituloModal.textContent = 'Registrar nuevo evento';
