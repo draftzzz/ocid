@@ -122,24 +122,83 @@
       .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
 
     establecerTexto('metrica_conteo_eventos', String(proximas.length));
-    const capa = document.querySelector('.capa_gradiente_plantel');
-    if (!capa) return;
+  }
 
-    capa.replaceChildren();
-    const titulo = document.createElement('div');
-    titulo.className = 'titulo_plantel_superpuesto';
-    const detalle = document.createElement('div');
-    detalle.className = 'lema_plantel_superpuesto';
+  function renderizarTareas(tareas, nombreDepartamento) {
+    const contenedor = obtenerElemento('contenedor_lista_tareas');
+    if (!contenedor) return;
+    contenedor.replaceChildren();
 
-    if (proximas.length) {
-      const proximo = proximas[0];
-      titulo.textContent = 'Próximo evento';
-      detalle.textContent = `${proximo.titulo || 'Evento escolar'}${proximo.fecha ? ` · ${new Date(`${String(proximo.fecha).slice(0, 10)}T00:00:00`).toLocaleDateString('es-MX')}` : ''}`;
-    } else {
-      titulo.textContent = 'CBTIS 258';
-      detalle.textContent = 'Sin eventos próximos registrados.';
+    const normalizarTexto = valor => String(valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+    const departamentoClave = normalizarTexto(nombreDepartamento);
+    const tareasDelDepartamento = tareas.filter(tarea => {
+      const departamentosTarea = normalizarTexto(tarea.departamento || tarea.departamento_nombre)
+        .split(',')
+        .map(nombre => nombre.trim())
+        .filter(Boolean);
+      return departamentosTarea.includes('general') ||
+        (departamentoClave && departamentosTarea.includes(departamentoClave));
+    });
+    const estaCompletada = tarea => /completad|terminad/.test(normalizarTexto(tarea.estado));
+    const fechaTarea = tarea => {
+      const valor = tarea.fecha || tarea.fecha_creacion;
+      const fecha = valor
+        ? new Date(tarea.fecha ? `${String(valor).slice(0, 10)}T00:00:00` : valor).getTime()
+        : Number.NaN;
+      return Number.isFinite(fecha) ? fecha : null;
+    };
+    const pendientes = tareasDelDepartamento
+      .filter(tarea => !estaCompletada(tarea))
+      .sort((a, b) => (fechaTarea(a) ?? Number.MAX_SAFE_INTEGER) - (fechaTarea(b) ?? Number.MAX_SAFE_INTEGER));
+    const mostrarPendientes = pendientes.length > 0;
+    const tareasVisibles = (mostrarPendientes
+      ? pendientes
+      : tareasDelDepartamento.slice().sort((a, b) => (fechaTarea(b) ?? 0) - (fechaTarea(a) ?? 0))
+    ).slice(0, 5);
+
+    if (!tareasVisibles.length) {
+      const vacio = document.createElement('p');
+      vacio.className = 'texto_vacio';
+      vacio.textContent = 'No hay tareas pendientes o recientes.';
+      contenedor.appendChild(vacio);
+      return;
     }
-    capa.append(titulo, detalle);
+
+    tareasVisibles.forEach(tarea => {
+      const tarjeta = document.createElement('article');
+      tarjeta.className = 'tarjeta_item_tarea';
+
+      const encabezado = document.createElement('div');
+      encabezado.className = 'encabezado_item_tarea';
+      const titulo = document.createElement('h3');
+      titulo.className = 'titulo_item_tarea';
+      titulo.textContent = tarea.titulo || 'Tarea sin título';
+
+      const estado = document.createElement('span');
+      const estadoTexto = String(tarea.estado || 'Pendiente');
+      const estadoClave = estaCompletada(tarea)
+        ? 'completada'
+        : /proceso/.test(normalizarTexto(estadoTexto)) ? 'en_proceso' : 'pendiente';
+      estado.className = `estado_item_tarea estado_item_tarea_${estadoClave}`;
+      estado.textContent = estadoTexto;
+      encabezado.append(titulo, estado);
+
+      const descripcion = document.createElement('p');
+      descripcion.className = 'descripcion_item_tarea';
+      descripcion.textContent = tarea.descripcion || 'Sin descripción adicional.';
+
+      const meta = document.createElement('span');
+      meta.className = 'meta_item_tarea';
+      const fecha = fechaTarea(tarea);
+      meta.textContent = fecha ? `Fecha: ${new Date(fecha).toLocaleDateString('es-MX')}` : 'Sin fecha asignada';
+
+      tarjeta.append(encabezado, descripcion, meta);
+      contenedor.appendChild(tarjeta);
+    });
   }
 
   async function cargarInicio() {
@@ -192,6 +251,10 @@
     anunciosCargados = anuncios;
     renderizarAnuncios(anunciosCargados);
     actualizarProximoEvento(tareas);
+    const nombreDepartamento = departamento
+      ? departamento.nombre
+      : (usuario.departamento_nombre || (typeof usuario.departamento === 'string' ? usuario.departamento : ''));
+    renderizarTareas(tareas, nombreDepartamento);
   }
 
   window.filtrarAnunciosEnTiempoReal = function () {

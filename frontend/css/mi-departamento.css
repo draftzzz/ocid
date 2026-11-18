@@ -872,6 +872,33 @@ textarea {
     cursor: pointer;
 }
 
+#modal_confirmar_transferencia .texto_confirmacion_transferencia {
+    margin: 0 0 4px;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+#modal_confirmar_transferencia .texto_confirmacion_transferencia strong {
+    color: #0f172a;
+}
+
+#modal_confirmar_transferencia .modal_input_custom:focus {
+    border-color: #2563eb;
+    outline: 3px solid rgba(37, 99, 235, 0.14);
+}
+
+#modal_confirmar_transferencia .ayuda_confirmacion_transferencia {
+    margin: -4px 0 0;
+    color: #64748b;
+    font-size: 11px;
+}
+
+#modal_confirmar_transferencia #confirmar_transferencia:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+}
+
 .menu_desplegable_opciones {
     display: none;
     position: fixed;

@@ -7,6 +7,7 @@
   let rolesDepartamentoDetalle = [];
   const COLOR_ROL_JEFE = '#4b1cb9';
   const FRASE_CONFIRMACION_BAJA = 'Confirmar eliminacion';
+  const FRASE_CONFIRMACION_TRANSFERENCIA = 'Transferir propiedad';
 
   function esMiembroJefe(miembro) {
     return Boolean(miembro && departamentoActual &&
@@ -735,10 +736,110 @@
   function configurarGestionDepartamento() {
     const formTransferencia = obtenerElemento('form_transferir_jefatura');
     const formCrearRol = obtenerElemento('form_crear_rol_departamento');
+    const modalTransferencia = obtenerElemento('modal_confirmar_transferencia');
+    const formConfirmacionTransferencia = obtenerElemento('form_confirmar_transferencia');
+    const inputConfirmacionTransferencia = obtenerElemento('confirmacion_transferencia_texto');
+    const botonConfirmarTransferencia = obtenerElemento('confirmar_transferencia');
+    const selectNuevoJefe = obtenerElemento('select_nuevo_jefe');
+    const integranteTransferencia = obtenerElemento('integrante_transferencia_seleccionado');
     const modalBaja = obtenerElemento('modal_baja_departamento');
     const inputConfirmacion = obtenerElemento('confirmacion_baja_texto');
     const inputNombre = obtenerElemento('nombre_baja_texto');
     const botonConfirmarBaja = obtenerElemento('confirmar_baja_departamento');
+
+    const validarConfirmacionTransferencia = () => {
+      if (!botonConfirmarTransferencia || !selectNuevoJefe || !inputConfirmacionTransferencia) return;
+      const nuevoJefeId = Number(selectNuevoJefe.value);
+      botonConfirmarTransferencia.disabled =
+        !Number.isSafeInteger(nuevoJefeId) ||
+        nuevoJefeId <= 0 ||
+        inputConfirmacionTransferencia.value !== FRASE_CONFIRMACION_TRANSFERENCIA;
+    };
+
+    const actualizarIntegranteTransferencia = () => {
+      if (integranteTransferencia && selectNuevoJefe) {
+        const opcion = selectNuevoJefe.selectedOptions[0];
+        integranteTransferencia.textContent = opcion && opcion.value
+          ? opcion.textContent
+          : 'Sin integrante seleccionado';
+      }
+      validarConfirmacionTransferencia();
+    };
+
+    const cerrarModalTransferencia = () => {
+      if (modalTransferencia) modalTransferencia.classList.remove('modal_activo');
+      if (inputConfirmacionTransferencia) inputConfirmacionTransferencia.value = '';
+      validarConfirmacionTransferencia();
+    };
+
+    if (formTransferencia) formTransferencia.addEventListener('submit', evento => {
+      evento.preventDefault();
+      if (!departamentoActual || !puedeGestionarDepartamento(window.OCID.obtenerUsuarioSesion())) {
+        window.OCID.mostrarToast('No tienes permiso para transferir la jefatura.', 'error');
+        return;
+      }
+      actualizarIntegranteTransferencia();
+      if (modalTransferencia) {
+        modalTransferencia.classList.add('modal_activo');
+        inputConfirmacionTransferencia?.focus();
+      }
+    });
+
+    if (selectNuevoJefe) selectNuevoJefe.addEventListener('change', actualizarIntegranteTransferencia);
+    if (inputConfirmacionTransferencia) {
+      inputConfirmacionTransferencia.addEventListener('input', validarConfirmacionTransferencia);
+    }
+    if (modalTransferencia) {
+      modalTransferencia.addEventListener('click', evento => {
+        if (evento.target === modalTransferencia) cerrarModalTransferencia();
+      });
+      document.addEventListener('keydown', evento => {
+        if (evento.key === 'Escape' && modalTransferencia.classList.contains('modal_activo')) {
+          cerrarModalTransferencia();
+        }
+      });
+    }
+    ['cerrar_modal_transferencia', 'cancelar_transferencia'].forEach(id => {
+      const boton = obtenerElemento(id);
+      if (boton) boton.addEventListener('click', cerrarModalTransferencia);
+    });
+
+    if (formConfirmacionTransferencia) formConfirmacionTransferencia.addEventListener('submit', async evento => {
+      evento.preventDefault();
+      const usuario = window.OCID.obtenerUsuarioSesion();
+      const nuevoJefeId = Number(selectNuevoJefe && selectNuevoJefe.value);
+      if (!departamentoActual || !puedeGestionarDepartamento(usuario) ||
+          !Number.isSafeInteger(nuevoJefeId) || nuevoJefeId <= 0 ||
+          inputConfirmacionTransferencia.value !== FRASE_CONFIRMACION_TRANSFERENCIA) {
+        validarConfirmacionTransferencia();
+        window.OCID.mostrarToast('Selecciona un integrante y escribe exactamente “Transferir propiedad”.', 'advertencia');
+        return;
+      }
+
+      botonConfirmarTransferencia.disabled = true;
+      try {
+        const resultado = await window.OCID.apiFetch(
+          `/departamentos/${departamentoActual.id}/transferir-jefatura`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({
+              nuevo_jefe_id: nuevoJefeId,
+              confirmacion: inputConfirmacionTransferencia.value
+            })
+          }
+        );
+        if (!resultado.success || !resultado.usuario || !resultado.departamento) {
+          throw new Error(resultado.error || 'El servidor no confirmó la transferencia de jefatura.');
+        }
+        window.OCID.guardarSesion({ ...usuario, ...resultado.usuario });
+        window.OCID.mostrarToast('La jefatura se transfirió correctamente.');
+        window.setTimeout(() => window.location.reload(), 600);
+      } catch (error) {
+        console.error('Error al transferir la jefatura:', error);
+        window.OCID.mostrarToast(error.message || 'No se pudo transferir la jefatura.', 'error');
+        validarConfirmacionTransferencia();
+      }
+    });
 
     if (formCrearRol) formCrearRol.addEventListener('submit', async evento => {
       evento.preventDefault();
@@ -854,34 +955,6 @@
       }
     });
 
-    if (formTransferencia) formTransferencia.addEventListener('submit', async evento => {
-      evento.preventDefault();
-      const usuario = window.OCID.obtenerUsuarioSesion();
-      const nuevoJefeId = Number(obtenerElemento('select_nuevo_jefe').value);
-      if (!departamentoActual || !puedeGestionarDepartamento(usuario) || !Number.isSafeInteger(nuevoJefeId) || nuevoJefeId <= 0) {
-        window.OCID.mostrarToast('Selecciona un integrante y verifica tus permisos.', true);
-        return;
-      }
-      const boton = formTransferencia.querySelector('[type="submit"]');
-      boton.disabled = true;
-      try {
-        const resultado = await window.OCID.apiFetch(
-          `/departamentos/${departamentoActual.id}/transferir-jefatura`,
-          { method: 'PATCH', body: JSON.stringify({ nuevo_jefe_id: nuevoJefeId }) }
-        );
-        if (!resultado.success || !resultado.usuario || !resultado.departamento) {
-          throw new Error(resultado.error || 'El servidor no confirmó la transferencia de jefatura.');
-        }
-        window.OCID.guardarSesion({ ...usuario, ...resultado.usuario });
-        window.OCID.mostrarToast('La jefatura se transfirió correctamente.');
-        window.setTimeout(() => window.location.reload(), 600);
-      } catch (error) {
-        console.error('Error al transferir la jefatura:', error);
-        window.OCID.mostrarToast(error.message || 'No se pudo transferir la jefatura.', true);
-      } finally {
-        boton.disabled = false;
-      }
-    });
   }
 
   function configurarContacto() {

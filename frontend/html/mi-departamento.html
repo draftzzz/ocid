@@ -247,11 +247,7 @@
                     <p class="subtitulo_gestion_departamento">Administra la jefatura y los permisos del equipo.</p>
                 </div>
                 <form class="formulario_transferencia" id="form_transferir_jefatura">
-                    <label class="modal_label_custom" for="select_nuevo_jefe">Transferir jefatura</label>
                     <div class="fila_transferencia">
-                        <select class="modal_input_custom" id="select_nuevo_jefe" required>
-                            <option value="">Selecciona un integrante</option>
-                        </select>
                         <button class="boton_guardar_custom" type="submit">Transferir propiedad</button>
                     </div>
                 </form>
@@ -381,6 +377,41 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="modal_contacto" id="modal_confirmar_transferencia" role="dialog" aria-modal="true"
+        aria-labelledby="titulo_confirmar_transferencia">
+        <section class="caja_modal">
+            <header class="modal_cabecera_custom">
+                <h2 class="modal_titulo_custom" id="titulo_confirmar_transferencia">Confirmar transferencia de jefatura</h2>
+                <button class="boton_cerrar_custom" id="cerrar_modal_transferencia" type="button"
+                    aria-label="Cerrar">✕</button>
+            </header>
+            <form class="modal_formulario_custom" id="form_confirmar_transferencia">
+                <label class="modal_label_custom" for="select_nuevo_jefe">Integrante que recibirá la jefatura</label>
+                <select class="modal_input_custom" id="select_nuevo_jefe">
+                    <option value="">Selecciona un integrante</option>
+                </select>
+                <p class="texto_confirmacion_transferencia">
+                    Se transferirá la jefatura al integrante seleccionado:
+                    <strong id="integrante_transferencia_seleccionado">Sin integrante seleccionado</strong>.
+                    Para continuar, escribe exactamente <strong>Transferir propiedad</strong>.
+                </p>
+                <label class="modal_label_custom" for="confirmacion_transferencia_texto">Confirmación</label>
+                <input class="modal_input_custom" id="confirmacion_transferencia_texto" type="text"
+                    placeholder="Transferir propiedad" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false"
+                    aria-describedby="ayuda_confirmacion_transferencia" />
+                <p class="ayuda_confirmacion_transferencia" id="ayuda_confirmacion_transferencia">
+                    La frase distingue entre mayúsculas, minúsculas y espacios.
+                </p>
+                <div class="modal_botones_custom">
+                    <button class="boton_cancelar_custom" id="cancelar_transferencia" type="button">Cancelar</button>
+                    <button class="boton_guardar_custom" id="confirmar_transferencia" type="submit" disabled>
+                        Confirmar transferencia
+                    </button>
+                </div>
+            </form>
+        </section>
     </div>
 
     <!-- Menú desplegable para los tres puntitos del departamento -->

@@ -2043,11 +2043,15 @@ app.put('/departamentos/:id', async (req, res) => {
 
 app.patch('/departamentos/:id/transferir-jefatura', async (req, res) => {
   const departamentoId = Number(req.params.id);
-  const nuevoJefeId = Number(req.body.nuevo_jefe_id);
+  const { nuevo_jefe_id: nuevoJefeRecibido, confirmacion } = req.body || {};
+  const nuevoJefeId = Number(nuevoJefeRecibido);
   const usuarioId = Number(req.usuario && req.usuario.id);
   if (!Number.isSafeInteger(departamentoId) || departamentoId <= 0 ||
       !Number.isSafeInteger(nuevoJefeId) || nuevoJefeId <= 0) {
     return res.status(400).json({ success: false, error: 'Selecciona un docente válido' });
+  }
+  if (confirmacion !== 'Transferir propiedad') {
+    return res.status(400).json({ success: false, error: 'La frase de confirmación no coincide' });
   }
   if (nuevoJefeId === usuarioId) {
     return res.status(400).json({ success: false, error: 'El nuevo jefe debe ser otro integrante' });
