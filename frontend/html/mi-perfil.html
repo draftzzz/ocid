@@ -146,18 +146,10 @@
                         </div>
                         <div class="grupo_formulario">
                             <label class="etiqueta_formulario" for="campo_departamento">Departamento</label>
-                            <select class="campo_input" id="campo_departamento">
-                                <option value="Servicios Escolares">Servicios Escolares</option>
-                                <option value="Control Escolar">Control Escolar</option>
-                                <option value="Académico">Académico</option>
-                                <option value="Vinculación">Vinculación</option>
-                                <option value="Orientación">Orientación</option>
-                            </select>
-                        </div>
-                        <div class="grupo_formulario">
-                            <label class="etiqueta_formulario" for="campo_rol_usuario">Rol</label>
-                            <input class="campo_input campo_input_deshabilitado" id="campo_rol_usuario" readonly=""
-                                type="text" value="Jefe de Departamento" />
+                            <input class="campo_input campo_input_deshabilitado" id="campo_departamento"
+                                type="text" value="Cargando..." disabled />
+                            <button class="boton_salir_departamento" id="boton_salir_departamento"
+                                type="button" hidden>Salir del departamento</button>
                         </div>
                         <div>
                             <button class="boton_primario_azul" type="submit">
@@ -231,14 +223,29 @@
     </main>
     <!-- END: MainContentArea -->
 
+    <div class="modal_overlay" id="modal_salir_departamento" role="dialog" aria-modal="true"
+        aria-labelledby="titulo_modal_salir_departamento" aria-describedby="texto_modal_salir_departamento"
+        hidden>
+        <section class="modal_salida_departamento_caja">
+            <header class="modal_salida_departamento_encabezado">
+                <h2 id="titulo_modal_salir_departamento">Salir del departamento</h2>
+                <button class="modal_salida_departamento_cerrar" id="cerrar_modal_salir_departamento"
+                    type="button" aria-label="Cerrar">×</button>
+            </header>
+            <div class="modal_salida_departamento_cuerpo">
+                <p id="texto_modal_salir_departamento">¿Deseas salir de tu departamento?</p>
+            </div>
+            <footer class="modal_salida_departamento_pie">
+                <button class="modal_salida_departamento_cancelar" id="cancelar_salir_departamento"
+                    type="button">Cancelar</button>
+                <button class="boton_primario_azul" id="confirmar_salir_departamento"
+                    type="button">Sí</button>
+            </footer>
+        </section>
+    </div>
+
     <!-- Fondo Oscuro para Menú Móvil -->
     <div class="fondo_menu_movil"></div>
-
-    <!-- Notificación Toast Dinámica -->
-    <div class="notificacion_toast" id="toast_mensaje" role="status">
-        <i class="fa-solid fa-circle-check" style="color: #10b981; font-size: 16px;"></i>
-        <span id="texto_toast">Cambios guardados con éxito.</span>
-    </div>
 
     <!-- Script de Configuración / Perfil -->
     <script src="../js/ocid-core.js"></script>

@@ -84,6 +84,34 @@
     });
   }
 
+  function renderizarTodosIntegrantes() {
+    const lista = obtenerElemento('lista_todos_integrantes');
+    if (!lista) return;
+    lista.replaceChildren();
+
+    if (!miembrosActuales.length) {
+      const vacio = document.createElement('li');
+      vacio.className = 'elemento_integrante_vacio';
+      vacio.textContent = 'No hay integrantes registrados en este departamento.';
+      lista.appendChild(vacio);
+      return;
+    }
+
+    miembrosActuales.forEach(miembro => {
+      const elemento = document.createElement('li');
+      elemento.className = 'elemento_integrante_modal';
+      const nombre = document.createElement('strong');
+      nombre.textContent = miembro.nombre || miembro.correo || 'Usuario';
+      const correo = document.createElement('span');
+      correo.textContent = miembro.correo || 'Correo no disponible';
+      const rol = document.createElement('span');
+      rol.className = 'rol_integrante_modal';
+      rol.textContent = miembro.rol || 'Docente';
+      elemento.append(nombre, correo, rol);
+      lista.appendChild(elemento);
+    });
+  }
+
   function filtrarMiembros() {
     const termino = (obtenerElemento('campo_busqueda_general')?.value || '').trim().toLocaleLowerCase('es-MX');
     const visibles = miembrosActuales.filter(miembro =>
@@ -144,6 +172,7 @@
             }
             miembro.rol = resultado.usuario.rol;
             selectorRol.value = miembro.rol;
+            renderizarTodosIntegrantes();
             window.OCID.mostrarToast('Rol actualizado correctamente.', 'exito');
           } catch (error) {
             selectorRol.value = rolAnterior;
@@ -254,6 +283,7 @@
     miembrosActuales = miembros;
     actualizarControlesEdicion();
     renderizarListaRoles();
+    renderizarTodosIntegrantes();
 
     texto('nombre_departamento_texto', departamento ? departamento.nombre : 'Sin departamento asignado');
     texto('detalle_departamento_texto', departamento && departamento.codigo
@@ -331,6 +361,35 @@
     const modalEdicion = obtenerElemento('modal_editar_departamento');
     const botonOpciones = obtenerElemento('boton_opciones_departamento');
     const opcionEditar = obtenerElemento('opcion_editar_departamento');
+    const modalIntegrantes = obtenerElemento('modal_todos_integrantes');
+    const enlaceVerTodos = document.querySelector('.enlace_ver_todos[aria-controls="modal_todos_integrantes"]');
+    const botonCerrarIntegrantes = obtenerElemento('cerrar_modal_todos_integrantes');
+
+    const cerrarModalIntegrantes = () => {
+      if (!modalIntegrantes || modalIntegrantes.hidden) return;
+      modalIntegrantes.classList.remove('visible');
+      window.setTimeout(() => {
+        modalIntegrantes.hidden = true;
+        if (enlaceVerTodos) enlaceVerTodos.focus();
+      }, 300);
+    };
+
+    if (enlaceVerTodos && modalIntegrantes) {
+      enlaceVerTodos.addEventListener('click', evento => {
+        evento.preventDefault();
+        renderizarTodosIntegrantes();
+        modalIntegrantes.hidden = false;
+        window.requestAnimationFrame(() => modalIntegrantes.classList.add('visible'));
+        if (botonCerrarIntegrantes) botonCerrarIntegrantes.focus();
+      });
+      modalIntegrantes.addEventListener('click', evento => {
+        if (evento.target === modalIntegrantes) cerrarModalIntegrantes();
+      });
+      document.addEventListener('keydown', evento => {
+        if (evento.key === 'Escape' && !modalIntegrantes.hidden) cerrarModalIntegrantes();
+      });
+    }
+    if (botonCerrarIntegrantes) botonCerrarIntegrantes.addEventListener('click', cerrarModalIntegrantes);
 
     if (botonOpciones && menuDepartamento) {
       botonOpciones.addEventListener('click', evento => {

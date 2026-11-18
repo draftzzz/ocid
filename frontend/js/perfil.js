@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Cargar datos de perfil y departamentos al iniciar
   cargarDatosPerfil();
+  configurarSalirDepartamento();
 });
 
 function obtenerUsuarioSesion() {
@@ -65,8 +66,80 @@ function obtenerUsuarioSesion() {
   }
 }
 
+function perfilTieneDepartamento(usuario) {
+  const id = Number(usuario && usuario.departamento_id);
+  return Number.isSafeInteger(id) && id > 0;
+}
+
+function perfilEsJefe(usuario) {
+  return Boolean(usuario &&
+    (usuario.es_jefe === true || usuario.es_jefe === 't' || usuario.es_jefe === 'true'));
+}
+
 async function peticionServidor(ruta, opciones) {
   return window.OCID.apiFetch(ruta, opciones);
+}
+
+function configurarSalirDepartamento() {
+  const botonAbrir = document.getElementById('boton_salir_departamento');
+  const modal = document.getElementById('modal_salir_departamento');
+  const botonCerrar = document.getElementById('cerrar_modal_salir_departamento');
+  const botonCancelar = document.getElementById('cancelar_salir_departamento');
+  const botonConfirmar = document.getElementById('confirmar_salir_departamento');
+  if (!botonAbrir || !modal || !botonConfirmar) return;
+
+  const cerrar = () => {
+    if (modal.hidden) return;
+    modal.classList.remove('visible');
+    window.setTimeout(() => {
+      modal.hidden = true;
+      botonAbrir.focus();
+    }, 300);
+  };
+
+  botonAbrir.addEventListener('click', () => {
+    const usuario = obtenerUsuarioSesion();
+    if (!usuario || !perfilTieneDepartamento(usuario) || perfilEsJefe(usuario)) return;
+    modal.hidden = false;
+    window.requestAnimationFrame(() => modal.classList.add('visible'));
+    botonCancelar?.focus();
+  });
+  if (botonCerrar) botonCerrar.addEventListener('click', cerrar);
+  if (botonCancelar) botonCancelar.addEventListener('click', cerrar);
+  modal.addEventListener('click', evento => {
+    if (evento.target === modal) cerrar();
+  });
+  document.addEventListener('keydown', evento => {
+    if (evento.key === 'Escape' && !modal.hidden) cerrar();
+  });
+
+  botonConfirmar.addEventListener('click', async () => {
+    const usuario = obtenerUsuarioSesion();
+    if (!usuario || !usuario.id || !perfilTieneDepartamento(usuario)) {
+      mostrarAviso('No tienes un departamento asignado para salir.', true);
+      return;
+    }
+    if (perfilEsJefe(usuario)) {
+      mostrarAviso('El jefe debe transferir la propiedad antes de salir del departamento.', true);
+      return;
+    }
+
+    botonConfirmar.disabled = true;
+    try {
+      const resultado = await peticionServidor(
+        `/usuarios/${encodeURIComponent(usuario.id)}/salir-departamento`,
+        { method: 'PATCH' }
+      );
+      if (!resultado.success || !resultado.usuario) {
+        throw new Error(resultado.error || 'No se pudo salir del departamento.');
+      }
+      window.OCID.guardarSesion({ ...usuario, ...resultado.usuario });
+      window.location.href = 'bienvenida.html';
+    } catch (error) {
+      mostrarAviso(error.message || 'No se pudo salir del departamento.', true);
+      botonConfirmar.disabled = false;
+    }
+  });
 }
 
 // Sistema de avisos insertado exactamente debajo de la cabecera ("Administra tu cuenta...")
@@ -81,21 +154,30 @@ async function cargarDatosPerfil() {
 
   const campoNombre = document.getElementById('campo_nombre_completo');
   const campoCorreo = document.getElementById('campo_correo_electronico');
-  const campoRol = document.getElementById('campo_rol_usuario');
-  const selectorDepartamento = document.getElementById('campo_departamento');
+  const campoDepartamento = document.getElementById('campo_departamento');
+  const botonSalirDepartamento = document.getElementById('boton_salir_departamento');
 
   if (campoNombre) campoNombre.value = usuario.nombre || '';
   if (campoCorreo) campoCorreo.value = usuario.correo || '';
-  if (campoRol) campoRol.value = usuario.rol || '';
+  if (campoDepartamento) {
+    campoDepartamento.value = usuario.departamento_nombre ||
+      (usuario.departamento_objeto && usuario.departamento_objeto.nombre) ||
+      (typeof usuario.departamento === 'string' ? usuario.departamento : 'Sin departamento');
+    campoDepartamento.disabled = true;
+  }
+  if (botonSalirDepartamento) {
+    botonSalirDepartamento.hidden = !perfilTieneDepartamento(usuario) || perfilEsJefe(usuario);
+  }
 
   try {
     const departamentos = await peticionServidor('/departamentos');
-    if (selectorDepartamento && Array.isArray(departamentos)) {
-      selectorDepartamento.replaceChildren(new Option('Sin departamento', ''));
-      departamentos.forEach(dep => {
-        selectorDepartamento.add(new Option(dep.nombre, dep.id));
-      });
-      selectorDepartamento.value = usuario.departamento_id ? String(usuario.departamento_id) : '';
+    if (campoDepartamento && Array.isArray(departamentos)) {
+      const departamentoActual = departamentos.find(dep =>
+        Number(dep.id) === Number(usuario.departamento_id)
+      );
+      campoDepartamento.value = departamentoActual
+        ? departamentoActual.nombre
+        : 'Sin departamento';
     }
   } catch (error) {
     console.error('Error al cargar departamentos:', error);
@@ -115,20 +197,8 @@ if (formPerfil) {
 
     const nombre = document.getElementById('campo_nombre_completo').value.trim();
     const correo = document.getElementById('campo_correo_electronico').value.trim();
-    const departamento_id = document.getElementById('campo_departamento').value || null;
-    const campoRol = document.getElementById('campo_rol_usuario');
-    const rol = campoRol ? campoRol.value.trim() : (usuario.rol || '');
 
-    // Validar si los campos son exactamente iguales a los almacenados
-    const deptoActualStr = usuario.departamento_id ? String(usuario.departamento_id) : '';
-    const deptoNuevoStr = departamento_id ? String(departamento_id) : '';
-
-    if (
-      nombre === (usuario.nombre || '') &&
-      correo === (usuario.correo || '') &&
-      deptoNuevoStr === deptoActualStr &&
-      rol === (usuario.rol || '')
-    ) {
+    if (nombre === (usuario.nombre || '') && correo === (usuario.correo || '')) {
       mostrarAviso('No se realizaron cambios porque los datos son exactamente iguales.', true);
       return;
     }
@@ -137,7 +207,7 @@ if (formPerfil) {
       const respuesta = await peticionServidor(`/usuarios/${encodeURIComponent(usuario.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, correo, departamento_id, rol })
+        body: JSON.stringify({ nombre, correo })
       });
 
       const usuarioActualizado = { ...usuario, ...respuesta.usuario };
@@ -147,6 +217,12 @@ if (formPerfil) {
       const etiquetaRol = document.getElementById('etiqueta_rol_usuario');
       if (etiquetaNombre) etiquetaNombre.textContent = usuarioActualizado.nombre;
       if (etiquetaRol) etiquetaRol.textContent = window.OCID.obtenerEtiquetaRolUsuario(usuarioActualizado);
+      if (document.getElementById('campo_departamento')) {
+        document.getElementById('campo_departamento').value =
+          usuarioActualizado.departamento_nombre ||
+          (usuarioActualizado.departamento_objeto && usuarioActualizado.departamento_objeto.nombre) ||
+          'Sin departamento';
+      }
 
       // Aviso verde de éxito que se oculta a los 7 segundos
       mostrarAviso('Perfil actualizado correctamente.', false);
@@ -186,8 +262,10 @@ if (formContrasena) {
         body: JSON.stringify({ password_actual, password_nueva })
       });
 
-      mostrarAviso('Contraseña actualizada correctamente.', false);
       formContrasena.reset();
+      window.OCID.limpiarSesion();
+      sessionStorage.setItem('ocid_password_changed', 'true');
+      window.location.href = 'login.html';
     } catch (error) {
       let mensaje = error.message;
       if (mensaje.toLowerCase().includes('actual es incorrecta') || mensaje.toLowerCase().includes('password')) {

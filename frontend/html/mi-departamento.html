@@ -225,7 +225,8 @@
             <div class="tarjeta_integrantes" data-purpose="bloque_integrantes">
                 <div class="cabecera_integrantes">
                     <div class="titulo_seccion_bloque titulo_integrantes_margen">Integrantes del departamento</div>
-                    <a class="enlace_ver_todos" href="#ver_todos_integrantes">
+                    <a class="enlace_ver_todos" href="#ver_todos_integrantes"
+                        aria-controls="modal_todos_integrantes" aria-haspopup="dialog">
                         Ver todos
                         <svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                     </a>
@@ -254,6 +255,20 @@
         <!-- END: ContenidoPrincipal -->
     </main>
     <!-- END: MainContentArea -->
+
+    <div class="modal_overlay" id="modal_todos_integrantes" role="dialog" aria-modal="true"
+        aria-labelledby="titulo_modal_todos_integrantes" hidden>
+        <section class="caja_modal modal_caja_integrantes">
+            <header class="modal_cabecera_custom">
+                <h2 class="modal_titulo_custom" id="titulo_modal_todos_integrantes">Integrantes del departamento</h2>
+                <button class="boton_cerrar_custom" id="cerrar_modal_todos_integrantes"
+                    type="button" aria-label="Cerrar">×</button>
+            </header>
+            <div class="modal_formulario_custom">
+                <ul class="lista_todos_integrantes" id="lista_todos_integrantes"></ul>
+            </div>
+        </section>
+    </div>
 
     <!-- BEGIN: ModalContact -->
     <div class="modal_contacto" data-purpose="modal_contactar_jefe" id="modal_contacto">

@@ -591,7 +591,7 @@ app.patch('/usuarios/:id/rol', async (req, res) => {
 // Actualizar usuario
 app.put('/usuarios/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const { nombre, correo, departamento_id, departamento } = req.body;
+  const { nombre, correo } = req.body;
 
   if (!Number.isInteger(id) || id <= 0 || !nombre || !correo) {
     return res.status(400).json({ success: false, error: 'Los datos del perfil no son válidos' });
@@ -601,29 +601,12 @@ app.put('/usuarios/:id', async (req, res) => {
   }
 
   try {
-    let departamentoId = null;
-    if (departamento_id !== null && departamento_id !== undefined && departamento_id !== '' && !isNaN(Number(departamento_id))) {
-      const numId = Number(departamento_id);
-      if (numId > 0) {
-        const depto = await pool.query('SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE', [numId]);
-        if (depto.rowCount > 0) departamentoId = numId;
-      }
-    }
-
-    if (!departamentoId && departamento && String(departamento).trim()) {
-      const deptoNom = await pool.query(
-        'SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER($1) AND eliminado = FALSE LIMIT 1',
-        [String(departamento).trim()]
-      );
-      if (deptoNom.rowCount > 0) departamentoId = deptoNom.rows[0].id;
-    }
-
     const resultado = await pool.query(
       `UPDATE usuarios
-       SET nombre = $1, correo = $2, departamento_id = $3
-       WHERE id = $4
+       SET nombre = $1, correo = $2
+       WHERE id = $3
        RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
-      [nombre.trim(), correo.trim(), departamentoId, id]
+      [nombre.trim(), correo.trim(), id]
     );
 
     if (resultado.rowCount === 0) {
@@ -667,6 +650,77 @@ app.put('/usuarios/:id', async (req, res) => {
       return res.status(409).json({ success: false, error: 'Ese correo ya está registrado' });
     }
     res.status(500).json({ success: false, error: 'No se pudo actualizar el perfil' });
+  }
+});
+
+app.patch('/usuarios/:id/salir-departamento', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, error: 'ID de usuario inválido' });
+  }
+  if (id !== Number(req.usuario.id)) {
+    return res.status(403).json({ success: false, error: 'Solo puedes salir de tu propio departamento' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const usuarioActual = await client.query(
+      'SELECT id, departamento_id, es_jefe FROM usuarios WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+    if (usuarioActual.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El usuario no existe' });
+    }
+
+    const usuario = usuarioActual.rows[0];
+    if (!usuario.departamento_id) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'El usuario no pertenece a un departamento' });
+    }
+    if (esFlagActivo(usuario.es_jefe)) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'Transfiere primero la jefatura del departamento' });
+    }
+
+    const departamento = await client.query(
+      'SELECT jefe_id FROM departamentos WHERE id = $1 FOR UPDATE',
+      [usuario.departamento_id]
+    );
+    if (departamento.rowCount > 0 && Number(departamento.rows[0].jefe_id) === id) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'Transfiere primero la jefatura del departamento' });
+    }
+
+    await client.query(
+      `UPDATE usuarios
+       SET departamento_id = NULL, es_jefe = FALSE, rol = 'Docente'
+       WHERE id = $1`,
+      [id]
+    );
+    const perfil = await client.query(
+      `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
+              NULLIF(BTRIM(d.nombre), '') AS departamento,
+              NULLIF(BTRIM(d.nombre), '') AS departamento_nombre,
+              CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
+                'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
+                'jefe_id', d.jefe_id, 'codigo', d.codigo
+              ) END AS departamento_objeto
+       FROM usuarios u
+       LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
+       WHERE u.id = $1`,
+      [id]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true, usuario: perfil.rows[0] });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al salir del departamento:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo salir del departamento' });
+  } finally {
+    if (client) client.release();
   }
 });
 

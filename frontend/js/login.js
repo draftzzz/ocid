@@ -3,6 +3,16 @@
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   const $ = (id) => document.getElementById(id);
+  const cambioContrasenaExitoso = sessionStorage.getItem('ocid_password_changed');
+  if (cambioContrasenaExitoso) {
+    sessionStorage.removeItem('ocid_password_changed');
+    const alerta = $('mensaje_estado');
+    if (alerta) {
+      alerta.className = 'mensaje_alerta exito';
+      alerta.textContent = 'Cambio de contraseña exitoso, vuelve a iniciar sesión';
+      alerta.style.display = 'block';
+    }
+  }
 
   // Mostrar / ocultar contraseña de forma segura
   const botonClave = $('boton_clave');

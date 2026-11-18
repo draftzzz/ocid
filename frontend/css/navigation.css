@@ -421,40 +421,6 @@
   display: none !important;
 }
 
-body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
-body select,
-body textarea {
-  height: auto !important;
-  min-height: 44px;
-  padding: 10px 13px !important;
-  border: 1px solid #d6deea !important;
-  border-radius: 10px !important;
-  background-color: #ffffff !important;
-  color: #172033 !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  font: inherit !important;
-  line-height: 1.4;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
-}
-
-body textarea {
-  min-height: 100px;
-  resize: vertical;
-}
-
-body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
-body select:focus,
-body textarea:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14) !important;
-  outline: none;
-}
-
-body input[type="checkbox"],
-body input[type="radio"] {
-  accent-color: #2563eb;
-}
-
 .boton_subir_archivo,
 .boton_nuevo_anuncio {
   border: 1px solid rgba(255, 255, 255, 0.34) !important;
@@ -496,6 +462,10 @@ body input[type="radio"] {
   -webkit-backdrop-filter: blur(8px);
 }
 
+.modal_overlay[hidden] {
+  display: none !important;
+}
+
 .modal_overlay > :is(.modal_caja, .modal_contenedor, .caja_modal, .modal_caja_detalle),
 .modal_fondo > :is(.modal_caja, .modal_contenedor, .caja_modal),
 .fondo_modal > :is(.modal_caja, .modal_contenedor, .caja_modal),
@@ -521,7 +491,7 @@ body.modal_abierto {
 
 .toast_mensaje {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(15px);
   transition: all 0.3s ease;
   font-family: inherit !important;
 }
@@ -534,7 +504,7 @@ body.modal_abierto {
 
 .toast_mensaje.toast_ocultando {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(15px);
 }
 
 .seccion_superior_derecha {

@@ -357,7 +357,7 @@ textarea {
    ========================================================================== */
 .contenido_principal {
     flex: 1;
-    padding: 28px 32px;
+    padding: 28px 32px 48px;
     max-width: 1300px;
     width: 100%;
     margin: 0px auto;
@@ -365,6 +365,8 @@ textarea {
     flex-direction: column;
     gap: 24px;
     overflow-y: auto;
+    scroll-behavior: smooth;
+    scroll-padding-bottom: 48px;
 
     scrollbar-width: thin;
     scrollbar-color: #ccd2d8 #232E33;
@@ -630,6 +632,8 @@ textarea {
 
 .contenedor_tabla_integrantes {
     overflow-x: auto;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
 }
 
 .tabla_integrantes {
@@ -941,7 +945,7 @@ textarea {
     }
 
     .contenido_principal {
-        padding: 18px 14px;
+        padding: 18px 14px 42px;
     }
 
     .fila_metricas {
@@ -1150,4 +1154,79 @@ textarea {
     .fila_transferencia .modal_input_custom {
         max-width: none;
     }
+}
+
+.modal_caja_integrantes {
+    width: min(620px, 100%);
+    max-height: calc(100dvh - 48px);
+}
+
+#modal_todos_integrantes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#modal_todos_integrantes.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#modal_todos_integrantes .caja_modal {
+    transform: translateY(12px);
+    transition: transform 0.3s ease;
+}
+
+#modal_todos_integrantes.visible .caja_modal {
+    transform: translateY(0);
+}
+
+.lista_todos_integrantes {
+    max-height: min(62vh, 520px);
+    margin: 0;
+    padding: 2px 10px 20px 2px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+    scroll-padding-bottom: 18px;
+    list-style: none;
+}
+
+.elemento_integrante_modal {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 10px;
+    padding: 14px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #fff;
+}
+
+.elemento_integrante_modal:last-child {
+    margin-bottom: 0;
+}
+
+.elemento_integrante_modal strong {
+    color: #172033;
+    font-size: 13px;
+}
+
+.elemento_integrante_modal > span {
+    color: #64748b;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.elemento_integrante_modal .rol_integrante_modal {
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+.elemento_integrante_vacio {
+    padding: 16px 8px 24px;
+    color: #64748b;
+    text-align: center;
 }
