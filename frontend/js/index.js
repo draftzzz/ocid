@@ -44,6 +44,11 @@
     const botonVerGuia = document.getElementById('boton_ver_guia');
     const botonHeroExplorar = document.getElementById('boton_hero_explorar');
 
+    if (sesionValida) {
+      redirigirSistema(usuario);
+      return;
+    }
+
     if (botonVerGuia) {
       botonVerGuia.addEventListener('click', () => desplazarASeccion('como_funciona'));
     }
@@ -52,41 +57,13 @@
       botonHeroExplorar.addEventListener('click', () => desplazarASeccion('modulos_sistema'));
     }
 
-    if (sesionValida) {
-      if (botonAcceder) {
-        botonAcceder.replaceChildren();
-        const icono = document.createElement('i');
-        icono.setAttribute('data-lucide', 'layout-dashboard');
-        icono.className = 'icono_16';
-        const texto = document.createElement('span');
-        texto.textContent = 'Ir al Sistema';
-        botonAcceder.appendChild(icono);
-        botonAcceder.appendChild(texto);
-        botonAcceder.addEventListener('click', () => redirigirSistema(usuario));
-      }
-
-      if (botonHeroLogin) {
-        const spanHero = botonHeroLogin.querySelector('span');
-        if (spanHero) spanHero.textContent = 'Ir a mi Panel Docente';
-        botonHeroLogin.addEventListener('click', () => redirigirSistema(usuario));
-      }
-    } else {
-      if (botonAcceder) {
-        botonAcceder.addEventListener('click', redirigirInicioSesion);
-      }
-      if (botonHeroLogin) {
-        botonHeroLogin.addEventListener('click', redirigirInicioSesion);
-      }
-    }
+    if (botonAcceder) botonAcceder.href = 'html/login.html';
+    if (botonHeroLogin) botonHeroLogin.addEventListener('click', redirigirInicioSesion);
 
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
       lucide.createIcons();
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inicializarIndexPublico);
-  } else {
-    inicializarIndexPublico();
-  }
+  inicializarIndexPublico();
 })();

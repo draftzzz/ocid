@@ -1,24 +1,24 @@
 (function () {
   'use strict';
 
-  const rutaActual = window.location.pathname.toLowerCase();
-  const paginaActual = rutaActual.split('/').pop();
+  const rutaActual = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+  const paginaActual = rutaActual.split('/').pop() || 'index.html';
+  const rutaBase = document.currentScript?.dataset.routePrefix || '';
+  const paginaIndex = paginaActual === 'index.html';
   const paginaBienvenida = paginaActual === 'bienvenida.html';
   const paginaCrearDepartamento = paginaActual === 'crear-departamento.html';
-  const paginasPublicas = ['index.html', 'login.html', 'registro.html'];
-  if (paginasPublicas.includes(paginaActual)) return;
-
-  const rutaBase = document.currentScript?.dataset.routePrefix || '';
+  const paginasPublicas = ['index.html', 'login.html', 'registro.html', 'bienvenida.html'];
   let token;
   let usuario;
 
   try {
-    token = localStorage.getItem('token_ocid');
     const usuarioGuardado = localStorage.getItem('usuario_ocid');
     usuario = usuarioGuardado ? JSON.parse(usuarioGuardado) : null;
+    token = localStorage.getItem('token_ocid') ||
+      (usuario && typeof usuario.token === 'string' ? usuario.token : null);
   } catch (error) {
     console.error('No se pudo validar la sesión local:', error);
-    if (!paginaBienvenida) window.location.href = `${rutaBase}login.html`;
+    if (!paginasPublicas.includes(paginaActual)) window.location.href = `${rutaBase}login.html`;
     return;
   }
 
@@ -30,7 +30,7 @@
     usuario.id
   );
   if (!sesionValida) {
-    if (!paginaBienvenida) window.location.href = `${rutaBase}login.html`;
+    if (!paginasPublicas.includes(paginaActual)) window.location.href = `${rutaBase}login.html`;
     return;
   }
 
@@ -41,8 +41,22 @@
     Number.isFinite(Number(departamentoId)) &&
     Number(departamentoId) > 0;
 
+  if (paginaIndex) {
+    window.location.href = tieneDepartamento
+      ? `${rutaBase}inicio.html`
+      : `${rutaBase}bienvenida.html`;
+    return;
+  }
+
+  if (paginaActual === 'login.html' || paginaActual === 'registro.html') return;
+
   if (paginaBienvenida) {
     if (tieneDepartamento) window.location.href = `${rutaBase}inicio.html`;
+    return;
+  }
+
+  if (tieneDepartamento && paginaCrearDepartamento) {
+    window.location.href = `${rutaBase}inicio.html`;
     return;
   }
 
