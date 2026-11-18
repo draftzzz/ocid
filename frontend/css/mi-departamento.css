@@ -450,11 +450,36 @@ textarea {
     line-height: 22px;
 }
 
-.detalle_departamento {
+.boton_codigo_acceso {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: #2563eb;
+    color: #ffffff;
     font-size: 12px;
-    color: #64748b;
-    margin-top: 2px;
+    font-weight: 700;
     line-height: 16px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.boton_codigo_acceso:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.boton_codigo_acceso:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.3);
+    outline-offset: 2px;
+}
+
+.boton_codigo_acceso[hidden] {
+    display: none !important;
 }
 
 .fila_metricas {
@@ -656,7 +681,6 @@ textarea {
     font-size: 13px;
     color: #334155;
     padding: 12px;
-    border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
 }
 
@@ -1025,6 +1049,13 @@ textarea {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+.tarjeta_integrantes .menu_integrante {
+    position: fixed;
+    top: 0;
+    right: auto;
+    z-index: 1200;
+}
+
 .tarjeta_gestion_departamento[hidden] {
     display: none;
 }
@@ -1091,25 +1122,24 @@ textarea {
     gap: 8px;
 }
 
-.lista_roles_departamento {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    list-style: none;
-}
-
-.lista_roles_departamento li {
-    padding: 6px 10px;
-    border: 1px solid #dbeafe;
-    border-radius: 999px;
-    background: #eff6ff;
-    color: #1e40af;
-    font-size: 12px;
-    font-weight: 600;
-}
-
 .select_rol_integrante {
-    min-width: 140px;
+    width: 100%;
+    min-width: 150px;
+    margin-top: 5px;
+    padding: 7px 8px;
+    border: 1px solid #dbe3ee;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 12px;
+}
+
+.menu_integrante_rol {
+    display: block;
+    padding: 8px 10px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
 }
 
 .acciones_gestion_departamento {

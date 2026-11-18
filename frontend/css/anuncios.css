@@ -981,18 +981,18 @@ textarea {
 }
 
 .boton_ver_todo_conteo {
-    padding: 5px 9px;
-    border: 1px solid #bfdbfe;
+    padding: 7px 12px;
+    border: none;
     border-radius: 6px;
-    background: #eff6ff;
-    color: #1d4ed8;
-    font-size: 11px;
-    font-weight: 700;
+    background: transparent;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
 }
 
 .boton_ver_todo_conteo:hover {
-    background: #dbeafe;
+    background-color: #eff6ff;
 }
 
 .punto_departamento_0 { background-color: #3b82f6; }

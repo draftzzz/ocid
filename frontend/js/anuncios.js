@@ -289,7 +289,7 @@ function actualizar_panel_lateral() {
   const contenedorConteos = document.getElementById('lista_conteo_departamentos');
   if (contenedorConteos) {
     contenedorConteos.replaceChildren();
-    conteos_departamento.forEach((departamento, indice) => {
+    conteos_departamento.slice(0, 5).forEach((departamento, indice) => {
       const anuncios = Number(departamento.anuncios_activos) || 0;
       const archivos = Number(departamento.archivos_activos) || 0;
       const fila = document.createElement('div');

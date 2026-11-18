@@ -60,7 +60,11 @@
                 <span>Calendario</span>
             </a>
             <a class="enlace_navegacion" href="tareas.html" id="nav_asistente">
-                <i class="fa-regular fa-list-check icono_nav"></i>
+                <svg aria-hidden="true" class="icono_nav" fill="none" height="20" stroke="currentColor"
+                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20">
+                    <path d="M9 6h12M9 12h12M9 18h12"></path>
+                    <path d="m3.5 5.5 1 1 2-2M3.5 11.5l1 1 2-2M3.5 17.5l1 1 2-2"></path>
+                </svg>
                 <span>Tareas</span>
             </a>
             <a class="enlace_navegacion" href="notificaciones.html">
@@ -129,7 +133,15 @@
                         </div>
                         <div class="info_encabezado_dep">
                             <h2 class="nombre_departamento" id="nombre_departamento_texto"></h2>
-                            <div class="detalle_departamento" id="detalle_departamento_texto"></div>
+                            <button class="boton_codigo_acceso" id="boton_codigo_acceso" type="button" hidden>
+                                <svg aria-hidden="true" fill="none" height="16" stroke="currentColor"
+                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    viewBox="0 0 24 24" width="16">
+                                    <circle cx="8" cy="15" r="5"></circle>
+                                    <path d="m21 2-9.6 9.6M15.5 7.5l3 3M18.5 4.5l3 3"></path>
+                                </svg>
+                                <span id="detalle_departamento_texto"></span>
+                            </button>
                         </div>
                         <button
                             aria-label="Opciones de departamento"
@@ -170,13 +182,14 @@
                                 <div class="valor_metrica" id="total_eventos"></div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
                 <!-- Tarjeta de contacto Jefe de Departamento -->
                 <div class="tarjeta_jefe" data-purpose="tarjeta_jefe_departamento">
                     <div class="titulo_caja_pequena">Jefe de departamento</div>
-                    <div class="avatar_jefe_grande" id="avatar_jefe">AL</div>
+                    <div class="avatar_jefe_grande" id="avatar_jefe"></div>
                     <h3 class="nombre_jefe" id="nombre_jefe"></h3>
                     <span class="correo_jefe" id="correo_jefe"></span>
                 </div>
@@ -187,39 +200,6 @@
                 <div class="titulo_seccion_bloque">Descripción</div>
                 <p class="texto_parrafo_desc" id="parrafo_descripcion"></p>
             </div>
-
-            <section class="tarjeta_gestion_departamento" id="panel_gestion_departamento" hidden>
-                <div>
-                    <h2 class="titulo_seccion_bloque">Gestionar Departamento</h2>
-                    <p class="subtitulo_gestion_departamento">Administra la jefatura y los permisos del equipo.</p>
-                </div>
-                <form class="formulario_transferencia" id="form_transferir_jefatura">
-                    <label class="modal_label_custom" for="select_nuevo_jefe">Transferir jefatura</label>
-                    <div class="fila_transferencia">
-                        <select class="modal_input_custom" id="select_nuevo_jefe" required>
-                            <option value="">Selecciona un integrante</option>
-                        </select>
-                        <button class="boton_guardar_custom" type="submit">Transferir propiedad</button>
-                    </div>
-                </form>
-                <section class="gestion_roles_departamento" id="gestion_roles_departamento" hidden>
-                    <h3>Roles del departamento</h3>
-                    <form id="form_crear_rol_departamento">
-                        <label class="modal_label_custom" for="nombre_rol_departamento">Crear un rol específico</label>
-                        <div class="fila_transferencia">
-                            <input class="modal_input_custom" id="nombre_rol_departamento" maxlength="60"
-                                placeholder="Ej. Coordinación académica" required type="text" />
-                            <button class="boton_guardar_custom" type="submit">Crear rol</button>
-                        </div>
-                    </form>
-                    <ul class="lista_roles_departamento" id="lista_roles_departamento"></ul>
-                </section>
-                <div class="acciones_gestion_departamento">
-                    <p>La baja lógica conserva el registro y desvincula a los integrantes.</p>
-                    <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento"
-                        type="button" hidden>Borrar departamento</button>
-                </div>
-            </section>
 
             <!-- Sección de Tabla de Integrantes del Departamento -->
             <div class="tarjeta_integrantes" data-purpose="bloque_integrantes">
@@ -251,6 +231,38 @@
                     </table>
                 </div>
             </div>
+
+            <section class="tarjeta_gestion_departamento" id="panel_gestion_departamento" hidden>
+                <div>
+                    <h2 class="titulo_seccion_bloque">Gestionar Departamento</h2>
+                    <p class="subtitulo_gestion_departamento">Administra la jefatura y los permisos del equipo.</p>
+                </div>
+                <form class="formulario_transferencia" id="form_transferir_jefatura">
+                    <label class="modal_label_custom" for="select_nuevo_jefe">Transferir jefatura</label>
+                    <div class="fila_transferencia">
+                        <select class="modal_input_custom" id="select_nuevo_jefe" required>
+                            <option value="">Selecciona un integrante</option>
+                        </select>
+                        <button class="boton_guardar_custom" type="submit">Transferir propiedad</button>
+                    </div>
+                </form>
+                <section class="gestion_roles_departamento" id="gestion_roles_departamento" hidden>
+                    <h3>Roles del departamento</h3>
+                    <form id="form_crear_rol_departamento">
+                        <label class="modal_label_custom" for="nombre_rol_departamento">Crear un rol específico</label>
+                        <div class="fila_transferencia">
+                            <input class="modal_input_custom" id="nombre_rol_departamento" maxlength="60"
+                                placeholder="Ej. Coordinación académica" required type="text" />
+                            <button class="boton_guardar_custom" type="submit">Crear rol</button>
+                        </div>
+                    </form>
+                </section>
+                <div class="acciones_gestion_departamento">
+                    <p>La baja lógica conserva el registro y desvincula a los integrantes.</p>
+                    <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento"
+                        type="button" hidden>Borrar departamento</button>
+                </div>
+            </section>
         </div>
         <!-- END: ContenidoPrincipal -->
     </main>

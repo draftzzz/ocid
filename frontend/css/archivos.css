@@ -348,15 +348,16 @@ textarea {
    4. Zona de Contenido de Archivos (Inputs Grandes de 44px)
    ========================================================================== */
 .cuerpo_contenido {
-    flex: 1;
-    padding: 28px 32px;
+    flex: 0 0 auto;
+    min-height: calc(100vh - 64px);
+    padding: 28px 32px 48px;
     max-width: 1300px;
     width: 100%;
     margin: 0px auto;
     display: flex;
     flex-direction: column;
     gap: 24px;
-    overflow-y: auto;
+    overflow: visible;
 }
 
 .encabezado_archivos {
@@ -468,7 +469,9 @@ textarea {
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);
-    overflow: hidden;
+    overflow: visible;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .tabla_archivos {

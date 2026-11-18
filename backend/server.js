@@ -105,6 +105,15 @@ const migracionEsquema = pool.query(`
   ALTER TABLE departamentos
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE;
 
+  ALTER TABLE usuarios
+  ADD COLUMN IF NOT EXISTS estado VARCHAR(10) DEFAULT 'Activo';
+
+  UPDATE usuarios
+  SET estado = 'Activo'
+  WHERE estado IS NULL OR estado NOT IN ('Activo', 'Inactivo');
+  ALTER TABLE usuarios ALTER COLUMN estado SET DEFAULT 'Activo';
+  ALTER TABLE usuarios ALTER COLUMN estado SET NOT NULL;
+
   UPDATE departamentos SET eliminado = FALSE WHERE eliminado IS NULL;
   ALTER TABLE departamentos ALTER COLUMN eliminado SET DEFAULT FALSE;
   ALTER TABLE departamentos ALTER COLUMN eliminado SET NOT NULL;
@@ -346,7 +355,7 @@ async function obtenerPermisosDepartamento(db, usuarioId, departamentoId, bloque
 app.get('/usuarios', async (req, res) => {
   try {
     const resultado = await pool.query(
-      `SELECT u.id, u.nombre, u.correo,
+      `SELECT u.id, u.nombre, u.correo, COALESCE(u.estado, 'Activo') AS estado,
               CASE
                 WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
                 WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN 'Jefe de Departamento'
@@ -398,6 +407,7 @@ app.get('/docentes', async (req, res) => {
 
     const resultado = await pool.query(
       `SELECT u.id, u.nombre, u.correo, u.departamento_id,
+              COALESCE(u.estado, 'Activo') AS estado,
               CASE WHEN u.es_jefe IS TRUE THEN TRUE ELSE FALSE END AS es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,
               CASE
@@ -583,6 +593,67 @@ app.patch('/usuarios/:id/rol', async (req, res) => {
     if (client) await client.query('ROLLBACK');
     console.error('Error al asignar rol:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo asignar el rol' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+app.patch('/usuarios/:id/estado', async (req, res) => {
+  const id = Number(req.params.id);
+  const estado = typeof req.body.estado === 'string' ? req.body.estado.trim() : '';
+  if (!Number.isSafeInteger(id) || id <= 0 ||
+      !['Activo', 'Inactivo'].includes(estado)) {
+    return res.status(400).json({ success: false, error: 'El estado solicitado no es válido' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const usuarioObjetivo = await client.query(
+      'SELECT departamento_id FROM usuarios WHERE id = $1',
+      [id]
+    );
+    if (!usuarioObjetivo.rowCount || !usuarioObjetivo.rows[0].departamento_id) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El integrante no pertenece a un departamento activo' });
+    }
+
+    const departamentoId = Number(usuarioObjetivo.rows[0].departamento_id);
+    const acceso = await obtenerPermisosDepartamento(client, req.usuario.id, departamentoId, true);
+    if (!acceso) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: 'El departamento no existe' });
+    }
+    if (!acceso.esJefe) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, error: 'Solo el jefe puede cambiar el estado de sus integrantes' });
+    }
+
+    const objetivoBloqueado = await client.query(
+      'SELECT id, departamento_id, es_jefe FROM usuarios WHERE id = $1 FOR UPDATE',
+      [id]
+    );
+    if (!objetivoBloqueado.rowCount ||
+        Number(objetivoBloqueado.rows[0].departamento_id) !== departamentoId) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'La pertenencia del integrante al departamento cambió' });
+    }
+    if (Number(acceso.departamento.jefe_id) === id || esFlagActivo(objetivoBloqueado.rows[0].es_jefe)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ success: false, error: 'No se puede cambiar el estado del jefe del departamento' });
+    }
+
+    const actualizado = await client.query(
+      'UPDATE usuarios SET estado = $1 WHERE id = $2 RETURNING id, estado',
+      [estado, id]
+    );
+    await client.query('COMMIT');
+    res.json({ success: true, usuario: actualizado.rows[0] });
+  } catch (error) {
+    if (client) await client.query('ROLLBACK');
+    console.error('Error al cambiar el estado del integrante:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo cambiar el estado del integrante' });
   } finally {
     if (client) client.release();
   }
