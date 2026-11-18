@@ -5,7 +5,7 @@
   let miembrosActuales = [];
   let rolesDepartamento = [];
   let rolesDepartamentoDetalle = [];
-  const COLOR_ROL_JEFE = '#B91C1C';
+  const COLOR_ROL_JEFE = '#4b1cb9';
   const FRASE_CONFIRMACION_BAJA = 'Confirmar eliminacion';
 
   function esMiembroJefe(miembro) {
