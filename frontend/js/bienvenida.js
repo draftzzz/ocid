@@ -20,24 +20,27 @@ modalUnirse.addEventListener('click', (e) => { if (e.target === modalUnirse) mod
 // Enviar código para unirse
 document.getElementById('form_unirse_codigo').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const codigo = document.getElementById('input_codigo_acceso').value.trim().toLowerCase();
+    const codigo = document.getElementById('input_codigo_acceso').value;
+    const botonUnirse = document.querySelector('#form_unirse_codigo button[type="submit"]');
+    if (botonUnirse) botonUnirse.disabled = true;
     try {
-        const resultado = await window.OCID.apiFetch(`/departamentos/codigo/${encodeURIComponent(codigo)}`);
-        const datos = await window.OCID.apiFetch(`/usuarios/${usuario.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                nombre: usuario.nombre,
-                correo: usuario.correo,
-                departamento_id: resultado.departamento.id,
-                rol: usuario.rol
-            })
+        const datos = await window.OCID.apiFetch('/departamentos/unirse', {
+            method: 'POST',
+            body: JSON.stringify({ codigo })
         });
-        if (!datos.success || !datos.usuario) throw new Error(datos.error || 'No se pudo actualizar el departamento');
+        if (!datos.success || !datos.usuario || !datos.token ||
+            typeof datos.usuario.es_jefe !== 'boolean' ||
+            !window.OCID.tieneDepartamentoAsignado(datos.usuario)) {
+            throw new Error(datos.error || 'El servidor no devolvió el perfil actualizado del departamento.');
+        }
 
-        localStorage.setItem('usuario_ocid', JSON.stringify({ ...usuario, ...datos.usuario }));
+        usuario = { ...usuario, ...datos.usuario };
+        window.OCID.guardarSesion(usuario, datos.token);
         window.location.href = 'inicio.html';
     } catch (err) {
-        window.OCID.mostrarToast(err.message, 'error');
+        window.OCID.mostrarToast(err.message || 'No se pudo unir al departamento.', 'error');
+    } finally {
+        if (botonUnirse) botonUnirse.disabled = false;
     }
 });
 

@@ -119,6 +119,14 @@ const departmentCreationLimiter = rateLimit({
   message: { success: false, error: 'Se alcanzó el límite de creación de departamentos. Intenta más tarde.' }
 });
 
+const departmentJoinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Se alcanzó el límite de intentos para unirse a departamentos. Intenta más tarde.' }
+});
+
 app.use(express.json({ limit: '15mb' }));
 
 // ==========================================
@@ -464,6 +472,56 @@ function autenticarJWT(req, res, next) {
 }
 
 app.use(autenticarJWT);
+
+async function obtenerPerfilUsuario(db, usuarioId) {
+  const resultado = await db.query(
+    `SELECT u.id, u.nombre, u.correo,
+            CASE
+              WHEN LOWER(BTRIM(COALESCE(u.rol, ''))) IN ('administrador', 'administrador general') THEN 'Administrador General'
+              WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN 'Jefe de Departamento'
+              WHEN EXISTS (
+                SELECT 1 FROM roles_departamento rd
+                WHERE rd.departamento_id = d.id
+                  AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+              ) THEN BTRIM(u.rol)
+              ELSE 'Docente'
+            END AS rol,
+            EXISTS (
+              SELECT 1 FROM roles_departamento rd
+              WHERE rd.departamento_id = d.id
+                AND LOWER(BTRIM(rd.nombre)) = LOWER(BTRIM(COALESCE(u.rol, '')))
+            ) AS rol_personalizado_valido,
+            CASE WHEN d.id IS NULL THEN NULL ELSE u.departamento_id END AS departamento_id,
+            CASE WHEN d.id IS NOT NULL AND u.es_jefe IS TRUE THEN TRUE ELSE FALSE END AS es_jefe,
+            d.nombre AS departamento,
+            d.nombre AS departamento_nombre,
+            CASE WHEN d.id IS NULL THEN NULL ELSE json_build_object(
+              'id', d.id, 'nombre', d.nombre, 'descripcion', d.descripcion,
+              'jefe_id', d.jefe_id, 'codigo', d.codigo
+            ) END AS departamento_objeto
+     FROM usuarios u
+     LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
+     WHERE u.id = $1`,
+    [usuarioId]
+  );
+  return resultado.rows[0] || null;
+}
+
+app.get('/perfil', async (req, res) => {
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+  }
+
+  try {
+    const usuario = await obtenerPerfilUsuario(pool, usuarioId);
+    if (!usuario) return res.status(404).json({ success: false, error: 'El usuario no existe' });
+    res.json({ success: true, usuario });
+  } catch (error) {
+    console.error('Error al consultar el perfil actual:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo consultar el perfil actual' });
+  }
+});
 
 const ROLES_ADMINISTRATIVOS = new Set(['administrador', 'administrador general']);
 
@@ -1732,7 +1790,7 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
        FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id
-       WHERE LOWER(BTRIM(d.codigo)) = LOWER(BTRIM($1)) AND d.eliminado = FALSE
+       WHERE BTRIM(d.codigo) = BTRIM($1) AND d.eliminado = FALSE
        LIMIT 1`,
       [codigo.trim()]
     );
@@ -1740,6 +1798,85 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
     res.json({ success: true, departamento: resultado.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error al buscar el departamento' });
+  }
+});
+
+app.post('/departamentos/unirse', departmentJoinLimiter, async (req, res) => {
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  const codigo = req.body && typeof req.body.codigo === 'string' ? req.body.codigo.trim() : '';
+  if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+    return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+  }
+  if (!/^[A-Za-z0-9]{7}$/.test(codigo)) {
+    return res.status(400).json({ success: false, error: 'El código debe tener 7 letras o números y respetar sus mayúsculas y minúsculas' });
+  }
+
+  let client;
+  let transaccionAbierta = false;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    transaccionAbierta = true;
+
+    const usuarioActual = await client.query(
+      'SELECT id, departamento_id FROM usuarios WHERE id = $1 FOR UPDATE',
+      [usuarioId]
+    );
+    if (!usuarioActual.rowCount) {
+      await client.query('ROLLBACK');
+      transaccionAbierta = false;
+      return res.status(404).json({ success: false, error: 'El usuario no existe' });
+    }
+    if (usuarioActual.rows[0].departamento_id) {
+      await client.query('ROLLBACK');
+      transaccionAbierta = false;
+      return res.status(409).json({ success: false, error: 'Ya perteneces a un departamento' });
+    }
+
+    const departamento = await client.query(
+      `SELECT id FROM departamentos
+       WHERE BTRIM(codigo) = $1 AND eliminado = FALSE
+       FOR KEY SHARE`,
+      [codigo]
+    );
+    if (!departamento.rowCount) {
+      await client.query('ROLLBACK');
+      transaccionAbierta = false;
+      return res.status(404).json({ success: false, error: 'Código de departamento no encontrado' });
+    }
+
+    await client.query(
+      `UPDATE usuarios
+       SET departamento_id = $1, es_jefe = FALSE
+       WHERE id = $2`,
+      [departamento.rows[0].id, usuarioId]
+    );
+    const usuario = await obtenerPerfilUsuario(client, usuarioId);
+    if (!usuario || !usuario.departamento_id) {
+      throw new Error('No se pudo cargar el perfil actualizado del usuario');
+    }
+
+    await client.query('COMMIT');
+    transaccionAbierta = false;
+
+    const token = jwt.sign(
+      { id: usuario.id, correo: usuario.correo, rol: usuario.rol },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+    res.json({ success: true, usuario, token });
+  } catch (error) {
+    if (client && transaccionAbierta) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('Error al revertir la unión al departamento:', rollbackError.message);
+      }
+    }
+    console.error('Error al unirse al departamento:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo unir al departamento' });
+  } finally {
+    if (client) client.release();
   }
 });
 

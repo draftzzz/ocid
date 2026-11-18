@@ -33,8 +33,13 @@
                 <i class="fa-solid fa-house icono_nav"></i>
                 <span>Inicio / Bienvenida</span>
             </a>
-            <a class="enlace_navegacion" href="crear-departamento.html">
-                <i class="fa-solid fa-building icono_nav"></i>
+            <a class="enlace_navegacion" href="crear-departamento.html" id="nav_crear_departamento">
+                <svg aria-hidden="true" class="icono_nav" fill="none" height="20" stroke="currentColor"
+                    stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24"
+                    width="20">
+                    <path d="M12 5v14M5 12h14"></path>
+                    <circle cx="12" cy="12" r="9"></circle>
+                </svg>
                 <span>Crear departamento</span>
             </a>
             <div class="separador_menu"></div>
@@ -120,7 +125,8 @@
                         style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">Código
                         de acceso</label>
                     <input type="text" id="input_codigo_acceso" maxlength="7" placeholder="Ej. X7mK9p2" required
-                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; outline: none;" />
+                        autocomplete="off" autocapitalize="off" spellcheck="false"
+                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; letter-spacing: 1px; outline: none;" />
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 8px;">
                     <button type="button" id="btn_cerrar_modal"

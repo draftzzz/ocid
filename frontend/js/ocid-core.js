@@ -100,6 +100,23 @@
     sessionStorage.clear();
   }
 
+  async function sincronizarPerfil() {
+    const usuarioLocal = obtenerUsuarioSesion();
+    if (!usuarioLocal || !obtenerToken()) {
+      throw new Error('No hay una sesión válida para sincronizar.');
+    }
+
+    const datos = await apiFetch('/perfil');
+    if (!datos.success || !datos.usuario ||
+        Number(datos.usuario.id) !== Number(usuarioLocal.id)) {
+      throw new Error(datos.error || 'El servidor no devolvió un perfil válido.');
+    }
+
+    const usuarioActualizado = { ...usuarioLocal, ...datos.usuario };
+    guardarSesion(usuarioActualizado, datos.token);
+    return usuarioActualizado;
+  }
+
   async function apiFetch(path, opciones = {}) {
     const token = obtenerToken();
     if (!token) throw new Error('Inicia sesión para continuar.');
@@ -524,6 +541,7 @@
     tieneDepartamentoAsignado,
     obtenerEtiquetaRolUsuario,
     guardarSesion,
+    sincronizarPerfil,
     limpiarSesion,
     apiFetch,
     apiPublico,
