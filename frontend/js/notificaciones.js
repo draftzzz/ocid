@@ -96,7 +96,8 @@
         ? fecha.toLocaleDateString('es-MX')
         : '';
 
-      return `<article class="item_notificacion ${item.leida ? 'leido' : 'no_leido'}" data-id="${id}" data-tipo="${escaparHTML(item.tipo)}">
+      // El id y el tipo viajan en los botones, sin atributos personalizados
+      return `<article class="item_notificacion ${item.leida ? 'leido' : 'no_leido'}">
         <div class="icono_item"><i class="${esAnuncio ? 'fa-solid fa-bullhorn' : esArchivo ? 'fa-regular fa-folder-open' : 'fa-solid fa-list-check'}" aria-hidden="true"></i></div>
         <div class="contenido_item">
           <div class="titulo_item">${escaparHTML(item.titulo || 'Notificación')}</div>

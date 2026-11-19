@@ -5,6 +5,7 @@
   let miembrosActuales = [];
   let rolesDepartamento = [];
   let rolesDepartamentoDetalle = [];
+  let codigoAccesoActual = ''; // Código compartido sin atributos personalizados
   const COLOR_ROL_JEFE = '#4b1cb9';
   const FRASE_CONFIRMACION_BAJA = 'Confirmar eliminacion';
   const FRASE_CONFIRMACION_TRANSFERENCIA = 'Transferir propiedad';
@@ -451,7 +452,7 @@
       textoCodigo.textContent = departamento && departamento.codigo
         ? `Código de acceso: ${departamento.codigo}`
         : '';
-      botonCodigo.dataset.codigo = departamento && departamento.codigo ? departamento.codigo : '';
+      codigoAccesoActual = departamento && departamento.codigo ? departamento.codigo : '';
     }
     texto('parrafo_descripcion', departamento && departamento.descripcion
       ? departamento.descripcion
@@ -711,7 +712,8 @@
     const botonCodigo = obtenerElemento('boton_codigo_acceso');
     if (botonCodigo) {
       botonCodigo.addEventListener('click', async () => {
-        const codigo = botonCodigo.dataset.codigo || '';
+        // Lee el código de la variable de módulo, sin atributos personalizados
+        const codigo = codigoAccesoActual || '';
         if (!codigo) return;
         try {
           if (navigator.clipboard && window.isSecureContext) {

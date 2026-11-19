@@ -294,7 +294,7 @@
     }
 
     .tabla_papelera tbody tr {
-        margin: 12px;
+        margin: 12px 0;
         padding: 14px;
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -311,8 +311,9 @@
         overflow-wrap: anywhere;
     }
 
+    /* Etiquetas de tarjeta por clase, sin atributos de etiqueta */
     .tabla_papelera td::before {
-        content: attr(data-etiqueta);
+        content: none;
         display: block;
         margin-bottom: 2px;
         color: #64748b;
@@ -320,6 +321,22 @@
         font-weight: 700;
         letter-spacing: 0.06em;
         text-transform: uppercase;
+    }
+
+    .tabla_papelera td.celda_titulo_papelera::before {
+        content: "Título";
+    }
+
+    .tabla_papelera td.celda_departamento_papelera::before {
+        content: "Departamento";
+    }
+
+    .tabla_papelera td.celda_fecha_papelera::before {
+        content: "Fecha";
+    }
+
+    .tabla_papelera td.celda_acciones_papelera::before {
+        content: "Acciones";
     }
 
     .tabla_papelera td.columna_centrada {
@@ -345,7 +362,7 @@
     }
 
     .tabla_papelera td.celda_estado_vacio {
-        margin: 12px;
+        margin: 12px 0;
         padding: 28px 18px !important;
         text-align: center !important;
         color: #64748b;

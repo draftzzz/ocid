@@ -344,7 +344,7 @@ async function cargarTareasDesdeDB() {
       const clave = fechaClave(fecha);
       const celda = document.createElement('div');
       celda.className = 'celda_dia';
-      celda.dataset.fecha = clave;
+      // La fecha queda en las variables fecha/clave del closure
 
       if (vistaActual === 'mes' && fecha.getMonth() !== fechaSeleccionada.getMonth()) {
         celda.classList.add('celda_dia_fuera');

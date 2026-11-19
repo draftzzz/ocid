@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tareasPagina.forEach(tarea => {
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_anuncio tarjeta_tarea';
-      tarjeta.dataset.id = String(tarea.id);
+      // El id vive en el objeto tarea del closure, sin atributos personalizados
 
       const estadoValor = tarea.estado || 'Pendiente';
       let claseBadge = 'etiqueta_urgente';

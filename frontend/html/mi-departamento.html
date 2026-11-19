@@ -20,7 +20,7 @@
     <button type="button" class="fondo_menu_movil" aria-label="Cerrar menú"></button>
 
     <!-- BEGIN: Sidebar -->
-    <aside class="barra_lateral" data-purpose="navegacion-principal">
+    <aside class="barra_lateral">
         <!-- Logotipo y Nombre del Plantel -->
         <div class="encabezado_logo">
             <div class="icono_escudo">
@@ -91,7 +91,7 @@
     <!-- BEGIN: MainContentArea -->
     <main class="area_principal">
         <!-- Barra Superior Global -->
-        <header class="barra_superior" data-purpose="cabecera_global">
+        <header class="barra_superior">
             <div class="seccion_superior_izquierda">
                 <button type="button" class="boton_menu_hamburguesa" aria-label="Abrir menú de navegación"
                     aria-expanded="false">
@@ -118,7 +118,7 @@
 
         <!-- BEGIN: ContenidoPrincipal / DepartmentDashboard -->
         <!-- Contenedor a ancho completo sin desbordamiento horizontal en móvil -->
-        <div class="contenido_principal" data-purpose="department_view">
+        <div class="contenido_principal">
             <!-- Título de sección -->
             <div class="cabecera_modulo">
                 <h1 class="titulo_pagina">Mi Departamento</h1>
@@ -128,7 +128,7 @@
             <!-- Fila superior: Resumen de departamento y Tarjeta del Jefe -->
             <div class="cuadricula_superior">
                 <!-- Tarjeta de información principal del departamento -->
-                <div class="tarjeta_general" data-purpose="tarjeta_resumen_departamento">
+                <div class="tarjeta_general">
                     <div class="encabezado_departamento">
                         <div class="icono_dep_destacado">
                             <svg fill="none" height="26" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
@@ -164,7 +164,7 @@
 
                     <!-- Métricas estadísticas del departamento -->
                     <div class="fila_metricas">
-                        <div class="caja_metrica" data-purpose="metrica_docentes">
+                        <div class="caja_metrica">
                             <div class="icono_metrica icono_docentes">
                                 <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
                                     width="18">
@@ -177,7 +177,7 @@
                                 <div class="valor_metrica" id="total_docentes"></div>
                             </div>
                         </div>
-                        <div class="caja_metrica" data-purpose="metrica_documentos">
+                        <div class="caja_metrica">
                             <div class="icono_metrica icono_documentos">
                                 <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
                                     width="18">
@@ -190,7 +190,7 @@
                                 <div class="valor_metrica" id="total_documentos"></div>
                             </div>
                         </div>
-                        <div class="caja_metrica" data-purpose="metrica_eventos">
+                        <div class="caja_metrica">
                             <div class="icono_metrica icono_eventos">
                                 <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
                                     width="18">
@@ -210,7 +210,7 @@
                 </div>
 
                 <!-- Tarjeta de contacto Jefe de Departamento -->
-                <div class="tarjeta_jefe" data-purpose="tarjeta_jefe_departamento">
+                <div class="tarjeta_jefe">
                     <div class="titulo_caja_pequena">Jefe de departamento</div>
                     <div class="avatar_jefe_grande" id="avatar_jefe"></div>
                     <h3 class="nombre_jefe" id="nombre_jefe"></h3>
@@ -219,13 +219,13 @@
             </div>
 
             <!-- Sección de Descripción Institucional -->
-            <div class="tarjeta_descripcion" data-purpose="bloque_descripcion">
+            <div class="tarjeta_descripcion">
                 <div class="titulo_seccion_bloque">Descripción</div>
                 <p class="texto_parrafo_desc" id="parrafo_descripcion"></p>
             </div>
 
             <!-- Sección de Tabla de Integrantes del Departamento -->
-            <div class="tarjeta_integrantes" data-purpose="bloque_integrantes">
+            <div class="tarjeta_integrantes">
                 <div class="cabecera_integrantes">
                     <div class="titulo_seccion_bloque titulo_integrantes_margen">Integrantes del departamento</div>
                     <a class="enlace_ver_todos" href="#ver_todos_integrantes" aria-controls="modal_todos_integrantes"
@@ -333,7 +333,7 @@
     </div>
 
     <!-- BEGIN: ModalContact -->
-    <div class="modal_contacto" data-purpose="modal_contactar_jefe" id="modal_contacto">
+    <div class="modal_contacto" id="modal_contacto">
         <div class="caja_modal">
             <div class="modal_cabecera_custom">
                 <h3 class="modal_titulo_custom">Enviar mensaje al Jefe de Departamento</h3>
@@ -360,7 +360,7 @@
     <!-- END: ModalContact -->
 
     <!-- BEGIN: ModalEditarDepartamento -->
-    <div class="modal_contacto" data-purpose="modal_editar_departamento" id="modal_editar_departamento">
+    <div class="modal_contacto" id="modal_editar_departamento">
         <div class="caja_modal">
             <div class="modal_cabecera_custom">
                 <h3 class="modal_titulo_custom">Editar información del departamento</h3>

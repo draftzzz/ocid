@@ -935,12 +935,13 @@ body.menu_movil_abierto .fondo_menu_movil {
         min-width: 0px;
     }
 
+    /* Tabla sin desplazamiento horizontal en móvil */
     .contenedor_tabla {
-        overflow-x: auto;
+        overflow-x: hidden;
     }
 
-    table {
-        min-width: 600px;
+    .tabla_docentes {
+        min-width: 0px;
     }
 
     .barra_paginacion {
@@ -1072,5 +1073,98 @@ body.menu_movil_abierto .fondo_menu_movil {
         max-width: 100%;
         padding: 12px 14px;
         font-size: 12.5px;
+    }
+}
+
+/* Docentes en tarjetas verticales (movil) */
+@media (max-width: 768px) {
+    .contenedor_tabla {
+        overflow-x: hidden;
+    }
+
+    .tabla_docentes,
+    .tabla_docentes tbody,
+    .tabla_docentes tr,
+    .tabla_docentes td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tabla_docentes thead {
+        display: none;
+    }
+
+    .tabla_docentes tbody tr {
+        margin: 12px 0;
+        padding: 14px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .tabla_docentes td {
+        border: 0;
+        padding: 7px 0;
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
+
+    .tabla_docentes td:nth-child(1)::before {
+        content: "Nombre";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_docentes td:nth-child(2)::before {
+        content: "Correo";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_docentes td:nth-child(3)::before {
+        content: "Rol";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_docentes td:nth-child(4)::before {
+        content: "Estado";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    /* Filas de carga o vacio sin etiqueta de columna */
+    .tabla_docentes td[colspan] {
+        text-align: center;
+    }
+
+    .tabla_docentes td[colspan]::before {
+        display: none;
+    }
+
+    .tabla_docentes tr[hidden] {
+        display: none !important;
     }
 }

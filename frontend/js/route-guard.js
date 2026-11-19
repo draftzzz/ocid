@@ -4,7 +4,22 @@
   const rutaActual = window.location.pathname.toLowerCase().replace(/\/+$/, '');
   const paginaActual = rutaActual.split('/').pop() || 'index.html';
   const scriptActual = document.currentScript;
-  const rutaBase = scriptActual ? scriptActual.dataset.routePrefix || '' : '';
+  // Calcula el prefijo hacia html/ comparando la ruta del script con la de la página.
+  function calcularRutaBase(script) {
+    if (!script || !script.src) return '';
+    const rutaScript = new URL(script.src);
+    const raizFrontend = new URL('..', rutaScript);
+    const carpetaHtml = new URL('html/', raizFrontend);
+    const partesPagina = window.location.pathname.split('/').filter(Boolean).slice(0, -1);
+    const partesHtml = carpetaHtml.pathname.split('/').filter(Boolean);
+    let comun = 0;
+    while (comun < partesPagina.length && comun < partesHtml.length &&
+      partesPagina[comun] === partesHtml[comun]) comun++;
+    const subir = '../'.repeat(partesPagina.length - comun);
+    const bajar = partesHtml.slice(comun).join('/');
+    return subir + (bajar ? `${bajar}/` : '');
+  }
+  const rutaBase = calcularRutaBase(scriptActual);
   const paginaIndex = paginaActual === 'index.html';
   const paginaBienvenida = paginaActual === 'bienvenida.html';
   const paginaCrearDepartamento = paginaActual === 'crear-departamento.html';

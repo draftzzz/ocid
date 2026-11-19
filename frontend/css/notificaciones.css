@@ -1064,15 +1064,17 @@ body.modal_abierto {
         justify-content: center;
     }
 
+    /* Filtros en una sola fila ajustada sin desplazamiento horizontal */
     .contenedor_pestanas_filtro {
         align-self: stretch;
-        overflow-x: auto;
-        flex-wrap: nowrap;
+        overflow-x: hidden;
+        flex-wrap: wrap;
         padding-bottom: 4px;
     }
 
     .pestana_filtro {
-        flex: 1 0 auto;
+        flex: 1 1 auto;
+        min-width: 0;
         min-height: 42px;
     }
 

@@ -1521,4 +1521,91 @@ textarea {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
     }
+
+    /* Integrantes en tarjetas verticales (movil) */
+    .contenedor_tabla_integrantes {
+        overflow-x: hidden;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    .tabla_integrantes,
+    .tabla_integrantes tbody,
+    .tabla_integrantes tr,
+    .tabla_integrantes td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tabla_integrantes thead {
+        display: none;
+    }
+
+    .tabla_integrantes tbody tr {
+        margin: 12px 0;
+        padding: 14px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .tabla_integrantes td {
+        border: 0;
+        padding: 7px 0;
+        text-align: left;
+        overflow-wrap: anywhere;
+    }
+
+    .tabla_integrantes td:nth-child(1)::before {
+        content: "Nombre";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_integrantes td:nth-child(2)::before {
+        content: "Puesto";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_integrantes td:nth-child(3)::before {
+        content: "Estado";
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_integrantes td:nth-child(4)::before {
+        content: none;
+        display: none;
+    }
+
+    /* Fila vacia sin etiqueta de columna */
+    .tabla_integrantes td[colspan] {
+        text-align: center;
+    }
+
+    .tabla_integrantes td[colspan]::before {
+        display: none;
+    }
+
+    .tabla_integrantes tr[hidden] {
+        display: none !important;
+    }
 }

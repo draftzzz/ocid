@@ -80,17 +80,18 @@
       return;
     }
 
+    // Etiquetas de móvil con clases de celda, sin atributos personalizados
     tbody.innerHTML = lista.map(archivo => `
       <tr>
-        <td data-etiqueta="Documento">
+        <td class="celda_titulo_papelera">
           <div class="celda_documento">
             <div class="icono_archivo_papelera"><i class="fa-regular fa-file-lines"></i></div>
             <span>${escaparHTML(archivo.nombre)}</span>
           </div>
         </td>
-        <td data-etiqueta="Departamento">${escaparHTML(archivo.departamento_nombre || 'General')}</td>
-        <td data-etiqueta="Eliminado el">${archivo.fecha_eliminacion ? new Date(archivo.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
-        <td class="columna_centrada" data-etiqueta="Acciones">
+        <td class="celda_departamento_papelera">${escaparHTML(archivo.departamento_nombre || 'General')}</td>
+        <td class="celda_fecha_papelera">${archivo.fecha_eliminacion ? new Date(archivo.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+        <td class="columna_centrada celda_acciones_papelera">
           <div class="grupo_acciones_papelera">
             <button type="button" class="boton_restaurar" onclick="restaurarArchivo(${archivo.id})">
               <i class="fa-solid fa-arrow-rotate-left"></i>
@@ -126,11 +127,12 @@
       return;
     }
 
+    // Etiquetas de móvil con clases de celda, sin atributos personalizados
     tbody.innerHTML = lista.map(anuncio => {
       const resumen = String(anuncio.contenido || '').slice(0, 60);
       return `
         <tr>
-          <td data-etiqueta="Titulo del anuncio">
+          <td class="celda_titulo_papelera">
             <div class="celda_documento">
               <div class="icono_archivo_papelera"><i class="fa-solid fa-bullhorn"></i></div>
               <div>
@@ -139,9 +141,9 @@
               </div>
             </div>
           </td>
-          <td data-etiqueta="Prioridad">${escaparHTML(anuncio.prioridad || 'Informativo')}</td>
-          <td data-etiqueta="Eliminado el">${anuncio.fecha_eliminacion ? new Date(anuncio.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
-          <td class="columna_centrada" data-etiqueta="Acciones">
+          <td class="celda_departamento_papelera">${escaparHTML(anuncio.prioridad || 'Informativo')}</td>
+          <td class="celda_fecha_papelera">${anuncio.fecha_eliminacion ? new Date(anuncio.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+          <td class="columna_centrada celda_acciones_papelera">
             <div class="grupo_acciones_papelera">
               <button type="button" class="boton_restaurar" onclick="restaurarAnuncio(${anuncio.id})">
                 <i class="fa-solid fa-arrow-rotate-left"></i>
@@ -174,12 +176,13 @@
       tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No hay tareas en la papelera.</td></tr>`;
       return;
     }
+    // Etiquetas de móvil con clases de celda, sin atributos personalizados
     tbody.innerHTML = lista.map(tarea => `
       <tr>
-        <td data-etiqueta="Tarea"><div class="celda_documento"><div class="icono_archivo_papelera"><i class="fa-solid fa-list-check"></i></div><span>${escaparHTML(tarea.titulo)}</span></div></td>
-        <td data-etiqueta="Departamento(s)">${escaparHTML(tarea.departamento || 'General')}</td>
-        <td data-etiqueta="Eliminada el">${tarea.fecha_eliminacion ? new Date(tarea.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
-        <td class="columna_centrada" data-etiqueta="Acciones">
+        <td class="celda_titulo_papelera"><div class="celda_documento"><div class="icono_archivo_papelera"><i class="fa-solid fa-list-check"></i></div><span>${escaparHTML(tarea.titulo)}</span></div></td>
+        <td class="celda_departamento_papelera">${escaparHTML(tarea.departamento || 'General')}</td>
+        <td class="celda_fecha_papelera">${tarea.fecha_eliminacion ? new Date(tarea.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+        <td class="columna_centrada celda_acciones_papelera">
           <div class="grupo_acciones_papelera">
             <button type="button" class="boton_restaurar" onclick="restaurarTarea(${tarea.id})"><i class="fa-solid fa-arrow-rotate-left"></i><span>Restaurar</span></button>
             <button type="button" class="boton_eliminar_definitivo" onclick="eliminarDefinitivoTarea(${tarea.id})"><i class="fa-regular fa-trash-can"></i><span>Eliminar</span></button>

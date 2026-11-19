@@ -149,6 +149,9 @@ function obtenerRolAutomatico(docente) {
   return 'Docente';
 }
 
+// Nombres por fila en un WeakMap para filtrar sin atributos personalizados
+const nombresPorFila = new WeakMap();
+
 function agregarFilaDocente(docente) {
   const nombre = docente.nombre || 'Sin nombre';
   const rolCalculado = obtenerRolAutomatico(docente);
@@ -156,9 +159,8 @@ function agregarFilaDocente(docente) {
   
   const fila = document.createElement('tr');
   fila.className = 'fila_docente';
-  fila.dataset.id = String(docente.id);
-  fila.dataset.nombre = nombre;
-  fila.dataset.estado = 'Activo';
+  // Guarda el nombre en el WeakMap en lugar de atributos personalizados
+  nombresPorFila.set(fila, nombre);
 
   // Celda Nombre y Avatar
   const celdaNombre = document.createElement('td');
@@ -213,7 +215,7 @@ function filtrarTablaDocentes() {
 
   // Solo se filtra por nombre dentro del departamento elegido
   filas.forEach(fila => {
-    if (fila.dataset.nombre.toLowerCase().includes(textoFiltro)) coincidentes.push(fila);
+    if ((nombresPorFila.get(fila) || '').toLowerCase().includes(textoFiltro)) coincidentes.push(fila);
   });
 
   const paginas = Math.max(1, Math.ceil(coincidentes.length / docentesPorPagina));

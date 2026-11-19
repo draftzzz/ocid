@@ -11,6 +11,12 @@
   const USER_KEY = 'usuario_ocid';
   let solicitudNotificaciones = null;
   let intervaloNotificaciones = null;
+  // Estado interno de guardas por elemento (sin atributos data-*).
+  const elementosBloqueoScrollConfigurados = new WeakSet();
+  const botonesLogoutConfigurados = new WeakSet();
+  const botonesMenuConfigurados = new WeakSet();
+  const botonesCampanaConfigurados = new WeakSet();
+  const panelesNotificacionesCargando = new WeakSet();
 
   function crearElemento(tag, opciones = {}) {
     const el = document.createElement(tag);
@@ -263,8 +269,9 @@
   }
 
   function configurarBloqueoScrollModal() {
-    if (!document.body || document.body.dataset.ocidModalLockConfigured === 'true') return;
-    document.body.dataset.ocidModalLockConfigured = 'true';
+    // Guard del body en WeakSet (sin data-*).
+    if (!document.body || elementosBloqueoScrollConfigurados.has(document.body)) return;
+    elementosBloqueoScrollConfigurados.add(document.body);
     const selectorModales = [
       '.modal_overlay', '.modal_fondo', '.fondo_modal', '.fondo_modal_oscuro',
       '.fondo_oscuro_modal', '.modal_contacto', '.modal_unirse_fondo'
@@ -288,8 +295,9 @@
 
   function configurarCierreSesion() {
     document.querySelectorAll('#boton_cerrar_sesion, .boton_cerrar_sesion').forEach((btn) => {
-      if (btn.dataset.ocidLogoutConfigured === 'true') return;
-      btn.dataset.ocidLogoutConfigured = 'true';
+      // Guard por botón en WeakSet (sin data-*).
+      if (botonesLogoutConfigurados.has(btn)) return;
+      botonesLogoutConfigurados.add(btn);
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         limpiarSesion();
@@ -337,8 +345,9 @@
       const seccionIzq = barraSuperior.querySelector('.seccion_superior_izquierda') || barraSuperior;
       seccionIzq.prepend(btnMenu);
     }
-    if (btnMenu.dataset.ocidMenuConfigured === 'true') return;
-    btnMenu.dataset.ocidMenuConfigured = 'true';
+    // Guard tras crear/reemplazar el botón, como antes (sin data-*).
+    if (botonesMenuConfigurados.has(btnMenu)) return;
+    botonesMenuConfigurados.add(btnMenu);
     btnMenu.type = 'button';
     btnMenu.setAttribute('aria-label', 'Abrir menú de navegación');
     btnMenu.setAttribute('aria-expanded', 'false');
@@ -473,8 +482,9 @@
     indicador.style.display = 'none';
     if (indicador.parentElement !== boton) boton.appendChild(indicador);
 
-    if (boton.dataset.ocidCampanaConfigured !== 'true') {
-      boton.dataset.ocidCampanaConfigured = 'true';
+    // Guard por campana en WeakSet (sin data-*).
+    if (!botonesCampanaConfigurados.has(boton)) {
+      botonesCampanaConfigurados.add(boton);
       boton.setAttribute('aria-haspopup', 'true');
       boton.setAttribute('aria-expanded', 'false');
       boton.addEventListener('click', () => {
@@ -500,8 +510,9 @@
 
   async function cargarPanelNotificaciones(panel, mostrarCarga = true) {
     const lista = panel.querySelector('.panel_notificaciones_lista');
-    if (!lista || panel.dataset.loading === 'true') return;
-    panel.dataset.loading = 'true';
+    // Control de carga en WeakSet (sin data-*).
+    if (!lista || panelesNotificacionesCargando.has(panel)) return;
+    panelesNotificacionesCargando.add(panel);
     if (mostrarCarga) lista.textContent = 'Cargando notificaciones...';
     try {
       const datos = await apiFetch('/notificaciones');
@@ -556,7 +567,7 @@
       console.error('Error al cargar las notificaciones recientes:', error);
       lista.textContent = 'No se pudieron cargar las notificaciones.';
     } finally {
-      panel.dataset.loading = 'false';
+      panelesNotificacionesCargando.delete(panel);
     }
   }
 

@@ -18,7 +18,7 @@
 
 <body>
     <!-- BEGIN: Sidebar -->
-    <aside class="barra_lateral" data-purpose="navegacion-principal">
+    <aside class="barra_lateral">
         <!-- Logotipo y Nombre del Plantel -->
         <div class="encabezado_logo">
             <div class="icono_escudo">
@@ -89,7 +89,7 @@
     <!-- BEGIN: MainContentArea -->
     <main class="area_principal">
         <!-- Barra Superior Global -->
-        <header class="barra_superior" data-purpose="cabecera_global">
+        <header class="barra_superior">
             <div class="seccion_superior_izquierda">
                 <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
                     <i class="fa-solid fa-bars"></i>
@@ -115,7 +115,7 @@
         </header>
 
         <!-- BEGIN: ContenidoPrincipalTareas -->
-        <div class="cuerpo_contenido" data-purpose="area_tareas">
+        <div class="cuerpo_contenido">
             <!-- Título de la Sección -->
             <div class="fila_encabezado_anuncios">
                 <div>
@@ -129,7 +129,7 @@
             </div>
 
             <!-- Filtros de búsqueda -->
-            <section class="barra_filtros" data-purpose="filtros_busqueda">
+            <section class="barra_filtros">
                 <div class="filtro_busqueda_contenedor">
                     <i class="fa-solid fa-magnifying-glass icono_lupa_filtro"></i>
                     <input class="input_filtro_busqueda" id="campo_filtro_texto" placeholder="Buscar por título..."
@@ -150,13 +150,13 @@
             <div class="contenedor_dos_columnas">
                 <!-- Columna Izquierda: Listado dinámico de tarjetas de tareas -->
                 <!-- Las tareas propias se muestran como vistas desde JS -->
-                <section class="columna_lista_anuncios" data-purpose="listado_tarjetas" id="contenedor_tarjetas_tareas">
+                <section class="columna_lista_anuncios" id="contenedor_tarjetas_tareas">
                     <!-- Se renderiza desde JS como tarjetas modernas -->
                 </section>
 
                 <!-- Columna Derecha: Paneles laterales de resumen -->
                 <aside class="columna_lateral_derecha">
-                    <div class="tarjeta_lateral_panel" data-purpose="resumen_por_estado">
+                    <div class="tarjeta_lateral_panel">
                         <div class="encabezado_conteo_departamentos">
                             <h2 class="titulo_bloque_lateral">Por estado</h2>
                             <button class="boton_ver_todo_conteo" id="boton_ver_todo_estados" type="button">Ver todas</button>
@@ -164,7 +164,7 @@
                         <div class="lista_conteo_departamentos" id="lista_conteo_estados"></div>
                     </div>
 
-                    <div class="tarjeta_lateral_panel" data-purpose="resumen_por_departamento">
+                    <div class="tarjeta_lateral_panel">
                         <div class="encabezado_conteo_departamentos">
                             <h2 class="titulo_bloque_lateral">Por departamento</h2>
                             <button class="boton_ver_todo_conteo" id="boton_ver_todo_departamentos" type="button">Ver todos</button>

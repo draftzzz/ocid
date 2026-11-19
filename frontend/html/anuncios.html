@@ -18,7 +18,7 @@
 
 <body>
     <!-- BEGIN: Sidebar -->
-    <aside class="barra_lateral" data-purpose="navegacion-principal">
+    <aside class="barra_lateral">
         <!-- Logotipo y Nombre del Plantel -->
         <div class="encabezado_logo">
             <div class="icono_escudo">
@@ -87,7 +87,7 @@
     <!-- BEGIN: MainContentArea -->
     <main class="area_principal">
         <!-- Barra Superior Global -->
-        <header class="barra_superior" data-purpose="cabecera_global">
+        <header class="barra_superior">
             <div class="seccion_superior_izquierda">
                 <!-- Botón de menú lateral visible en móvil -->
                 <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
@@ -121,14 +121,14 @@
                     <h1 class="titulo_pantalla">Anuncios</h1>
                     <p class="subtitulo_pantalla">Publica y consulta los anuncios de tu departamento.</p>
                 </div>
-                <button class="boton_nuevo_anuncio" data-purpose="crear_anuncio" id="boton_abrir_modal">
+                <button class="boton_nuevo_anuncio" id="boton_abrir_modal">
                     <i class="fa-solid fa-plus"></i>
                     Nuevo anuncio
                 </button>
             </div>
 
             <!-- Controles de Filtros -->
-            <div class="barra_filtros" data-purpose="controles_filtro">
+            <div class="barra_filtros">
                 <div class="filtro_busqueda_contenedor">
                     <span class="icono_lupa_filtro">
                         <i class="fa-solid fa-magnifying-glass"></i>
@@ -157,14 +157,14 @@
             <div class="contenedor_dos_columnas">
                 <!-- Columna Izquierda: Listado dinamico de tarjetas -->
                 <!-- Los anuncios propios se muestran como vistos desde JS -->
-                <section class="columna_lista_anuncios" data-purpose="listado_tarjetas"
+                <section class="columna_lista_anuncios"
                     id="contenedor_tarjetas_anuncios">
                     <!-- Se renderiza desde JS -->
                 </section>
 
                 <!-- Columna Derecha: Paneles laterales de resumen -->
                 <aside class="columna_lateral_derecha">
-                    <div class="tarjeta_lateral_panel" data-purpose="resumen_por_departamento">
+                    <div class="tarjeta_lateral_panel">
                         <div class="encabezado_conteo_departamentos">
                             <h2 class="titulo_bloque_lateral">Por departamento</h2>
                             <button class="boton_ver_todo_conteo" id="boton_ver_todo_departamentos" type="button">Ver todo</button>
@@ -172,7 +172,7 @@
                         <div class="lista_conteo_departamentos" id="lista_conteo_departamentos"></div>
                     </div>
 
-                    <div class="tarjeta_lateral_panel" data-purpose="resumen_ultimos_anuncios">
+                    <div class="tarjeta_lateral_panel">
                         <h2 class="titulo_bloque_lateral">Últimos anuncios</h2>
                         <div class="lista_ultimos_anuncios" id="contenedor_ultimos_anuncios">
                             <!-- Se renderiza desde JS -->
@@ -184,7 +184,7 @@
     </main>
 
     <!-- Modal para crear anuncios -->
-    <div class="fondo_oscuro_modal" data-purpose="dialogo_creacion" id="modal_nuevo_anuncio">
+    <div class="fondo_oscuro_modal" id="modal_nuevo_anuncio">
         <div class="caja_modal">
             <div class="cabecera_modal">
                 <h3 class="titulo_modal">Nuevo Anuncio</h3>
