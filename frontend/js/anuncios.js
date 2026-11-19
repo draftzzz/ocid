@@ -54,6 +54,12 @@ function puedeGestionarAnuncio(anuncio, usuario = window.OCID.obtenerUsuarioSesi
     (usuarioEsJefeDepartamento(usuario) && perteneceAlDepartamento);
 }
 
+// Detecta anuncios creados por el usuario en sesión
+function esAnuncioPropio(anuncio, usuario) {
+  return Boolean(anuncio && usuario &&
+    (anuncio.es_autor === true || Number(usuario.id) === Number(anuncio.autor_id)));
+}
+
 async function cargar_anuncios_desde_servidor() {
   try {
     const [datosAnuncios, datosDepartamentos, datosConteos, datosArchivos] = await Promise.all([
@@ -134,11 +140,15 @@ function renderizar_interfaz() {
   if (!contenedor) return;
   contenedor.replaceChildren();
 
-  // Estado vacío con texto UTF-8 correcto
+  // Tarjeta vacía centrada con ícono y texto gris suave
   if (anuncios_filtrados.length === 0) {
     const divVacio = document.createElement('div');
     divVacio.className = 'estado_vacio';
-    divVacio.textContent = 'Aún no has recibido anuncios.';
+    const iconoVacio = document.createElement('i');
+    iconoVacio.className = 'fa-solid fa-bullhorn icono_estado_vacio';
+    const textoVacio = document.createElement('span');
+    textoVacio.textContent = 'Aún no has recibido anuncios.';
+    divVacio.append(iconoVacio, textoVacio);
     contenedor.appendChild(divVacio);
   } else {
     anuncios_filtrados.forEach(anuncio => {
@@ -225,25 +235,33 @@ function renderizar_interfaz() {
       filaMeta.appendChild(crearMeta('M8 7V3m8 7V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', anuncio.fecha));
 
       tarjeta.appendChild(filaMeta);
+
+      // El autor ya tiene su anuncio como visto y no puede marcarlo
+      const esPropio = esAnuncioPropio(anuncio, usuarioActual);
+      if (esPropio) anuncio.visto = true;
       const botonVisto = document.createElement('button');
       botonVisto.type = 'button';
-      botonVisto.className = 'boton_visto_elemento' + (anuncio.visto ? ' visto' : ' pendiente');
+      botonVisto.className = 'boton_visto_elemento' + (anuncio.visto ? ' visto' : ' pendiente') +
+        (esPropio ? ' boton_visto_propio' : '');
       botonVisto.innerHTML = anuncio.visto
         ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
         : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(anuncio.visto);
-      botonVisto.setAttribute('aria-label', anuncio.visto ? 'Anuncio visto' : 'Marcar anuncio como visto');
-      botonVisto.addEventListener('click', async () => {
-        botonVisto.disabled = true;
-        try {
-          await window.OCID.marcarElementoVisto('anuncio', Number(anuncio.id));
-          anuncio.visto = true;
-          renderizar_interfaz();
-        } catch (error) {
-          mostrarErrorAnuncios(error.message || 'No se pudo marcar el anuncio como visto.', 'error');
-          botonVisto.disabled = false;
-        }
-      });
+      botonVisto.setAttribute('aria-label', esPropio ? 'Anuncio propio, ya visto' :
+        (anuncio.visto ? 'Anuncio visto' : 'Marcar anuncio como visto'));
+      if (!esPropio) {
+        botonVisto.addEventListener('click', async () => {
+          botonVisto.disabled = true;
+          try {
+            await window.OCID.marcarElementoVisto('anuncio', Number(anuncio.id));
+            anuncio.visto = true;
+            renderizar_interfaz();
+          } catch (error) {
+            mostrarErrorAnuncios(error.message || 'No se pudo marcar el anuncio como visto.', 'error');
+            botonVisto.disabled = false;
+          }
+        });
+      }
       tarjeta.appendChild(botonVisto);
       contenedor.appendChild(tarjeta);
     });

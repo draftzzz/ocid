@@ -145,6 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
       (esJefe && perteneceAlDepartamento);
   }
 
+  // Detecta tareas creadas por el usuario en sesión
+  function esTareaPropio(tarea, usuario) {
+    return Boolean(tarea && usuario &&
+      (tarea.es_autor === true || Number(usuario.id) === Number(tarea.autor_id)));
+  }
+
   async function cargarCatalogosServidor() {
     try {
       const [departamentos, docentes, datosTareas] = await Promise.all([
@@ -623,12 +629,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Estado vacío de la tabla con acento correcto
     if (!tareasFiltradas.length) {
-      // Estado vacío con estilos en tareas.css
+      // Tarjeta vacía centrada con ícono y texto gris suave
       const vacio = document.createElement('div');
       vacio.className = 'tarjeta_anuncio estado_vacio_tareas';
       const iconoVacio = document.createElement('i');
       iconoVacio.className = 'fa-solid fa-list-check icono_estado_vacio';
-      vacio.append(iconoVacio, document.createTextNode(' Aún no has recibido tareas.'));
+      const textoVacio = document.createElement('span');
+      textoVacio.textContent = 'Aún no has recibido tareas.';
+      vacio.append(iconoVacio, textoVacio);
       cuerpoTabla.appendChild(vacio);
     }
 
@@ -775,27 +783,33 @@ document.addEventListener('DOMContentLoaded', () => {
       filaMeta.appendChild(crearMeta('M8 7V3m8 7V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', `Vence: ${formatearFecha(tarea.fecha)}`));
       tarjeta.appendChild(filaMeta);
 
-      // 6. Botón "Visto / Marcar como visto" con nuevo diseño compacto tipo pill
+      // 6. Botón "Visto" deshabilitado cuando la tarea es propia
+      const esPropio = esTareaPropio(tarea, usuarioActual);
+      if (esPropio) tarea.visto = true;
       const botonVisto = document.createElement('button');
       botonVisto.type = 'button';
-      botonVisto.className = 'boton_visto_elemento' + (tarea.visto ? ' visto' : ' pendiente');
+      botonVisto.className = 'boton_visto_elemento' + (tarea.visto ? ' visto' : ' pendiente') +
+        (esPropio ? ' boton_visto_propio' : '');
       botonVisto.innerHTML = tarea.visto
         ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
         : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(tarea.visto);
-      botonVisto.setAttribute('aria-label', tarea.visto ? 'Tarea vista' : 'Marcar tarea como vista');
-      botonVisto.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        botonVisto.disabled = true;
-        try {
-          await window.OCID.marcarElementoVisto('tarea', Number(tarea.id));
-          tarea.visto = true;
-          renderizarTabla();
-        } catch (error) {
-          mostrarToastTareas(error.message || 'No se pudo marcar la tarea como vista.', 'error');
-          botonVisto.disabled = false;
-        }
-      });
+      botonVisto.setAttribute('aria-label', esPropio ? 'Tarea propia, ya vista' :
+        (tarea.visto ? 'Tarea vista' : 'Marcar tarea como vista'));
+      if (!esPropio) {
+        botonVisto.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          botonVisto.disabled = true;
+          try {
+            await window.OCID.marcarElementoVisto('tarea', Number(tarea.id));
+            tarea.visto = true;
+            renderizarTabla();
+          } catch (error) {
+            mostrarToastTareas(error.message || 'No se pudo marcar la tarea como vista.', 'error');
+            botonVisto.disabled = false;
+          }
+        });
+      }
       tarjeta.appendChild(botonVisto);
 
       cuerpoTabla.appendChild(tarjeta);

@@ -114,26 +114,39 @@ function puedeGestionarArchivo(archivo) {
   return Number(usuario.id) === Number(archivo.autor_id) || esAdmin || (esJefe && perteneceAlDepartamento);
 }
 
+// Detecta archivos subidos por el usuario en sesión
+function esArchivoPropio(archivo, usuario) {
+  return Boolean(archivo && usuario &&
+    (archivo.es_autor === true || Number(usuario.id) === Number(archivo.autor_id)));
+}
+
 function crearBotonVisto(tipo, elemento) {
+  // El autor ya tiene su archivo como visto y no puede marcarlo
+  const esPropio = esArchivoPropio(elemento, sesionArchivos());
+  if (esPropio) elemento.visto = true;
   const boton = document.createElement('button');
   boton.type = 'button';
-  boton.className = 'boton_visto_elemento' + (elemento.visto ? ' visto' : ' pendiente');
+  boton.className = 'boton_visto_elemento' + (elemento.visto ? ' visto' : ' pendiente') +
+    (esPropio ? ' boton_visto_propio' : '');
   boton.innerHTML = elemento.visto
     ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
     : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
   boton.disabled = Boolean(elemento.visto);
-  boton.setAttribute('aria-label', elemento.visto ? 'Archivo visto' : 'Marcar archivo como visto');
-  boton.addEventListener('click', async () => {
-    boton.disabled = true;
-    try {
-      await window.OCID.marcarElementoVisto(tipo, Number(elemento.id));
-      elemento.visto = true;
-      dibujarArchivos();
-    } catch (error) {
-      mostrarToastArchivos(error.message || 'No se pudo marcar el archivo como visto.', 'error');
-      boton.disabled = false;
-    }
-  });
+  boton.setAttribute('aria-label', esPropio ? 'Archivo propio, ya visto' :
+    (elemento.visto ? 'Archivo visto' : 'Marcar archivo como visto'));
+  if (!esPropio) {
+    boton.addEventListener('click', async () => {
+      boton.disabled = true;
+      try {
+        await window.OCID.marcarElementoVisto(tipo, Number(elemento.id));
+        elemento.visto = true;
+        dibujarArchivos();
+      } catch (error) {
+        mostrarToastArchivos(error.message || 'No se pudo marcar el archivo como visto.', 'error');
+        boton.disabled = false;
+      }
+    });
+  }
   return boton;
 }
 

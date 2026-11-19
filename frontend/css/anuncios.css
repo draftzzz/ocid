@@ -1066,6 +1066,31 @@ textarea {
     font-size: 12px;
 }
 
+/* Tarjeta vacía centrada para anuncios */
+.estado_vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 220px;
+    padding: 48px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    color: #64748b;
+    font-size: 13.5px;
+    text-align: center;
+}
+
+/* Ícono sutil sobre el texto del estado vacío */
+.icono_estado_vacio {
+    display: block;
+    color: #94a3b8;
+    font-size: 32px;
+}
+
 .modal_conteo_departamentos {
     max-width: 720px;
     max-height: min(82vh, 760px);

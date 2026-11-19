@@ -372,6 +372,11 @@ textarea {
   box-shadow: none !important;
 }
 
+/* Elementos propios: estado "Visto" visible pero no accionable */
+.boton_visto_elemento.boton_visto_propio {
+  opacity: 0.8 !important;
+}
+
 .boton_visto_elemento .icono_check_visto {
   display: inline-block !important;
   width: 13px !important;

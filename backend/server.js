@@ -1447,14 +1447,16 @@ app.get('/anuncios/papelera', async (req, res) => {
 
 app.get('/anuncios', async (req, res) => {
   try {
+    // Marca como vistos los anuncios propios e identifica al autor
     const resultado = await pool.query(
       `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.autor_id, a.departamento_id,
               a.departamento_emisor_id, u.nombre AS autor_nombre,
               d.nombre AS departamento_nombre, em.nombre AS departamento_emisor_nombre,
-              EXISTS (
+              a.autor_id = $1 AS es_autor,
+              (a.autor_id = $1 OR EXISTS (
                 SELECT 1 FROM elementos_vistos v
                 WHERE v.tipo = 'anuncio' AND v.elemento_id = a.id AND v.usuario_id = $1
-              ) AS visto
+              )) AS visto
        FROM anuncios a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id AND d.eliminado = FALSE
@@ -1539,6 +1541,13 @@ app.post('/anuncios', async (req, res) => {
        WHERE departamento_id = ANY($2::INTEGER[])
        ON CONFLICT DO NOTHING`,
       [resultado.rows[0].id, [...new Set([departamentoEmisorId, departamentoId].filter(Boolean))]]
+    );
+    // El autor ya vio su propio anuncio al publicarlo
+    await cliente.query(
+      `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id)
+       VALUES ('anuncio', $1, $2)
+       ON CONFLICT (tipo, elemento_id, usuario_id) DO NOTHING`,
+      [resultado.rows[0].id, autorId]
     );
     await cliente.query('COMMIT');
     res.status(201).json({ success: true, anuncio: resultado.rows[0] });
@@ -1801,15 +1810,17 @@ app.get('/archivos/papelera', async (req, res) => {
 
 app.get('/archivos', async (req, res) => {
   try {
+    // Marca como vistos los archivos propios e identifica al autor
     const resultado = await pool.query(
       `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id,
               a.departamento_emisor_id, a.anuncio_id, a.fecha,
               u.nombre AS autor_nombre, d.nombre AS departamento_nombre,
               em.nombre AS departamento_emisor_nombre,
-              EXISTS (
+              a.autor_id = $1 AS es_autor,
+              (a.autor_id = $1 OR EXISTS (
                 SELECT 1 FROM elementos_vistos v
                 WHERE v.tipo = 'archivo' AND v.elemento_id = a.id AND v.usuario_id = $1
-              ) AS visto
+              )) AS visto
        FROM archivos a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
@@ -1892,6 +1903,13 @@ app.post('/archivos', async (req, res) => {
        RETURNING id, nombre, tipo, tamano, autor_id, departamento_id, departamento_emisor_id, fecha`,
       [nombre.trim(), contenido, tipo || 'application/octet-stream', Number(tamano) || 0,
         autorId, departamentoDestinoId, autor.rows[0].departamento_id]
+    );
+    // El autor ya vio su propio archivo al subirlo
+    await pool.query(
+      `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id)
+       VALUES ('archivo', $1, $2)
+       ON CONFLICT (tipo, elemento_id, usuario_id) DO NOTHING`,
+      [resultado.rows[0].id, autorId]
     );
     res.status(201).json({ success: true, archivo: resultado.rows[0] });
   } catch (error) {
@@ -2002,15 +2020,17 @@ app.delete('/archivos/:id/permanente', async (req, res) => {
 // --- TAREAS ---
 app.get('/tareas', async (req, res) => {
   try {
+    // Marca como vistas las tareas propias e identifica al autor
     const usuarioId = Number(req.usuario.id);
     const resultado = await pool.query(
       `SELECT t.id, t.titulo, t.descripcion, t.asignado, t.fecha, t.horario, t.departamento,
               t.departamentos_destino_ids, t.departamento_emisor_id, t.estado, t.autor_id, t.fecha_creacion,
               u.nombre AS autor_nombre, d.nombre AS autor_departamento,
-              EXISTS (
+              t.autor_id = $1 AS es_autor,
+              (t.autor_id = $1 OR EXISTS (
                 SELECT 1 FROM elementos_vistos v
                 WHERE v.tipo = 'tarea' AND v.elemento_id = t.id AND v.usuario_id = $1
-              ) AS visto
+              )) AS visto
        FROM tareas t
        LEFT JOIN usuarios u ON u.id = t.autor_id
        LEFT JOIN departamentos d ON d.id = t.departamento_emisor_id
@@ -2098,6 +2118,13 @@ app.post('/tareas', async (req, res) => {
         asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar',
         destinos.nombres.join(', '), destinos.ids, usuario.rows[0].departamento_id,
         estado || 'Pendiente', autorId]
+    );
+    // El autor ya vio su propia tarea al crearla
+    await pool.query(
+      `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id)
+       VALUES ('tarea', $1, $2)
+       ON CONFLICT (tipo, elemento_id, usuario_id) DO NOTHING`,
+      [resultado.rows[0].id, autorId]
     );
     res.status(201).json({ success: true, tarea: resultado.rows[0] });
   } catch (error) {
