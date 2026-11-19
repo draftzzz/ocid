@@ -641,10 +641,11 @@ document.addEventListener('DOMContentLoaded', () => {
         idx++;
       });
 
+      // Estado vacío con texto UTF-8 correcto
       if (!deptosMap.size) {
         const vacio = document.createElement('p');
         vacio.className = 'estado_conteo_vacio';
-        vacio.textContent = 'AÃºn no has recibido tareas.';
+        vacio.textContent = 'Aún no has recibido tareas.';
         contenedorDeptos.appendChild(vacio);
       }
 
@@ -679,11 +680,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const fin = inicio + elementosPorPagina;
     const tareasPagina = tareasFiltradas.slice(inicio, fin);
 
+    // Estado vacío de la tabla con acento correcto
     if (!tareasFiltradas.length) {
       const vacio = document.createElement('div');
       vacio.className = 'tarjeta_anuncio';
       vacio.style.cssText = 'text-align: center; padding: 48px 20px; color: #64748b; font-size: 13.5px;';
-      vacio.innerHTML = '<i class="fa-solid fa-list-check" style="font-size: 32px; color: #94a3b8; margin-bottom: 12px; display: block;"></i> AÃºn no has recibido tareas.';
+      vacio.innerHTML = '<i class="fa-solid fa-list-check" style="font-size: 32px; color: #94a3b8; margin-bottom: 12px; display: block;"></i> Aún no has recibido tareas.';
       cuerpoTabla.appendChild(vacio);
     }
 

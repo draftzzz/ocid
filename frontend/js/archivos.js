@@ -223,12 +223,13 @@ function dibujarArchivos() {
   });
 
   if (!visibles.length) {
+    // Fila de estado vacío con texto UTF-8 correcto
     const filaVacia = document.createElement('tr');
     const celda = document.createElement('td');
     celda.colSpan = 6;
     celda.style.textAlign = 'center';
     celda.style.padding = '20px';
-    celda.textContent = archivosCargados.length ? 'AÃºn no has recibido archivos.' : 'AÃºn no has recibido archivos.';
+    celda.textContent = archivosCargados.length ? 'Aún no has recibido archivos.' : 'Aún no has recibido archivos.';
     filaVacia.appendChild(celda);
     cuerpoArchivos.appendChild(filaVacia);
   }

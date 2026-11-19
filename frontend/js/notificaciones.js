@@ -15,6 +15,7 @@
     })[caracter]);
   }
 
+  // Sincroniza contadores, insignias y estado del botón global
   function actualizarContadores() {
     const total = notificaciones.length;
     const sinLeer = notificaciones.filter(item => !item.leida).length;
@@ -38,7 +39,7 @@
       const elemento = document.getElementById(id);
       if (elemento) {
         elemento.textContent = String(cantidad);
-        if (id === 'indicador_notificaciones') elemento.style.display = cantidad ? '' : 'none';
+        if (id === 'indicador_notificaciones') elemento.classList.toggle('oculto', !cantidad);
       }
     });
 
@@ -52,10 +53,12 @@
     }
   }
 
+  // Pinta la lista filtrada usando las clases definidas en notificaciones.css
   function renderizarNotificaciones() {
     const contenedor = document.getElementById('contenedor_notificaciones');
     const vacio = document.getElementById('vacio_notificaciones');
     if (!contenedor) return;
+    contenedor.classList.remove('mensaje_estado_notificaciones');
 
     const visibles = notificaciones.filter(item => {
       if (filtroActual === 'no_leidas') return !item.leida;
@@ -69,12 +72,12 @@
         vacio.textContent = filtroActual === 'todas'
           ? 'Aún no has recibido notificaciones.'
           : 'Aún no has recibido notificaciones en esta categoría.';
-        vacio.style.display = 'block';
+        vacio.classList.remove('oculto');
       }
       return;
     }
 
-    if (vacio) vacio.style.display = 'none';
+    if (vacio) vacio.classList.add('oculto');
     contenedor.innerHTML = visibles.map(item => {
       const esAnuncio = item.tipo === 'anuncio';
       const esArchivo = item.tipo === 'archivo';
@@ -109,15 +112,17 @@
     }).join('');
   }
 
+  // Carga el listado desde la API y controla los mensajes de estado
   async function cargarNotificaciones(mostrarError = true) {
     if (cargaNotificacionesActiva) return false;
     cargaNotificacionesActiva = true;
     const contenedor = document.getElementById('contenedor_notificaciones');
     const vacio = document.getElementById('vacio_notificaciones');
     if (contenedor && mostrarError) {
+      contenedor.classList.add('mensaje_estado_notificaciones');
       contenedor.textContent = 'Cargando notificaciones...';
     }
-    if (vacio) vacio.style.display = 'none';
+    if (vacio) vacio.classList.add('oculto');
 
     try {
       const datos = await window.OCID.apiFetch('/notificaciones');
@@ -131,7 +136,10 @@
       console.error('Error al cargar notificaciones:', error);
       if (mostrarError) {
         window.OCID.mostrarToast(error.message || 'No se pudieron cargar las notificaciones.', 'error');
-        if (contenedor) contenedor.textContent = 'No se pudieron cargar las notificaciones.';
+        if (contenedor) {
+          contenedor.classList.add('mensaje_estado_notificaciones');
+          contenedor.textContent = 'No se pudieron cargar las notificaciones.';
+        }
       }
       return false;
     } finally {
@@ -139,6 +147,7 @@
     }
   }
 
+  // Configura las pestañas Todas / No leídas / Leídas
   function configurarFiltros() {
     const pestañas = [
       ['pestana_todas', 'todas'],
@@ -239,6 +248,7 @@
     if (boton) boton.disabled = false;
   };
 
+  // Arranca la carga inicial y mantiene la lista actualizada
   document.addEventListener('DOMContentLoaded', () => {
     configurarFiltros();
     cargarNotificaciones();

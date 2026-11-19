@@ -2,7 +2,8 @@
 <html lang="es-MX">
 
 <head>
-    <meta charset="utf-8" />
+    <!-- Codificación UTF-8 para textos en español -->
+    <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Inicio</title>
     <script src="../js/route-guard.js"></script>
@@ -105,7 +106,8 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong id="nombreUsuario" style="color: #ffffff;">Cargando...</strong>
+                        <!-- Nombre del usuario con color definido en CSS -->
+                        <strong class="nombre_usuario_texto" id="nombreUsuario">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                 </div>
@@ -269,12 +271,12 @@
     </main>
     <!-- END: MainContentArea -->
 
-    <!-- Modal: Crear Anuncio -->
+    <!-- Modal: Crear Anuncio (ancho controlado por CSS) -->
     <div class="fondo_modal_oscuro" id="modal_nuevo_anuncio">
         <div class="caja_modal">
             <div class="encabezado_modal">
                 <div class="titulo_modal">
-                    <i class="fa-solid fa-bullhorn" style="color: #4f46e5;"></i>
+                    <i class="fa-solid fa-bullhorn icono_titulo_anuncio"></i>
                     <span>Publicar Nuevo Anuncio</span>
                 </div>
                 <button class="boton_cerrar_modal" onclick="cerrarModal('modal_nuevo_anuncio')">
@@ -321,10 +323,10 @@
 
     <!-- Modal: Autenticación / Cambio de Usuario -->
     <div class="fondo_modal_oscuro" id="modal_login_sesion">
-        <div class="caja_modal" style="max-width: 440px;">
+        <div class="caja_modal caja_modal_login">
             <div class="encabezado_modal">
                 <div class="titulo_modal">
-                    <i class="fa-solid fa-id-card" style="color: #2563eb;"></i>
+                    <i class="fa-solid fa-id-card icono_titulo_login"></i>
                     <span>Iniciar Sesión en el Plantel</span>
                 </div>
                 <button class="boton_cerrar_modal" onclick="cerrarModal('modal_login_sesion')">

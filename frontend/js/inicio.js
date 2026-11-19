@@ -37,7 +37,7 @@
     if (!anuncios.length) {
       const vacio = document.createElement('p');
       vacio.className = 'texto_vacio';
-      vacio.textContent = 'AÃºn no has recibido anuncios.';
+      vacio.textContent = 'Aún no has recibido anuncios.';
       contenedor.appendChild(vacio);
       return;
     }
@@ -100,6 +100,7 @@
     return departamento || null;
   }
 
+  // Actualiza contadores e insignias sin estilos inline
   function actualizarIndicadoresNotificaciones(notificaciones) {
     const avisosNuevos = notificaciones.filter(n => n.tipo === 'anuncio' && !n.leida).length;
     const notificacionesNuevas = notificaciones.filter(n => !n.leida).length;
@@ -110,7 +111,7 @@
       if (!badge) return;
       const cantidad = id === 'badge_conteo_anuncios' ? avisosNuevos : notificacionesNuevas;
       badge.textContent = String(cantidad);
-      badge.style.display = cantidad ? '' : 'none';
+      badge.classList.toggle('oculto', !cantidad);
     });
   }
 
@@ -124,6 +125,7 @@
     establecerTexto('metrica_conteo_eventos', String(proximas.length));
   }
 
+  // Muestra las tareas recientes del departamento del usuario
   function renderizarTareas(tareas, usuario) {
     const contenedor = obtenerElemento('contenedor_lista_tareas');
     if (!contenedor) return;
@@ -169,7 +171,7 @@
     if (!tareasVisibles.length) {
       const vacio = document.createElement('p');
       vacio.className = 'texto_vacio';
-      vacio.textContent = 'AÃºn no has recibido tareas.';
+      vacio.textContent = 'Aún no has recibido tareas.';
       contenedor.appendChild(vacio);
       return;
     }

@@ -282,11 +282,12 @@ async function cargarTareasDesdeDB() {
       listaEventos.appendChild(item);
     });
 
+    // Estado vacío del calendario con acento correcto
     if (!ordenados.length) {
       const vacio = document.createElement('p');
       vacio.style.fontSize = '13px';
       vacio.style.color = '#64748b';
-      vacio.textContent = 'AÃºn no has recibido eventos.';
+      vacio.textContent = 'Aún no has recibido eventos.';
       listaEventos.appendChild(vacio);
     }
   }

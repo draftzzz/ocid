@@ -36,8 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           body: JSON.stringify({ correo, password })
         });
+        // Error UTF-8 correcto si el auto-login falla tras registrar
         if (!sesion.success || !sesion.token || !sesion.usuario) {
-          throw new Error('La cuenta se creÃ³, pero no se pudo iniciar sesiÃ³n automÃ¡ticamente. Inicia sesiÃ³n desde el formulario.');
+          throw new Error('La cuenta se creó, pero no se pudo iniciar sesión automáticamente. Inicia sesión desde el formulario.');
         }
         window.OCID.guardarSesion(sesion.usuario, sesion.token);
         window.location.href = 'inicio.html';

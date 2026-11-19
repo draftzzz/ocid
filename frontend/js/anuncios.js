@@ -134,10 +134,11 @@ function renderizar_interfaz() {
   if (!contenedor) return;
   contenedor.replaceChildren();
 
+  // Estado vacío con texto UTF-8 correcto
   if (anuncios_filtrados.length === 0) {
     const divVacio = document.createElement('div');
     divVacio.className = 'estado_vacio';
-    divVacio.textContent = 'AÃºn no has recibido anuncios.';
+    divVacio.textContent = 'Aún no has recibido anuncios.';
     contenedor.appendChild(divVacio);
   } else {
     anuncios_filtrados.forEach(anuncio => {
@@ -149,8 +150,9 @@ function renderizar_interfaz() {
 
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_anuncio';
-      tarjeta.style.position = 'relative';
-      
+
+      // El menú de opciones usa clases CSS, sin estilos inline
+
       // Creación estructurada de elementos sin usar innerHTML masivo por seguridad
       const filaEtiqueta = document.createElement('div');
       filaEtiqueta.className = 'fila_etiqueta_anuncio';
@@ -165,7 +167,7 @@ function renderizar_interfaz() {
 
       if (puedeGestionar) {
         const contenedorOpciones = document.createElement('div');
-        contenedorOpciones.style.position = 'relative';
+        contenedorOpciones.className = 'contenedor_opciones_anuncio';
 
         const btnOpciones = document.createElement('button');
         btnOpciones.className = 'boton_opciones_anuncio';
@@ -178,17 +180,17 @@ function renderizar_interfaz() {
 
         const menuDesplegable = document.createElement('div');
         menuDesplegable.id = `menu_opciones_${anuncio.id}`;
-        menuDesplegable.style.cssText = 'display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;';
+        menuDesplegable.className = 'menu_opciones_anuncio';
 
         const btnEditar = document.createElement('button');
         btnEditar.type = 'button';
-        btnEditar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; display: flex; align-items: center; gap: 8px;';
+        btnEditar.className = 'boton_menu_opcion';
         btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
         btnEditar.addEventListener('click', () => prepararEdicionAnuncio(anuncio.id, puedeGestionar));
 
         const btnEliminar = document.createElement('button');
         btnEliminar.type = 'button';
-        btnEliminar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; display: flex; align-items: center; gap: 8px;';
+        btnEliminar.className = 'boton_menu_opcion boton_menu_opcion_eliminar';
         btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
         btnEliminar.addEventListener('click', () => eliminarAnuncio(anuncio.id, puedeGestionar));
 
@@ -250,21 +252,21 @@ function renderizar_interfaz() {
   actualizar_panel_lateral();
 }
 
+// Abre o cierra el menú de opciones alternando una clase CSS
 function toggleMenuOpciones(evento, idAnuncio) {
   evento.stopPropagation();
   document.querySelectorAll('[id^="menu_opciones_"]').forEach(menu => {
-    if (menu.id !== `menu_opciones_${idAnuncio}`) menu.style.display = 'none';
+    if (menu.id !== `menu_opciones_${idAnuncio}`) menu.classList.remove('menu_abierto');
   });
 
   const menu = document.getElementById(`menu_opciones_${idAnuncio}`);
-  if (menu) {
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-  }
+  if (menu) menu.classList.toggle('menu_abierto');
 }
 
+// Cierra cualquier menú abierto al hacer clic fuera
 window.addEventListener('click', () => {
   document.querySelectorAll('[id^="menu_opciones_"]').forEach(menu => {
-    menu.style.display = 'none';
+    menu.classList.remove('menu_abierto');
   });
 });
 

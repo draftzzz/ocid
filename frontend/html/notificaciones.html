@@ -2,7 +2,8 @@
 <html lang="es">
 
 <head>
-    <meta charset="utf-8" />
+    <!-- Codificación UTF-8 para textos en español -->
+    <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Notificaciones</title>
     <script src="../js/route-guard.js"></script>
@@ -10,9 +11,8 @@
     <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
-    <!-- Hoja de Estilos Base -->
+    <!-- Única hoja de estilos: shell, panel y lista de notificaciones -->
     <link rel="stylesheet" href="../css/notificaciones.css" />
-    <link rel="stylesheet" href="../css/navigation.css" />
 </head>
 
 <body>
@@ -91,7 +91,9 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior" data-purpose="cabecera_global">
             <div class="seccion_superior_izquierda">
+                <!-- Botón de menú lateral (visible en móvil) -->
                 <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
+                    <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
             <div class="seccion_superior_derecha">
@@ -143,9 +145,8 @@
                 <div id="vacio_notificaciones" class="estado_vacio_notificaciones">
                     Aún no has recibido notificaciones.
                 </div>
-                <div class="flex flex-col" id="contenedor_notificaciones">
-                    <!-- El script se encargará de inyectar las notificaciones aquí -->
-                </div>
+                <!-- El script inyecta aquí las tarjetas de notificaciones -->
+                <div class="lista_notificaciones" id="contenedor_notificaciones"></div>
             </section>
         </div>
     </main>

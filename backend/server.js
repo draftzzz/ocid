@@ -132,7 +132,44 @@ app.use(express.json({ limit: '15mb' }));
 // ==========================================
 // PREPARAR EL ESQUEMA COMPARTIDO
 // ==========================================
-const migracionEsquema = pool.query(`
+const migracionEsquema = (async () => {
+  // Normaliza columnas logicas que en esquemas antiguos vinieron como CHAR(1) ('t'/'f')
+  // o VARCHAR a BOOLEAN real, para que las comparaciones con TRUE nunca fallen.
+  await pool.query(`
+  DO $$
+  DECLARE
+    nombre_tabla TEXT;
+    nombre_columna TEXT;
+    tipo_actual TEXT;
+  BEGIN
+    FOREACH nombre_tabla IN ARRAY ARRAY['anuncios', 'archivos', 'tareas', 'departamentos', 'usuarios'] LOOP
+      IF nombre_tabla = 'usuarios' THEN
+        nombre_columna := 'es_jefe';
+      ELSE
+        nombre_columna := 'eliminado';
+      END IF;
+
+      SELECT udt_name INTO tipo_actual
+      FROM information_schema.columns
+      WHERE table_schema = CURRENT_SCHEMA()
+        AND table_name = nombre_tabla
+        AND column_name = nombre_columna;
+
+      IF tipo_actual IS NOT NULL AND tipo_actual <> 'bool' THEN
+        -- Se quita el default antes de convertir: un default CHAR(1) ('f'/'n')
+        -- no puede convertirse automaticamente a BOOLEAN y abortaria la ALTER.
+        EXECUTE format('ALTER TABLE %I ALTER COLUMN %I DROP DEFAULT', nombre_tabla, nombre_columna);
+        EXECUTE format(
+          'ALTER TABLE %I ALTER COLUMN %I TYPE BOOLEAN USING (CASE WHEN LOWER(BTRIM(%I::TEXT)) IN (''t'',''true'',''1'',''s'',''si'',''y'',''yes'') THEN TRUE ELSE FALSE END)',
+          nombre_tabla, nombre_columna, nombre_columna
+        );
+        EXECUTE format('ALTER TABLE %I ALTER COLUMN %I SET DEFAULT FALSE', nombre_tabla, nombre_columna);
+      END IF;
+    END LOOP;
+  END $$;
+  `);
+
+  await pool.query(`
   ALTER TABLE archivos
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL,
@@ -309,7 +346,17 @@ const migracionEsquema = pool.query(`
   );
   CREATE INDEX IF NOT EXISTS notificaciones_usuario_fecha_idx
   ON notificaciones (usuario_id, fecha DESC);
-`);
+  `);
+
+  // Ultima linea de defensa: ningun flag logico queda en NULL.
+  await pool.query(`
+    UPDATE anuncios SET eliminado = FALSE WHERE eliminado IS NULL;
+    UPDATE archivos SET eliminado = FALSE WHERE eliminado IS NULL;
+    UPDATE tareas SET eliminado = FALSE WHERE eliminado IS NULL;
+    UPDATE departamentos SET eliminado = FALSE WHERE eliminado IS NULL;
+    UPDATE usuarios SET es_jefe = FALSE WHERE es_jefe IS NULL;
+  `);
+})();
 
 // ==========================================
 // COMPROBAR SERVIDOR Y BASE DE DATOS (RAÍZ)
@@ -495,6 +542,27 @@ app.post('/registro', authLimiter, async (req, res) => {
   }
 });
 
+
+// Contexto de permisos reutilizado por los 3 endpoints de papelera.
+async function obtenerContextoPapelera(usuarioId) {
+  const resultado = await pool.query(
+    `SELECT u.departamento_id, u.es_jefe, d.jefe_id
+     FROM usuarios u
+     LEFT JOIN departamentos d
+       ON d.id = u.departamento_id AND COALESCE(d.eliminado, FALSE) = FALSE
+     WHERE u.id = $1`,
+    [usuarioId]
+  );
+  if (!resultado.rowCount) return { departamentoId: null, esJefe: false, jefeId: null };
+  const fila = resultado.rows[0];
+  const bandera = String(fila.es_jefe ?? '').trim().toLowerCase();
+  return {
+    departamentoId: Number(fila.departamento_id) || null,
+    esJefe: bandera === 't' || bandera === 'true' || bandera === '1' ||
+      bandera === 's' || bandera === 'si' || bandera === 'y' || bandera === 'yes',
+    jefeId: Number(fila.jefe_id) || null
+  };
+}
 
 // ==========================================
 // MIDDLEWARE DE AUTENTICACIÓN JWT
@@ -1330,34 +1398,50 @@ app.delete('/usuarios/:id', async (req, res) => {
 
 // --- ANUNCIOS Y PAPELERA DE ANUNCIOS ---
 app.get('/anuncios/papelera', async (req, res) => {
+  const usuarioId = Number(req.usuario && req.usuario.id);
   try {
-    const usuarioId = req.usuario.id;
+    if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+      return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+    }
+    const contexto = await obtenerContextoPapelera(usuarioId);
     const resultado = await pool.query(
       `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.fecha_eliminacion,
               a.autor_id, a.departamento_id, a.departamento_emisor_id, a.eliminado_por,
               u.nombre AS autor_nombre, d.nombre AS departamento_nombre,
-              em.nombre AS departamento_emisor_nombre
+              em.nombre AS departamento_emisor_nombre,
+              el.nombre AS eliminado_por_nombre
        FROM anuncios a
+       LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
        LEFT JOIN departamentos em ON em.id = a.departamento_emisor_id
-       LEFT JOIN usuarios u ON u.id = a.autor_id
-       WHERE a.eliminado = TRUE
+       LEFT JOIN usuarios el ON el.id = a.eliminado_por
+       WHERE COALESCE(a.eliminado, FALSE) = TRUE
          AND (
            a.autor_id = $1
-           OR EXISTS (
-             SELECT 1 FROM usuarios jefe
-             WHERE jefe.id = a.eliminado_por
-               AND jefe.es_jefe IS TRUE
-               AND jefe.departamento_id = (SELECT u.departamento_id FROM usuarios u WHERE u.id = $1)
-               AND jefe.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+           OR (
+             $2::INTEGER IN (a.departamento_id, a.departamento_emisor_id)
+             AND (
+               $3::BOOLEAN
+               OR a.eliminado_por = $4::INTEGER
+               OR EXISTS (
+                 SELECT 1 FROM usuarios jefe
+                 WHERE jefe.id = a.eliminado_por
+                   AND LOWER(BTRIM(COALESCE(jefe.es_jefe::TEXT, ''))) IN ('t', 'true', '1', 's', 'si', 'y', 'yes')
+                   AND jefe.departamento_id = $2::INTEGER
+               )
              )
-           
-ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
-      [usuarioId]
+           )
+         )
+       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
+      [usuarioId, contexto.departamentoId, contexto.esJefe, contexto.jefeId]
     );
-    res.json({ success: true, anuncios: resultado.rows });
+    return res.json({ success: true, anuncios: resultado.rows });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de anuncios' });
+    console.error('[papelera/anuncios] Error al cargar la papelera:', {
+      mensaje: error.message, codigo: error.code, detalle: error.detail,
+      hint: error.hint, statement: error.statement, stack: error.stack, usuarioId
+    });
+    return res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de anuncios' });
   }
 });
 
@@ -1668,34 +1752,50 @@ app.get('/api/departamentos-con-conteo', async (req, res) => {
 
 // --- ARCHIVOS Y PAPELERA DE ARCHIVOS ---
 app.get('/archivos/papelera', async (req, res) => {
+  const usuarioId = Number(req.usuario && req.usuario.id);
   try {
-    const usuarioId = Number(req.usuario.id);
+    if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+      return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+    }
+    const contexto = await obtenerContextoPapelera(usuarioId);
     const resultado = await pool.query(
       `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id,
               a.departamento_emisor_id, a.fecha, a.fecha_eliminacion, a.eliminado_por,
               u.nombre AS autor_nombre, d.nombre AS departamento_nombre,
-              em.nombre AS departamento_emisor_nombre
+              em.nombre AS departamento_emisor_nombre,
+              el.nombre AS eliminado_por_nombre
        FROM archivos a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
        LEFT JOIN departamentos em ON em.id = a.departamento_emisor_id
-       WHERE a.eliminado = TRUE
+       LEFT JOIN usuarios el ON el.id = a.eliminado_por
+       WHERE COALESCE(a.eliminado, FALSE) = TRUE
          AND (
            a.autor_id = $1
-           OR EXISTS (
-             SELECT 1 FROM usuarios jefe
-             WHERE jefe.id = a.eliminado_por
-               AND jefe.es_jefe IS TRUE
-               AND jefe.departamento_id = (SELECT u.departamento_id FROM usuarios u WHERE u.id = $1)
-               AND jefe.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+           OR (
+             $2::INTEGER IN (a.departamento_id, a.departamento_emisor_id)
+             AND (
+               $3::BOOLEAN
+               OR a.eliminado_por = $4::INTEGER
+               OR EXISTS (
+                 SELECT 1 FROM usuarios jefe
+                 WHERE jefe.id = a.eliminado_por
+                   AND LOWER(BTRIM(COALESCE(jefe.es_jefe::TEXT, ''))) IN ('t', 'true', '1', 's', 'si', 'y', 'yes')
+                   AND jefe.departamento_id = $2::INTEGER
+               )
              )
-           
-ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
-      [usuarioId]
+           )
+         )
+       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
+      [usuarioId, contexto.departamentoId, contexto.esJefe, contexto.jefeId]
     );
-    res.json({ success: true, archivos: resultado.rows });
+    return res.json({ success: true, archivos: resultado.rows });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de archivos' });
+    console.error('[papelera/archivos] Error al cargar la papelera:', {
+      mensaje: error.message, codigo: error.code, detalle: error.detail,
+      hint: error.hint, statement: error.statement, stack: error.stack, usuarioId
+    });
+    return res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de archivos' });
   }
 });
 
@@ -2050,36 +2150,52 @@ app.delete('/tareas/:id', async (req, res) => {
 });
 
 app.get('/tareas/papelera', async (req, res) => {
+  const usuarioId = Number(req.usuario && req.usuario.id);
   try {
+    if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+      return res.status(401).json({ success: false, error: 'La sesión no identifica a un usuario válido' });
+    }
+    const contexto = await obtenerContextoPapelera(usuarioId);
     const resultado = await pool.query(
       `SELECT t.id, t.titulo, t.descripcion, t.asignado, t.fecha, t.horario, t.departamento,
               t.departamentos_destino_ids, t.departamento_emisor_id, t.autor_id,
               t.fecha_eliminacion, t.eliminado_por, u.nombre AS autor_nombre,
-              d.nombre AS departamento_emisor_nombre
+              d.nombre AS departamento_emisor_nombre,
+              el.nombre AS eliminado_por_nombre
        FROM tareas t
        LEFT JOIN usuarios u ON u.id = t.autor_id
        LEFT JOIN departamentos d ON d.id = t.departamento_emisor_id
-       WHERE t.eliminado = TRUE
+       LEFT JOIN usuarios el ON el.id = t.eliminado_por
+       WHERE COALESCE(t.eliminado, FALSE) = TRUE
          AND (
            t.autor_id = $1
-           OR EXISTS (
-             SELECT 1 FROM usuarios jefe
-             WHERE jefe.id = t.eliminado_por
-               AND jefe.es_jefe IS TRUE
-               AND jefe.departamento_id = (SELECT u.departamento_id FROM usuarios u WHERE u.id = $1)
-               AND (
-                 jefe.departamento_id = t.departamento_emisor_id
-                 OR jefe.departamento_id = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
+           OR (
+             (
+               $2::INTEGER = t.departamento_emisor_id
+               OR $2::INTEGER = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
+             )
+             AND (
+               $3::BOOLEAN
+               OR t.eliminado_por = $4::INTEGER
+               OR EXISTS (
+                 SELECT 1 FROM usuarios jefe
+                 WHERE jefe.id = t.eliminado_por
+                   AND LOWER(BTRIM(COALESCE(jefe.es_jefe::TEXT, ''))) IN ('t', 'true', '1', 's', 'si', 'y', 'yes')
+                   AND jefe.departamento_id = $2::INTEGER
                )
              )
-           
-ORDER BY t.fecha_eliminacion DESC NULLS LAST, t.id DESC`,
-      [Number(req.usuario.id)]
+           )
+         )
+       ORDER BY t.fecha_eliminacion DESC NULLS LAST, t.id DESC`,
+      [usuarioId, contexto.departamentoId, contexto.esJefe, contexto.jefeId]
     );
-    res.json({ success: true, tareas: resultado.rows });
+    return res.json({ success: true, tareas: resultado.rows });
   } catch (error) {
-    console.error('Error al cargar la papelera de tareas:', error.message);
-    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de tareas' });
+    console.error('[papelera/tareas] Error al cargar la papelera:', {
+      mensaje: error.message, codigo: error.code, detalle: error.detail,
+      hint: error.hint, statement: error.statement, stack: error.stack, usuarioId
+    });
+    return res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de tareas' });
   }
 });
 
