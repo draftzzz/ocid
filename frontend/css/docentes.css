@@ -944,9 +944,11 @@ body.menu_movil_abierto .fondo_menu_movil {
         min-width: 0px;
     }
 
+    /* Acciones de paginación separadas de las tarjetas */
     .barra_paginacion {
         flex-direction: column;
         gap: 12px;
+        margin-top: 20px;
         align-items: flex-start;
     }
 }
@@ -1096,8 +1098,8 @@ body.menu_movil_abierto .fondo_menu_movil {
     }
 
     .tabla_docentes tbody tr {
-        margin: 12px 0;
-        padding: 14px;
+        margin: 18px 0;
+        padding: 18px;
         background-color: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 12px;
@@ -1106,15 +1108,22 @@ body.menu_movil_abierto .fondo_menu_movil {
 
     .tabla_docentes td {
         border: 0;
-        padding: 7px 0;
+        padding: 12px 0;
         text-align: left;
         overflow-wrap: anywhere;
+    }
+
+    /* Separadores suaves entre NOMBRE, CORREO, ROL y ESTADO */
+    .tabla_docentes td + td {
+        border-top: 1px solid #f1f5f9;
+        margin-top: 10px;
+        padding-top: 16px;
     }
 
     .tabla_docentes td:nth-child(1)::before {
         content: "Nombre";
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 7px;
         color: #64748b;
         font-size: 10.5px;
         font-weight: 700;
@@ -1125,7 +1134,7 @@ body.menu_movil_abierto .fondo_menu_movil {
     .tabla_docentes td:nth-child(2)::before {
         content: "Correo";
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 7px;
         color: #64748b;
         font-size: 10.5px;
         font-weight: 700;
@@ -1136,7 +1145,7 @@ body.menu_movil_abierto .fondo_menu_movil {
     .tabla_docentes td:nth-child(3)::before {
         content: "Rol";
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 7px;
         color: #64748b;
         font-size: 10.5px;
         font-weight: 700;
@@ -1147,7 +1156,7 @@ body.menu_movil_abierto .fondo_menu_movil {
     .tabla_docentes td:nth-child(4)::before {
         content: "Estado";
         display: block;
-        margin-bottom: 2px;
+        margin-bottom: 7px;
         color: #64748b;
         font-size: 10.5px;
         font-weight: 700;

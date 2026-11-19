@@ -90,7 +90,7 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
+                <button class="boton_menu_hamburguesa" title="Alternar menú lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -128,14 +128,14 @@
                     <!-- Control Navegación Mes / Selector de Vistas -->
                     <div class="encabezado_calendario">
                         <div class="control_mes">
-                            <button aria-label="Mes anterior" class="boton_flecha" id="boton_mes_previo">
+                            <button class="boton_flecha" id="boton_mes_previo" title="Mes anterior">
                                 <i class="fa-solid fa-chevron-left"></i>
                                 <!-- Indicador oculto hasta que haya eventos en ese mes -->
                                 <span class="badge_flecha_mes oculto" id="badge_mes_previo"></span>
                             </button>
                             <!-- Mes y año se calculan en calendario.js con zona Monterrey -->
                             <div class="titulo_mes_anio" id="texto_mes_actual"></div>
-                            <button aria-label="Mes siguiente" class="boton_flecha" id="boton_mes_siguiente">
+                            <button class="boton_flecha" id="boton_mes_siguiente" title="Mes siguiente">
                                 <i class="fa-solid fa-chevron-right"></i>
                                 <span class="badge_flecha_mes oculto" id="badge_mes_siguiente"></span>
                             </button>
@@ -224,7 +224,7 @@
         <div class="modal_caja modal_detalle_caja">
             <div class="modal_cabecera">
                 <h3 class="modal_titulo" id="detalle_titulo">Detalle de la tarea</h3>
-                <button class="modal_cerrar" id="cerrar_modal_detalle" type="button" aria-label="Cerrar detalle">×</button>
+                <button class="modal_cerrar" id="cerrar_modal_detalle" type="button" title="Cerrar detalle">×</button>
             </div>
             <!-- Campos del detalle con estilos en calendario.css -->
             <div class="modal_cuerpo modal_detalle_cuerpo">

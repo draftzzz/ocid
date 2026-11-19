@@ -29,6 +29,15 @@
     if (saludo) saludo.textContent = `¡Hola, ${nombre.split(/\s+/)[0]}!`;
   }
 
+  // Clasifica la prioridad en verde, ámbar o rojo según el valor recibido
+  function clasePrioridadAnuncio(valor) {
+    const clave = String(valor || 'general')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (/urgent|alta|import/.test(clave)) return 'etiqueta_importante';
+    if (/moderad|media|aviso/.test(clave)) return 'etiqueta_aviso';
+    return 'etiqueta_general';
+  }
+
   function renderizarAnuncios(anuncios) {
     const contenedor = obtenerElemento('contenedor_lista_anuncios');
     if (!contenedor) return;
@@ -47,39 +56,32 @@
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_item_anuncio';
 
-      const contenido = document.createElement('div');
-      contenido.className = 'contenido_item_anuncio';
+      const cabecera = document.createElement('div');
+      cabecera.className = 'cabecera_item_anuncio';
 
       const prioridad = String(anuncio.prioridad || 'General');
       const etiqueta = document.createElement('span');
-      // Píldora estándar con punto de color para la prioridad
-      etiqueta.className = 'etiqueta_tipo etiqueta_prioridad';
-      const prioridadClave = prioridad.toLowerCase();
-      etiqueta.classList.add(prioridadClave.includes('import') || prioridadClave.includes('urgent')
-        ? 'etiqueta_importante'
-        : prioridadClave.includes('aviso') || prioridadClave.includes('media')
-          ? 'etiqueta_aviso'
-          : 'etiqueta_general');
+      // Insignia de prioridad con el color que corresponde a su valor
+      etiqueta.className = `etiqueta_tipo etiqueta_prioridad ${clasePrioridadAnuncio(prioridad)}`;
       const puntoPrioridad = document.createElement('span');
       puntoPrioridad.className = 'punto_etiqueta';
       etiqueta.append(puntoPrioridad, document.createTextNode(` ${prioridad}`));
 
-      const detalles = document.createElement('div');
-      detalles.className = 'detalles_texto_anuncio';
       const titulo = document.createElement('span');
       titulo.className = 'titulo_item_anuncio';
       titulo.textContent = anuncio.titulo || 'Anuncio';
-      const meta = document.createElement('span');
+      cabecera.append(etiqueta, titulo);
+
+      const resumen = document.createElement('p');
+      resumen.className = 'contenido_resumen_anuncio';
+      resumen.textContent = anuncio.contenido || '';
+
+      const meta = document.createElement('div');
       meta.className = 'meta_item_anuncio';
       const fecha = anuncio.fecha ? new Date(anuncio.fecha).toLocaleDateString('es-MX') : '';
       meta.textContent = [anuncio.autor_nombre || 'Coordinación', fecha].filter(Boolean).join(' · ');
-      detalles.append(titulo, meta);
-      contenido.append(etiqueta, detalles);
 
-      const texto = document.createElement('p');
-      texto.className = 'contenido_resumen_anuncio';
-      texto.textContent = anuncio.contenido || '';
-      tarjeta.append(contenido, texto);
+      tarjeta.append(cabecera, resumen, meta);
       contenedor.appendChild(tarjeta);
     });
   }

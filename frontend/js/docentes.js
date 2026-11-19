@@ -257,12 +257,13 @@ function renderizarPaginacionDocentes(paginas) {
   if (!grupo) return;
   grupo.replaceChildren();
 
-  const agregarBoton = (texto, pagina, etiqueta, deshabilitado = false, clase = '') => {
+  const agregarBoton = (texto, pagina, deshabilitado = false, clase = '') => {
     const boton = document.createElement('button');
     boton.type = 'button';
     boton.className = `btn_pagina ${clase} ${pagina === paginaDocentes && !deshabilitado ? 'btn_pagina_activa' : ''}`.trim();
     boton.textContent = texto;
-    boton.setAttribute('aria-label', etiqueta);
+    // Título visible al pasar el cursor en lugar de atributos de accesibilidad
+    boton.title = texto === '<' ? 'Página anterior' : texto === '>' ? 'Página siguiente' : `Página ${texto}`;
     boton.disabled = deshabilitado;
     if (!deshabilitado) {
       boton.addEventListener('click', () => {
@@ -274,7 +275,7 @@ function renderizarPaginacionDocentes(paginas) {
   };
 
   // Flecha izquierda siempre disponible
-  agregarBoton('<', Math.max(1, paginaDocentes - 1), 'Página anterior', paginaDocentes === 1, 'btn_pagina_flecha');
+  agregarBoton('<', Math.max(1, paginaDocentes - 1), paginaDocentes === 1, 'btn_pagina_flecha');
 
   // Números de página y puntos suspensivos
   obtenerPaginasVisibles(paginaDocentes, paginas).forEach(valor => {
@@ -284,12 +285,12 @@ function renderizarPaginacionDocentes(paginas) {
       puntos.textContent = '…';
       grupo.appendChild(puntos);
     } else {
-      agregarBoton(String(valor), valor, `Página ${valor}`);
+      agregarBoton(String(valor), valor);
     }
   });
 
   // Flecha derecha siempre disponible
-  agregarBoton('>', Math.min(paginas, paginaDocentes + 1), 'Página siguiente', paginaDocentes === paginas, 'btn_pagina_flecha');
+  agregarBoton('>', Math.min(paginas, paginaDocentes + 1), paginaDocentes === paginas, 'btn_pagina_flecha');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

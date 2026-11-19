@@ -287,7 +287,6 @@ async function cargarTareasDesdeDB() {
         ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
         : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(tarea.visto);
-      botonVisto.setAttribute('aria-label', tarea.visto ? 'Evento visto' : 'Marcar evento como visto');
       botonVisto.addEventListener('click', async () => {
         botonVisto.disabled = true;
         try {
@@ -423,6 +422,7 @@ async function cargarTareasDesdeDB() {
   }
 
   let ultimoDesplazamientoTactil = 0;
+  let ultimaAperturaTactil = 0;
 
   // Abre el detalle con un toque y descarta gestos de desplazamiento
   function registrarAperturaTarea(elemento, tarea) {
@@ -451,12 +451,22 @@ async function cargarTareasDesdeDB() {
     elemento.addEventListener('pointermove', mover, { passive: true });
     elemento.addEventListener('touchstart', iniciar, { passive: true });
     elemento.addEventListener('touchmove', mover, { passive: true });
+    // Abre al soltar el dedo sin esperar al clic sintético del navegador
+    elemento.addEventListener('pointerup', evento => {
+      if (evento.pointerType !== 'touch' || seDesplazo || esAccion(evento)) return;
+      ultimaAperturaTactil = Date.now();
+      abrirDetalleTarea(tarea);
+    });
     elemento.addEventListener('touchend', evento => {
       if (seDesplazo) evento.preventDefault();
     }, { passive: false });
     elemento.addEventListener('click', evento => {
       evento.stopPropagation();
       if (esAccion(evento)) return;
+      if (Date.now() - ultimaAperturaTactil < 500) {
+        seDesplazo = false;
+        return;
+      }
       if (seDesplazo || Date.now() - ultimoDesplazamientoTactil < 350) {
         seDesplazo = false;
         return;
