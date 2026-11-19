@@ -86,6 +86,10 @@
                         aria-pressed="false" onclick="cambiarSeccionPapelera('anuncios')">
                         <i class="fa-solid fa-bullhorn" aria-hidden="true"></i> Anuncios
                     </button>
+                    <button id="btn_pestana_tareas" class="boton_pestana_papelera" type="button"
+                        aria-pressed="false" onclick="cambiarSeccionPapelera('tareas')">
+                        <i class="fa-solid fa-list-check" aria-hidden="true"></i> Tareas
+                    </button>
                 </div>
                 <span id="contador_elementos_papelera" class="contador_papelera">0 elementos</span>
             </div>
@@ -93,7 +97,7 @@
             <section class="tarjeta_tabla" style="background-color: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04);">
                 <div style="overflow-x: auto;">
                     <table class="tabla_tareas" style="width: 100%; border-collapse: collapse; text-align: left;">
-                        <thead>
+                        <thead id="encabezado_tabla_papelera">
                             <tr style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                                 <th style="padding: 14px 18px; font-size: 12px; font-weight: 600; color: #64748b;">Nombre del Documento</th>
                                 <th style="padding: 14px 18px; font-size: 12px; font-weight: 600; color: #64748b;">Departamento</th>

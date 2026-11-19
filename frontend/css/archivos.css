@@ -598,6 +598,10 @@ textarea {
     transition: all 0.2s;
 }
 
+#zona_archivo[hidden] {
+    display: none !important;
+}
+
 .boton_accion_icono:hover {
     background-color: #f1f5f9;
     color: #0f172a;

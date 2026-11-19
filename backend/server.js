@@ -135,11 +135,59 @@ app.use(express.json({ limit: '15mb' }));
 const migracionEsquema = pool.query(`
   ALTER TABLE archivos
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
+  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL,
+  ADD COLUMN IF NOT EXISTS eliminado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS departamento_emisor_id INTEGER REFERENCES departamentos(id) ON DELETE SET NULL;
 
   ALTER TABLE anuncios
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL;
+  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL,
+  ADD COLUMN IF NOT EXISTS eliminado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS departamento_emisor_id INTEGER REFERENCES departamentos(id) ON DELETE SET NULL;
+
+  ALTER TABLE tareas
+  ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS fecha_eliminacion TIMESTAMP NULL,
+  ADD COLUMN IF NOT EXISTS eliminado_por INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS departamento_emisor_id INTEGER REFERENCES departamentos(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS departamentos_destino_ids INTEGER[] NOT NULL DEFAULT '{}';
+
+  UPDATE anuncios a
+  SET departamento_emisor_id = u.departamento_id
+  FROM usuarios u
+  WHERE a.autor_id = u.id AND a.departamento_emisor_id IS NULL;
+
+  UPDATE archivos a
+  SET departamento_emisor_id = u.departamento_id
+  FROM usuarios u
+  WHERE a.autor_id = u.id AND a.departamento_emisor_id IS NULL;
+
+  UPDATE tareas t
+  SET departamento_emisor_id = u.departamento_id
+  FROM usuarios u
+  WHERE t.autor_id = u.id AND t.departamento_emisor_id IS NULL;
+
+  UPDATE tareas t
+  SET departamentos_destino_ids = ARRAY(
+    SELECT DISTINCT d.id
+    FROM departamentos d
+    JOIN UNNEST(STRING_TO_ARRAY(COALESCE(t.departamento, ''), ',')) AS destino(nombre)
+      ON LOWER(BTRIM(d.nombre)) = LOWER(BTRIM(destino.nombre))
+    WHERE d.eliminado = FALSE
+  )
+  WHERE CARDINALITY(t.departamentos_destino_ids) = 0
+    AND NULLIF(BTRIM(t.departamento), '') IS NOT NULL
+    AND LOWER(BTRIM(t.departamento)) <> 'general';
+
+  CREATE TABLE IF NOT EXISTS elementos_vistos (
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('anuncio', 'archivo', 'tarea')),
+    elemento_id INTEGER NOT NULL,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    visto_en TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (tipo, elemento_id, usuario_id)
+  );
+  CREATE INDEX IF NOT EXISTS elementos_vistos_usuario_idx
+  ON elementos_vistos (usuario_id, visto_en DESC);
 
   ALTER TABLE departamentos
   ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE;
@@ -559,6 +607,65 @@ async function obtenerPermisosDepartamento(db, usuarioId, departamentoId, bloque
     esJefe,
     esAdministrador,
     puedeGestionar: esJefe || esAdministrador
+  };
+}
+
+const DEFINICIONES_CONTENIDO = {
+  anuncio: {
+    tabla: 'anuncios',
+    destinos: `CASE WHEN x.departamento_id IS NULL
+      THEN ARRAY[]::INTEGER[] ELSE ARRAY[x.departamento_id] END`
+  },
+  archivo: {
+    tabla: 'archivos',
+    destinos: `CASE WHEN x.departamento_id IS NULL
+      THEN ARRAY[]::INTEGER[] ELSE ARRAY[x.departamento_id] END`
+  },
+  tarea: {
+    tabla: 'tareas',
+    destinos: `COALESCE(x.departamentos_destino_ids, ARRAY[]::INTEGER[])`
+  }
+};
+
+async function obtenerAccesoContenido(db, tipo, elementoId, usuarioId) {
+  const definicion = DEFINICIONES_CONTENIDO[tipo];
+  if (!definicion) return { existe: false, permitido: false };
+
+  const resultado = await db.query(
+    `SELECT x.autor_id, x.departamento_emisor_id,
+            ${definicion.destinos} AS departamentos_destino_ids,
+            COALESCE(x.eliminado, FALSE) AS eliminado,
+            u.departamento_id AS usuario_departamento_id, u.es_jefe, u.rol
+     FROM ${definicion.tabla} x
+     JOIN usuarios u ON u.id = $2
+     WHERE x.id = $1`,
+    [elementoId, usuarioId]
+  );
+  if (!resultado.rowCount) return { existe: false, permitido: false };
+
+  const elemento = resultado.rows[0];
+  const departamentoUsuarioId = Number(elemento.usuario_departamento_id) || null;
+  const departamentosRelacionados = [
+    Number(elemento.departamento_emisor_id) || null,
+    ...(elemento.departamentos_destino_ids || []).map(Number)
+  ].filter(Boolean);
+  const esAdministrador = esRolAdministrador(elemento.rol);
+  const esJefeDelAlcance = esFlagActivo(elemento.es_jefe) &&
+    departamentoUsuarioId !== null &&
+    departamentosRelacionados.includes(departamentoUsuarioId);
+  const esAutor = Number(elemento.autor_id) === Number(usuarioId);
+
+  return {
+    existe: true,
+    permitido: esAutor || esJefeDelAlcance || esAdministrador,
+    visible: esAutor || esJefeDelAlcance || esAdministrador ||
+      (departamentoUsuarioId !== null && departamentosRelacionados.includes(departamentoUsuarioId)),
+    esAutor,
+    esJefeDelAlcance,
+    esAdministrador,
+    departamentoUsuarioId,
+    departamentosRelacionados,
+    eliminado: esFlagActivo(elemento.eliminado)
   };
 }
 
@@ -1227,19 +1334,26 @@ app.get('/anuncios/papelera', async (req, res) => {
     const usuarioId = req.usuario.id;
     const resultado = await pool.query(
       `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.fecha_eliminacion,
-              a.autor_id, a.departamento_id, u.nombre AS autor_nombre,
-              d.nombre AS departamento_nombre
+              a.autor_id, a.departamento_id, a.departamento_emisor_id, a.eliminado_por,
+              u.nombre AS autor_nombre, d.nombre AS departamento_nombre,
+              em.nombre AS departamento_emisor_nombre
        FROM anuncios a
        LEFT JOIN departamentos d ON d.id = a.departamento_id
+       LEFT JOIN departamentos em ON em.id = a.departamento_emisor_id
        LEFT JOIN usuarios u ON u.id = a.autor_id
        WHERE a.eliminado = TRUE
          AND (
            a.autor_id = $1
            OR EXISTS (
-             SELECT 1 FROM usuarios jefe
-             WHERE jefe.id = $1
-               AND jefe.es_jefe IS TRUE
-               AND jefe.departamento_id = a.departamento_id
+             SELECT 1 FROM usuarios gestor
+             WHERE gestor.id = $1
+               AND (
+                 LOWER(BTRIM(COALESCE(gestor.rol, ''))) IN ('administrador', 'administrador general')
+                 OR (
+                   gestor.es_jefe IS TRUE
+                   AND gestor.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+                 )
+               )
            )
          )
        ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
@@ -1253,26 +1367,28 @@ app.get('/anuncios/papelera', async (req, res) => {
 
 app.get('/anuncios', async (req, res) => {
   try {
-    const usuario = await pool.query(
-      'SELECT id FROM usuarios WHERE id = $1',
-      [req.usuario.id]
-    );
-    if (usuario.rowCount === 0) {
-      return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
-    }
-
     const resultado = await pool.query(
       `SELECT a.id, a.titulo, a.contenido, a.prioridad, a.fecha, a.autor_id, a.departamento_id,
-              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
+              a.departamento_emisor_id, u.nombre AS autor_nombre,
+              d.nombre AS departamento_nombre, em.nombre AS departamento_emisor_nombre,
+              EXISTS (
+                SELECT 1 FROM elementos_vistos v
+                WHERE v.tipo = 'anuncio' AND v.elemento_id = a.id AND v.usuario_id = $1
+              ) AS visto
        FROM anuncios a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id AND d.eliminado = FALSE
+       LEFT JOIN departamentos em ON em.id = a.departamento_emisor_id AND em.eliminado = FALSE
        WHERE COALESCE(a.eliminado, FALSE) = FALSE
          AND (
-           a.departamento_id IS NULL
+           a.autor_id = $1
            OR EXISTS (
-             SELECT 1 FROM notificaciones n
-             WHERE n.anuncio_id = a.id AND n.usuario_id = $1
+             SELECT 1 FROM usuarios lector
+             WHERE lector.id = $1
+               AND (
+                 lector.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+                 OR LOWER(BTRIM(COALESCE(lector.rol, ''))) IN ('administrador', 'administrador general')
+               )
            )
          )
        ORDER BY a.fecha DESC, a.id DESC`,
@@ -1319,18 +1435,30 @@ app.post('/anuncios', async (req, res) => {
       }
     }
 
+    const autor = await cliente.query(
+      'SELECT departamento_id FROM usuarios WHERE id = $1 FOR KEY SHARE',
+      [autorId]
+    );
+    if (!autor.rowCount) {
+      await cliente.query('ROLLBACK');
+      return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+    }
+    const departamentoEmisorId = autor.rows[0].departamento_id;
     const resultado = await cliente.query(
-      `INSERT INTO anuncios (titulo, contenido, prioridad, autor_id, departamento_id, fecha, eliminado)
-       VALUES ($1, $2, $3, $4, $5, NOW(), FALSE) RETURNING *`,
-      [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamentoId]
+      `INSERT INTO anuncios (
+         titulo, contenido, prioridad, autor_id, departamento_id, departamento_emisor_id, fecha, eliminado
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), FALSE) RETURNING *`,
+      [titulo.trim(), contenido.trim(), prioridad || 'Informativo', autorId, departamentoId, departamentoEmisorId]
     );
 
     await cliente.query(
       `INSERT INTO notificaciones (usuario_id, anuncio_id, leida, fecha)
        SELECT id, $1, FALSE, NOW()
        FROM usuarios
-       WHERE $2::INTEGER IS NULL OR departamento_id = $2`,
-      [resultado.rows[0].id, departamentoId]
+       WHERE departamento_id = ANY($2::INTEGER[])
+       ON CONFLICT DO NOTHING`,
+      [resultado.rows[0].id, [...new Set([departamentoEmisorId, departamentoId].filter(Boolean))]]
     );
     await cliente.query('COMMIT');
     res.status(201).json({ success: true, anuncio: resultado.rows[0] });
@@ -1343,35 +1471,6 @@ app.post('/anuncios', async (req, res) => {
   }
 });
 
-async function obtenerPermisoGestionAnuncio(usuarioId, anuncioId) {
-  const resultado = await pool.query(
-    `SELECT a.autor_id, a.departamento_id, COALESCE(a.eliminado, FALSE) AS eliminado,
-            u.departamento_id AS usuario_departamento_id, u.es_jefe,
-            d.jefe_id AS jefe_departamento_id
-     FROM anuncios a
-     JOIN usuarios u ON u.id = $2
-     LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
-     WHERE a.id = $1`,
-    [anuncioId, usuarioId]
-  );
-  if (resultado.rowCount === 0) return { existe: false, permitido: false };
-
-  const anuncio = resultado.rows[0];
-  const departamentoId = anuncio.usuario_departamento_id;
-  const esJefe = esFlagActivo(anuncio.es_jefe);
-  const mismoDepartamento = anuncio.departamento_id !== null &&
-    departamentoId !== null &&
-    Number(anuncio.departamento_id) === Number(departamentoId);
-  const anuncioGeneralPropio = anuncio.departamento_id === null &&
-    Number(anuncio.autor_id) === Number(usuarioId);
-
-  return {
-    existe: true,
-    permitido: !esFlagActivo(anuncio.eliminado) && esJefe &&
-      (mismoDepartamento || anuncioGeneralPropio)
-  };
-}
-
 app.put('/anuncios/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { titulo, contenido, prioridad, departamento_id } = req.body;
@@ -1382,10 +1481,10 @@ app.put('/anuncios/:id', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Los datos del anuncio no son válidos' });
   }
   try {
-    const acceso = await obtenerPermisoGestionAnuncio(usuarioId, id);
+    const acceso = await obtenerAccesoContenido(pool, 'anuncio', id, usuarioId);
     if (!acceso.existe) return res.status(404).json({ success: false, error: 'El anuncio no existe' });
-    if (!acceso.permitido) {
-      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede editar este anuncio' });
+    if (!acceso.permitido || acceso.eliminado) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para editar este anuncio' });
     }
 
     let departamentoId = null;
@@ -1397,9 +1496,12 @@ app.put('/anuncios/:id', async (req, res) => {
       }
     }
     if (departamentoId !== null) {
-      const accesoDestino = await obtenerPermisosDepartamento(pool, usuarioId, departamentoId, false);
-      if (!accesoDestino || !accesoDestino.esJefe) {
-        return res.status(403).json({ success: false, error: 'Solo el jefe del departamento destino puede reasignar este anuncio' });
+      const destino = await pool.query(
+        'SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE',
+        [departamentoId]
+      );
+      if (!destino.rowCount) {
+        return res.status(404).json({ success: false, error: 'El departamento destino no existe' });
       }
     }
     const client = await pool.connect();
@@ -1422,8 +1524,9 @@ app.put('/anuncios/:id', async (req, res) => {
         `INSERT INTO notificaciones (usuario_id, anuncio_id, leida, fecha)
          SELECT id, $1, FALSE, NOW()
          FROM usuarios
-         WHERE $2::INTEGER IS NULL OR departamento_id = $2`,
-        [id, departamentoId]
+         WHERE departamento_id = ANY($2::INTEGER[])
+         ON CONFLICT DO NOTHING`,
+        [id, [...new Set([acceso.departamentosRelacionados[0], departamentoId].filter(Boolean))]]
       );
       await client.query('COMMIT');
     } catch (error) {
@@ -1445,17 +1548,17 @@ app.delete('/anuncios/:id', async (req, res) => {
     if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, error: 'ID de anuncio inválido' });
     }
-    const acceso = await obtenerPermisoGestionAnuncio(usuarioId, id);
+    const acceso = await obtenerAccesoContenido(pool, 'anuncio', id, usuarioId);
     if (!acceso.existe) return res.status(404).json({ success: false, error: 'El anuncio no existe' });
-    if (!acceso.permitido) {
-      return res.status(403).json({ success: false, error: 'Solo el jefe del departamento puede eliminar este anuncio' });
+    if (!acceso.permitido || acceso.eliminado) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar este anuncio' });
     }
     const resultado = await pool.query(
       `UPDATE anuncios
-       SET eliminado = TRUE, fecha_eliminacion = NOW()
+       SET eliminado = TRUE, fecha_eliminacion = NOW(), eliminado_por = $2
        WHERE id = $1 AND COALESCE(eliminado, FALSE) = FALSE
        RETURNING id`,
-      [id]
+      [id, usuarioId]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'El anuncio no existe o no te pertenece' });
     res.json({ success: true, mensaje: 'Anuncio movido a la papelera' });
@@ -1471,21 +1574,15 @@ app.put('/anuncios/:id/restaurar', async (req, res) => {
     if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, error: 'ID de anuncio inválido' });
     }
+    const acceso = await obtenerAccesoContenido(pool, 'anuncio', id, usuarioId);
+    if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Anuncio no encontrado' });
+    if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para restaurar este anuncio' });
     const resultado = await pool.query(
       `UPDATE anuncios
-       SET eliminado = FALSE, fecha_eliminacion = NULL
+       SET eliminado = FALSE, fecha_eliminacion = NULL, eliminado_por = NULL
        WHERE id = $1 AND eliminado = TRUE
-         AND (
-           autor_id = $2
-           OR EXISTS (
-             SELECT 1 FROM usuarios jefe
-             WHERE jefe.id = $2
-               AND jefe.es_jefe IS TRUE
-               AND jefe.departamento_id = anuncios.departamento_id
-           )
-         )
        RETURNING id`,
-      [id, usuarioId]
+      [id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Anuncio no encontrado' });
     res.json({ success: true, mensaje: 'Anuncio restaurado correctamente' });
@@ -1501,20 +1598,12 @@ app.delete('/anuncios/:id/permanente', async (req, res) => {
     if (!Number.isSafeInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, error: 'ID de anuncio inválido' });
     }
+    const acceso = await obtenerAccesoContenido(pool, 'anuncio', id, usuarioId);
+    if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Anuncio no encontrado en la papelera' });
+    if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar este anuncio permanentemente' });
     const resultado = await pool.query(
-      `DELETE FROM anuncios a
-       WHERE a.id = $1 AND a.eliminado = TRUE
-         AND (
-           a.autor_id = $2
-           OR EXISTS (
-             SELECT 1 FROM usuarios jefe
-             WHERE jefe.id = $2
-               AND jefe.es_jefe IS TRUE
-               AND jefe.departamento_id = a.departamento_id
-           )
-         )
-       RETURNING a.id`,
-      [id, usuarioId]
+      'DELETE FROM anuncios WHERE id = $1 AND eliminado = TRUE RETURNING id',
+      [id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Anuncio no encontrado en la papelera' });
     res.json({ success: true, mensaje: 'Anuncio eliminado definitivamente' });
@@ -1584,14 +1673,31 @@ app.get('/api/departamentos-con-conteo', async (req, res) => {
 // --- ARCHIVOS Y PAPELERA DE ARCHIVOS ---
 app.get('/archivos/papelera', async (req, res) => {
   try {
-    const usuarioId = req.usuario.id;
+    const usuarioId = Number(req.usuario.id);
     const resultado = await pool.query(
-      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id, a.fecha, a.fecha_eliminacion,
-              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
+      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id,
+              a.departamento_emisor_id, a.fecha, a.fecha_eliminacion, a.eliminado_por,
+              u.nombre AS autor_nombre, d.nombre AS departamento_nombre,
+              em.nombre AS departamento_emisor_nombre
        FROM archivos a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
-       WHERE a.eliminado = TRUE AND a.autor_id = $1
+       LEFT JOIN departamentos em ON em.id = a.departamento_emisor_id
+       WHERE a.eliminado = TRUE
+         AND (
+           a.autor_id = $1
+           OR EXISTS (
+             SELECT 1 FROM usuarios gestor
+             WHERE gestor.id = $1
+               AND (
+                 LOWER(BTRIM(COALESCE(gestor.rol, ''))) IN ('administrador', 'administrador general')
+                 OR (
+                   gestor.es_jefe IS TRUE
+                   AND gestor.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+                 )
+               )
+           )
+         )
        ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
       [usuarioId]
     );
@@ -1604,13 +1710,32 @@ app.get('/archivos/papelera', async (req, res) => {
 app.get('/archivos', async (req, res) => {
   try {
     const resultado = await pool.query(
-      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id, a.anuncio_id, a.fecha,
-              u.nombre AS autor_nombre, d.nombre AS departamento_nombre
+      `SELECT a.id, a.nombre, a.tipo, a.tamano, a.autor_id, a.departamento_id,
+              a.departamento_emisor_id, a.anuncio_id, a.fecha,
+              u.nombre AS autor_nombre, d.nombre AS departamento_nombre,
+              em.nombre AS departamento_emisor_nombre,
+              EXISTS (
+                SELECT 1 FROM elementos_vistos v
+                WHERE v.tipo = 'archivo' AND v.elemento_id = a.id AND v.usuario_id = $1
+              ) AS visto
        FROM archivos a
        LEFT JOIN usuarios u ON u.id = a.autor_id
        LEFT JOIN departamentos d ON d.id = a.departamento_id
+       LEFT JOIN departamentos em ON em.id = a.departamento_emisor_id
        WHERE COALESCE(a.eliminado, FALSE) = FALSE
+         AND (
+           a.autor_id = $1
+           OR EXISTS (
+             SELECT 1 FROM usuarios lector
+             WHERE lector.id = $1
+               AND (
+                 lector.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+                 OR LOWER(BTRIM(COALESCE(lector.rol, ''))) IN ('administrador', 'administrador general')
+               )
+           )
+         )
        ORDER BY a.fecha DESC, a.id DESC`
+      , [Number(req.usuario.id)]
     );
     res.json(resultado.rows);
   } catch (error) {
@@ -1625,6 +1750,11 @@ app.get('/archivos/:id', async (req, res) => {
   }
 
   try {
+    const acceso = await obtenerAccesoContenido(pool, 'archivo', id, Number(req.usuario.id));
+    if (!acceso.existe || acceso.eliminado) {
+      return res.status(404).json({ success: false, error: 'El archivo no existe o fue eliminado' });
+    }
+    if (!acceso.visible) return res.status(403).json({ success: false, error: 'No tienes acceso a este archivo' });
     const resultado = await pool.query(
       `SELECT id, nombre, ruta, tipo
        FROM archivos
@@ -1642,28 +1772,92 @@ app.get('/archivos/:id', async (req, res) => {
 });
 
 app.post('/archivos', async (req, res) => {
-  const { nombre, contenido, tipo, tamano, autor_id, departamento_id } = req.body;
+  const { nombre, contenido, tipo, tamano, departamento_id } = req.body;
+  const autorId = Number(req.usuario && req.usuario.id);
+  const departamentoDestinoId = Number(departamento_id);
+  if (typeof nombre !== 'string' || !nombre.trim() ||
+      typeof contenido !== 'string' || !Number.isSafeInteger(departamentoDestinoId) || departamentoDestinoId <= 0 ||
+      !Number.isSafeInteger(autorId) || autorId <= 0) {
+    return res.status(400).json({ success: false, error: 'Los datos del archivo no son válidos' });
+  }
   try {
+    const autor = await pool.query(
+      'SELECT departamento_id FROM usuarios WHERE id = $1',
+      [autorId]
+    );
+    if (!autor.rowCount) return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+    const destino = await pool.query(
+      'SELECT id FROM departamentos WHERE id = $1 AND eliminado = FALSE',
+      [departamentoDestinoId]
+    );
+    if (!destino.rowCount) return res.status(404).json({ success: false, error: 'El departamento destino no existe' });
     const resultado = await pool.query(
-      `INSERT INTO archivos (nombre, ruta, tipo, tamano, autor_id, departamento_id, anuncio_id, fecha, eliminado)
-       VALUES ($1, $2, $3, $4, $5, $6, NULL, NOW(), FALSE)
-       RETURNING id, nombre, tipo, tamano, autor_id, departamento_id, fecha`,
-      [nombre.trim(), contenido, tipo, Number(tamano), Number(autor_id), Number(departamento_id)]
+      `INSERT INTO archivos (
+         nombre, ruta, tipo, tamano, autor_id, departamento_id, departamento_emisor_id,
+         anuncio_id, fecha, eliminado
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NOW(), FALSE)
+       RETURNING id, nombre, tipo, tamano, autor_id, departamento_id, departamento_emisor_id, fecha`,
+      [nombre.trim(), contenido, tipo || 'application/octet-stream', Number(tamano) || 0,
+        autorId, departamentoDestinoId, autor.rows[0].departamento_id]
     );
     res.status(201).json({ success: true, archivo: resultado.rows[0] });
   } catch (error) {
+    console.error('Error al guardar archivo:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo guardar el archivo' });
+  }
+});
+
+app.put('/archivos/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  const { nombre, departamento_id: departamentoDestinoId } = req.body || {};
+  if (!Number.isSafeInteger(id) || id <= 0 || typeof nombre !== 'string' || !nombre.trim()) {
+    return res.status(400).json({ success: false, error: 'Los datos del archivo no son válidos' });
+  }
+  try {
+    const acceso = await obtenerAccesoContenido(pool, 'archivo', id, usuarioId);
+    if (!acceso.existe) return res.status(404).json({ success: false, error: 'El archivo no existe' });
+    if (!acceso.permitido || acceso.eliminado) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para editar este archivo' });
+    }
+    const destinoId = Number(departamentoDestinoId);
+    if (!Number.isSafeInteger(destinoId) || destinoId <= 0) {
+      return res.status(400).json({ success: false, error: 'El departamento destino no es válido' });
+    }
+    const departamentoExiste = await pool.query(
+      'SELECT 1 FROM departamentos WHERE id = $1 AND eliminado = FALSE',
+      [destinoId]
+    );
+    if (!departamentoExiste.rowCount) return res.status(404).json({ success: false, error: 'El departamento destino no existe' });
+    const resultado = await pool.query(
+      `UPDATE archivos SET nombre = $1, departamento_id = $2
+       WHERE id = $3 AND COALESCE(eliminado, FALSE) = FALSE
+       RETURNING id, nombre, tipo, tamano, autor_id, departamento_id, departamento_emisor_id, fecha`,
+      [nombre.trim(), destinoId, id]
+    );
+    if (!resultado.rowCount) return res.status(404).json({ success: false, error: 'El archivo no existe' });
+    res.json({ success: true, archivo: resultado.rows[0] });
+  } catch (error) {
+    console.error('Error al actualizar archivo:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo actualizar el archivo' });
   }
 });
 
 app.delete('/archivos/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const usuarioId = req.usuario.id;
+    const usuarioId = Number(req.usuario.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ success: false, error: 'ID de archivo inválido' });
+    const acceso = await obtenerAccesoContenido(pool, 'archivo', id, usuarioId);
+    if (!acceso.existe) return res.status(404).json({ success: false, error: 'El archivo no existe' });
+    if (!acceso.permitido || acceso.eliminado) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar este archivo' });
+    }
     const resultado = await pool.query(
       `UPDATE archivos
-       SET eliminado = TRUE, fecha_eliminacion = NOW()
-       WHERE id = $1 AND autor_id = $2
+       SET eliminado = TRUE, fecha_eliminacion = NOW(), eliminado_por = $2
+       WHERE id = $1 AND COALESCE(eliminado, FALSE) = FALSE
        RETURNING id`,
       [id, usuarioId]
     );
@@ -1678,12 +1872,15 @@ app.put('/archivos/:id/restaurar', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const usuarioId = req.usuario.id;
+    const acceso = await obtenerAccesoContenido(pool, 'archivo', id, usuarioId);
+    if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
+    if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para restaurar este archivo' });
     const resultado = await pool.query(
       `UPDATE archivos
-       SET eliminado = FALSE, fecha_eliminacion = NULL
-       WHERE id = $1 AND autor_id = $2 AND eliminado = TRUE
+       SET eliminado = FALSE, fecha_eliminacion = NULL, eliminado_por = NULL
+       WHERE id = $1 AND eliminado = TRUE
        RETURNING id`,
-      [id, usuarioId]
+      [id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Archivo no encontrado' });
     res.json({ success: true, mensaje: 'Documento restaurado correctamente' });
@@ -1696,9 +1893,12 @@ app.delete('/archivos/:id/permanente', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const usuarioId = req.usuario.id;
+    const acceso = await obtenerAccesoContenido(pool, 'archivo', id, usuarioId);
+    if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Archivo no encontrado en la papelera' });
+    if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar este archivo permanentemente' });
     const resultado = await pool.query(
-      'DELETE FROM archivos WHERE id = $1 AND eliminado = TRUE AND autor_id = $2 RETURNING id',
-      [id, usuarioId]
+      'DELETE FROM archivos WHERE id = $1 AND eliminado = TRUE RETURNING id',
+      [id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'Archivo no encontrado en la papelera' });
     res.json({ success: true, mensaje: 'Archivo eliminado definitivamente' });
@@ -1710,13 +1910,33 @@ app.delete('/archivos/:id/permanente', async (req, res) => {
 // --- TAREAS ---
 app.get('/tareas', async (req, res) => {
   try {
+    const usuarioId = Number(req.usuario.id);
     const resultado = await pool.query(
-      `SELECT t.id, t.titulo, t.descripcion, t.asignado, t.fecha, t.horario, t.departamento, t.estado, t.autor_id, t.fecha_creacion,
-              u.nombre AS autor_nombre, d.nombre AS autor_departamento
+      `SELECT t.id, t.titulo, t.descripcion, t.asignado, t.fecha, t.horario, t.departamento,
+              t.departamentos_destino_ids, t.departamento_emisor_id, t.estado, t.autor_id, t.fecha_creacion,
+              u.nombre AS autor_nombre, d.nombre AS autor_departamento,
+              EXISTS (
+                SELECT 1 FROM elementos_vistos v
+                WHERE v.tipo = 'tarea' AND v.elemento_id = t.id AND v.usuario_id = $1
+              ) AS visto
        FROM tareas t
        LEFT JOIN usuarios u ON u.id = t.autor_id
-       LEFT JOIN departamentos d ON d.id = u.departamento_id
-       ORDER BY t.fecha ASC, t.id DESC`
+       LEFT JOIN departamentos d ON d.id = t.departamento_emisor_id
+       WHERE COALESCE(t.eliminado, FALSE) = FALSE
+         AND (
+           t.autor_id = $1
+           OR EXISTS (
+             SELECT 1 FROM usuarios lector
+             WHERE lector.id = $1
+               AND (
+                 lector.departamento_id = t.departamento_emisor_id
+                 OR lector.departamento_id = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
+                 OR LOWER(BTRIM(COALESCE(lector.rol, ''))) IN ('administrador', 'administrador general')
+               )
+           )
+         )
+       ORDER BY t.fecha DESC, t.id DESC`,
+      [usuarioId]
     );
     res.json(resultado.rows);
   } catch (error) {
@@ -1724,47 +1944,189 @@ app.get('/tareas', async (req, res) => {
   }
 });
 
-app.post('/tareas', async (req, res) => {
-  const { titulo, descripcion, asignado, fecha, horario, departamento, estado, autor_id } = req.body;
-  if (!titulo || !fecha) return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
+async function resolverDestinosTarea(db, departamentos, departamento) {
+  const nombres = Array.isArray(departamentos)
+    ? departamentos
+    : String(departamento || 'General').split(',');
+  const destinos = [...new Set(nombres.map(nombre => String(nombre).trim()).filter(Boolean))];
+  if (!destinos.length || destinos.some(nombre => nombre.toLocaleLowerCase('es-MX') === 'general')) {
+    if (destinos.length > 1) throw new Error('Selecciona General o departamentos específicos, no ambos');
+    return { ids: [], nombres: ['General'] };
+  }
+  const encontrados = await db.query(
+    `SELECT id, nombre FROM departamentos
+     WHERE eliminado = FALSE AND LOWER(BTRIM(nombre)) = ANY($1::TEXT[])`,
+    [destinos.map(nombre => nombre.toLocaleLowerCase('es-MX'))]
+  );
+  if (encontrados.rowCount !== destinos.length) {
+    throw new Error('Uno o más departamentos destino no existen');
+  }
+  return {
+    ids: encontrados.rows.map(fila => Number(fila.id)),
+    nombres: encontrados.rows.map(fila => fila.nombre)
+  };
+}
 
-  let autorId = autor_id ? Number(autor_id) : null;
+app.post('/tareas', async (req, res) => {
+  const { titulo, descripcion, asignado, fecha, horario, departamentos, departamento, estado } = req.body;
+  const autorId = Number(req.usuario && req.usuario.id);
+  if (typeof titulo !== 'string' || !titulo.trim() || !fecha) {
+    return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
+  }
   try {
+    const usuario = await pool.query('SELECT departamento_id FROM usuarios WHERE id = $1', [autorId]);
+    if (!usuario.rowCount) return res.status(401).json({ success: false, error: 'El usuario de la sesión ya no existe' });
+    const destinos = await resolverDestinosTarea(pool, departamentos, departamento);
     const resultado = await pool.query(
-      `INSERT INTO tareas (titulo, descripcion, asignado, fecha, horario, departamento, estado, autor_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [titulo.trim(), descripcion ? descripcion.trim() : null, asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar', departamento || 'General', estado || 'Pendiente', autorId]
+      `INSERT INTO tareas (
+         titulo, descripcion, asignado, fecha, horario, departamento, departamentos_destino_ids,
+         departamento_emisor_id, estado, autor_id, eliminado
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE) RETURNING *`,
+      [titulo.trim(), descripcion ? descripcion.trim() : null,
+        asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar',
+        destinos.nombres.join(', '), destinos.ids, usuario.rows[0].departamento_id,
+        estado || 'Pendiente', autorId]
     );
     res.status(201).json({ success: true, tarea: resultado.rows[0] });
   } catch (error) {
+    if (error.message && /departamento(s)? destino|general o departamentos/i.test(error.message)) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+    console.error('Error al crear tarea:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo guardar la tarea' });
   }
 });
 
 app.put('/tareas/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const { titulo, descripcion, asignado, fecha, horario, departamento, estado } = req.body;
-  if (!titulo || !fecha) return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  const { titulo, descripcion, asignado, fecha, horario, departamentos, departamento, estado } = req.body || {};
+  if (!Number.isSafeInteger(id) || id <= 0 ||
+      typeof titulo !== 'string' || !titulo.trim() || !fecha) {
+    return res.status(400).json({ success: false, error: 'Los datos de la tarea no son válidos' });
+  }
 
   try {
+    const acceso = await obtenerAccesoContenido(pool, 'tarea', id, usuarioId);
+    if (!acceso.existe) return res.status(404).json({ success: false, error: 'La tarea no existe' });
+    if (!acceso.permitido || acceso.eliminado) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para editar esta tarea' });
+    }
+    const destinos = await resolverDestinosTarea(pool, departamentos, departamento);
     const resultado = await pool.query(
-      `UPDATE tareas SET titulo = $1, descripcion = $2, asignado = $3, fecha = $4, horario = $5, departamento = $6, estado = $7 WHERE id = $8 RETURNING *`,
-      [titulo.trim(), descripcion ? descripcion.trim() : null, asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar', departamento || 'General', estado || 'Pendiente', id]
+      `UPDATE tareas
+       SET titulo = $1, descripcion = $2, asignado = $3, fecha = $4, horario = $5,
+           departamento = $6, departamentos_destino_ids = $7, estado = $8
+       WHERE id = $9 AND COALESCE(eliminado, FALSE) = FALSE
+       RETURNING *`,
+      [titulo.trim(), descripcion ? descripcion.trim() : null,
+        asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar',
+        destinos.nombres.join(', '), destinos.ids, estado || 'Pendiente', id]
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'La tarea no existe' });
     res.json({ success: true, tarea: resultado.rows[0] });
   } catch (error) {
+    if (error.message && /departamento(s)? destino|general o departamentos/i.test(error.message)) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+    console.error('Error al actualizar tarea:', error.message);
     res.status(500).json({ success: false, error: 'No se pudo actualizar la tarea' });
   }
 });
 
 app.delete('/tareas/:id', async (req, res) => {
   try {
-    const resultado = await pool.query('DELETE FROM tareas WHERE id = $1 RETURNING id', [Number(req.params.id)]);
+    const id = Number(req.params.id);
+    const usuarioId = Number(req.usuario.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ success: false, error: 'ID de tarea inválido' });
+    const acceso = await obtenerAccesoContenido(pool, 'tarea', id, usuarioId);
+    if (!acceso.existe) return res.status(404).json({ success: false, error: 'La tarea no existe' });
+    if (!acceso.permitido || acceso.eliminado) {
+      return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar esta tarea' });
+    }
+    const resultado = await pool.query(
+      `UPDATE tareas SET eliminado = TRUE, fecha_eliminacion = NOW(), eliminado_por = $2
+       WHERE id = $1 AND COALESCE(eliminado, FALSE) = FALSE RETURNING id`,
+      [id, usuarioId]
+    );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'La tarea no existe' });
-    res.json({ success: true });
+    res.json({ success: true, mensaje: 'Tarea movida a la papelera' });
   } catch (error) {
     res.status(500).json({ success: false, error: 'No se pudo eliminar la tarea' });
+  }
+});
+
+app.get('/tareas/papelera', async (req, res) => {
+  try {
+    const resultado = await pool.query(
+      `SELECT t.id, t.titulo, t.descripcion, t.asignado, t.fecha, t.horario, t.departamento,
+              t.departamentos_destino_ids, t.departamento_emisor_id, t.autor_id,
+              t.fecha_eliminacion, t.eliminado_por, u.nombre AS autor_nombre,
+              d.nombre AS departamento_emisor_nombre
+       FROM tareas t
+       LEFT JOIN usuarios u ON u.id = t.autor_id
+       LEFT JOIN departamentos d ON d.id = t.departamento_emisor_id
+       WHERE t.eliminado = TRUE
+         AND (
+           t.autor_id = $1
+           OR EXISTS (
+             SELECT 1 FROM usuarios gestor
+             WHERE gestor.id = $1
+               AND (
+                 LOWER(BTRIM(COALESCE(gestor.rol, ''))) IN ('administrador', 'administrador general')
+                 OR (
+                   gestor.es_jefe IS TRUE
+                   AND (
+                     gestor.departamento_id = t.departamento_emisor_id
+                     OR gestor.departamento_id = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
+                   )
+                 )
+               )
+           )
+         )
+       ORDER BY t.fecha_eliminacion DESC NULLS LAST, t.id DESC`,
+      [Number(req.usuario.id)]
+    );
+    res.json({ success: true, tareas: resultado.rows });
+  } catch (error) {
+    console.error('Error al cargar la papelera de tareas:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo cargar la papelera de tareas' });
+  }
+});
+
+app.put('/tareas/:id/restaurar', async (req, res) => {
+  const id = Number(req.params.id);
+  const usuarioId = Number(req.usuario.id);
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ success: false, error: 'ID de tarea inválido' });
+  try {
+    const acceso = await obtenerAccesoContenido(pool, 'tarea', id, usuarioId);
+    if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Tarea no encontrada' });
+    if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para restaurar esta tarea' });
+    await pool.query(
+      'UPDATE tareas SET eliminado = FALSE, fecha_eliminacion = NULL, eliminado_por = NULL WHERE id = $1',
+      [id]
+    );
+    res.json({ success: true, mensaje: 'Tarea restaurada correctamente' });
+  } catch (error) {
+    console.error('Error al restaurar tarea:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo restaurar la tarea' });
+  }
+});
+
+app.delete('/tareas/:id/permanente', async (req, res) => {
+  const id = Number(req.params.id);
+  const usuarioId = Number(req.usuario.id);
+  if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ success: false, error: 'ID de tarea inválido' });
+  try {
+    const acceso = await obtenerAccesoContenido(pool, 'tarea', id, usuarioId);
+    if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Tarea no encontrada en la papelera' });
+    if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para eliminar esta tarea permanentemente' });
+    await pool.query('DELETE FROM tareas WHERE id = $1 AND eliminado = TRUE', [id]);
+    res.json({ success: true, mensaje: 'Tarea eliminada permanentemente' });
+  } catch (error) {
+    console.error('Error al eliminar tarea permanentemente:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo eliminar la tarea permanentemente' });
   }
 });
 
@@ -2207,7 +2569,7 @@ app.get('/notificaciones', async (req, res) => {
   try {
     const usuarioId = req.usuario.id;
     const usuarioResult = await pool.query(
-      `SELECT u.departamento_id, NULLIF(BTRIM(d.nombre), '') AS departamento_nombre
+      `SELECT u.departamento_id, u.rol, NULLIF(BTRIM(d.nombre), '') AS departamento_nombre
        FROM usuarios u
        LEFT JOIN departamentos d ON d.id = u.departamento_id AND d.eliminado = FALSE
        WHERE u.id = $1`,
@@ -2216,40 +2578,100 @@ app.get('/notificaciones', async (req, res) => {
     if (usuarioResult.rowCount === 0) return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
 
     const departamentoId = usuarioResult.rows[0].departamento_id;
-    const departamentoNombre = usuarioResult.rows[0].departamento_nombre || null;
-    const correoUsuario = typeof req.usuario.correo === 'string' ? req.usuario.correo.trim() : '';
+    const [anuncios, tareas, archivos] = await Promise.all([
+      pool.query(
+        `SELECT n.id, a.id AS elemento_id, a.fecha, 'anuncio' AS tipo, a.titulo,
+                a.contenido, d.nombre AS departamento_nombre,
+                (COALESCE(v.usuario_id IS NOT NULL, FALSE) OR COALESCE(n.leida, FALSE)) AS leida,
+                (v.usuario_id IS NOT NULL OR COALESCE(n.leida, FALSE)) AS visto
+         FROM anuncios a
+         LEFT JOIN LATERAL (
+           SELECT id, leida FROM notificaciones
+           WHERE anuncio_id = a.id AND usuario_id = $1
+           ORDER BY id DESC LIMIT 1
+         ) n ON TRUE
+         LEFT JOIN elementos_vistos v
+           ON v.tipo = 'anuncio' AND v.elemento_id = a.id AND v.usuario_id = $1
+         LEFT JOIN departamentos d ON d.id = a.departamento_id
+         WHERE COALESCE(a.eliminado, FALSE) = FALSE
+           AND (
+             a.autor_id = $1
+             OR $2::INTEGER IN (a.departamento_id, a.departamento_emisor_id)
+             OR $3::BOOLEAN
+           )`,
+        [usuarioId, departamentoId, esRolAdministrador(usuarioResult.rows[0].rol)]
+      ),
+      pool.query(
+        `SELECT NULL::INTEGER AS id, t.id AS elemento_id, t.fecha_creacion AS fecha,
+                'tarea' AS tipo, t.titulo, t.descripcion AS contenido,
+                t.departamento AS departamento_nombre,
+                (v.usuario_id IS NOT NULL) AS leida, (v.usuario_id IS NOT NULL) AS visto
+         FROM tareas t
+         LEFT JOIN elementos_vistos v
+           ON v.tipo = 'tarea' AND v.elemento_id = t.id AND v.usuario_id = $1
+         WHERE COALESCE(t.eliminado, FALSE) = FALSE
+           AND (
+             t.autor_id = $1
+             OR $2::INTEGER = t.departamento_emisor_id
+             OR $2::INTEGER = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
+             OR $3::BOOLEAN
+           )`,
+        [usuarioId, departamentoId, esRolAdministrador(usuarioResult.rows[0].rol)]
+      ),
+      pool.query(
+        `SELECT NULL::INTEGER AS id, f.id AS elemento_id, f.fecha,
+                'archivo' AS tipo, f.nombre AS titulo, f.tipo AS contenido,
+                d.nombre AS departamento_nombre,
+                (v.usuario_id IS NOT NULL) AS leida, (v.usuario_id IS NOT NULL) AS visto
+         FROM archivos f
+         LEFT JOIN elementos_vistos v
+           ON v.tipo = 'archivo' AND v.elemento_id = f.id AND v.usuario_id = $1
+         LEFT JOIN departamentos d ON d.id = f.departamento_id
+         WHERE COALESCE(f.eliminado, FALSE) = FALSE
+           AND (
+             f.autor_id = $1
+             OR $2::INTEGER IN (f.departamento_id, f.departamento_emisor_id)
+             OR $3::BOOLEAN
+           )`,
+        [usuarioId, departamentoId, esRolAdministrador(usuarioResult.rows[0].rol)]
+      )
+    ]);
 
-    const anunciosResult = await pool.query(
-      `SELECT n.id, n.fecha, n.leida, 'anuncio' AS tipo, a.titulo, a.contenido, a.departamento_id
-       FROM notificaciones n
-       JOIN anuncios a ON a.id = n.anuncio_id
-       WHERE n.usuario_id = $1
-         AND COALESCE(a.eliminado, FALSE) = FALSE
-       ORDER BY n.fecha DESC`,
-      [usuarioId]
-    );
-
-    const tareasResult = await pool.query(
-      `SELECT t.id, t.fecha_creacion AS fecha, FALSE AS leida, 'tarea' AS tipo, t.titulo, t.descripcion AS contenido, t.departamento AS departamento_nombre
-       FROM tareas t
-       WHERE t.estado = 'Pendiente'
-         AND (
-           ($1::text IS NOT NULL AND NULLIF(BTRIM(t.departamento), '') = $1::text)
-           OR ($2::text <> '' AND t.asignado ILIKE '%' || $2::text || '%')
-         )
-       ORDER BY t.fecha_creacion DESC`,
-      [departamentoNombre, correoUsuario]
-    );
-
-    const notificaciones = [
-      ...anunciosResult.rows.map(n => ({ ...n, leida: Boolean(n.leida) })),
-      ...tareasResult.rows
-    ].sort((a, b) => new Date(b.fecha || b.fecha_creacion) - new Date(a.fecha || a.fecha_creacion));
+    const notificaciones = [...anuncios.rows, ...tareas.rows, ...archivos.rows]
+      .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
 
     res.json({ success: true, notificaciones });
   } catch (error) {
     console.error('Error al cargar notificaciones:', error.message);
     res.status(500).json({ success: false, error: 'No se pudieron cargar las notificaciones' });
+  }
+});
+
+app.post('/elementos/:tipo/:id/visto', async (req, res) => {
+  const { tipo } = req.params;
+  const id = Number(req.params.id);
+  const usuarioId = Number(req.usuario && req.usuario.id);
+  if (!DEFINICIONES_CONTENIDO[tipo] || !Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, error: 'El elemento no es válido' });
+  }
+  try {
+    const acceso = await obtenerAccesoContenido(pool, tipo, id, usuarioId);
+    if (!acceso.existe || acceso.eliminado) return res.status(404).json({ success: false, error: 'El elemento no existe o fue eliminado' });
+    if (!acceso.visible) return res.status(403).json({ success: false, error: 'No tienes acceso a este elemento' });
+    await pool.query(
+      `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (tipo, elemento_id, usuario_id)
+       DO UPDATE SET visto_en = NOW()`,
+      [tipo, id, usuarioId]
+    );
+    if (tipo === 'anuncio') {
+      await pool.query('UPDATE notificaciones SET leida = TRUE WHERE anuncio_id = $1 AND usuario_id = $2', [id, usuarioId]);
+    }
+    res.json({ success: true, visto: true });
+  } catch (error) {
+    console.error('Error al registrar visto:', error.message);
+    res.status(500).json({ success: false, error: 'No se pudo registrar como visto' });
   }
 });
 

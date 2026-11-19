@@ -5,6 +5,7 @@
   let seccionActiva = 'archivos';
   let archivosEliminados = [];
   let anunciosEliminados = [];
+  let tareasEliminadas = [];
 
   function mostrarToast(mensaje, esError = false) {
     window.OCID.mostrarToast(mensaje, esError);
@@ -25,14 +26,12 @@
     seccionActiva = seccion;
     const btnArchivos = document.getElementById('btn_pestana_archivos');
     const btnAnuncios = document.getElementById('btn_pestana_anuncios');
-    if (btnArchivos) {
-      btnArchivos.classList.toggle('activa', seccion === 'archivos');
-      btnArchivos.setAttribute('aria-pressed', String(seccion === 'archivos'));
-    }
-    if (btnAnuncios) {
-      btnAnuncios.classList.toggle('activa', seccion === 'anuncios');
-      btnAnuncios.setAttribute('aria-pressed', String(seccion === 'anuncios'));
-    }
+    const btnTareas = document.getElementById('btn_pestana_tareas');
+    [[btnArchivos, 'archivos'], [btnAnuncios, 'anuncios'], [btnTareas, 'tareas']].forEach(([boton, tipo]) => {
+      if (!boton) return;
+      boton.classList.toggle('activa', seccion === tipo);
+      boton.setAttribute('aria-pressed', String(seccion === tipo));
+    });
     renderizarContenidoActual();
   };
 
@@ -46,12 +45,18 @@
         (a.departamento_nombre || '').toLowerCase().includes(termino)
       );
       renderizarTablaArchivos(filtrados);
-    } else {
+    } else if (seccionActiva === 'anuncios') {
       const filtrados = anunciosEliminados.filter(a =>
         (a.titulo || '').toLowerCase().includes(termino) ||
         (a.contenido || '').toLowerCase().includes(termino)
       );
       renderizarTablaAnuncios(filtrados);
+    } else {
+      const filtrados = tareasEliminadas.filter(t =>
+        (t.titulo || '').toLowerCase().includes(termino) ||
+        (t.departamento || '').toLowerCase().includes(termino)
+      );
+      renderizarTablaTareas(filtrados);
     }
   }
 
@@ -153,6 +158,37 @@
     }).join('');
   }
 
+  function renderizarTablaTareas(lista) {
+    const thead = document.getElementById('encabezado_tabla_papelera');
+    const tbody = document.getElementById('cuerpo_tabla_papelera');
+    const contador = document.getElementById('contador_elementos_papelera');
+    if (!tbody || !thead) return;
+    if (contador) contador.textContent = `${lista.length} ${lista.length === 1 ? 'elemento' : 'elementos'}`;
+    thead.innerHTML = `<tr>
+      <th>Tarea</th>
+      <th>Departamento(s)</th>
+      <th>Eliminada el</th>
+      <th class="columna_centrada">Acciones</th>
+    </tr>`;
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No hay tareas en la papelera.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = lista.map(tarea => `
+      <tr>
+        <td><div class="celda_documento"><div class="icono_archivo_papelera"><i class="fa-solid fa-list-check"></i></div><span>${escaparHTML(tarea.titulo)}</span></div></td>
+        <td>${escaparHTML(tarea.departamento || 'General')}</td>
+        <td>${tarea.fecha_eliminacion ? new Date(tarea.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+        <td class="columna_centrada">
+          <div class="grupo_acciones_papelera">
+            <button type="button" class="boton_restaurar" onclick="restaurarTarea(${tarea.id})"><i class="fa-solid fa-arrow-rotate-left"></i><span>Restaurar</span></button>
+            <button type="button" class="boton_eliminar_definitivo" onclick="eliminarDefinitivoTarea(${tarea.id})"><i class="fa-regular fa-trash-can"></i><span>Eliminar</span></button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
   async function cargarPapeleraGeneral() {
     const tbody = document.getElementById('cuerpo_tabla_papelera');
     const token = window.OCID.obtenerToken();
@@ -169,17 +205,20 @@
     }
 
     try {
-      const [dataArchivos, dataAnuncios] = await Promise.all([
+      const [dataArchivos, dataAnuncios, dataTareas] = await Promise.all([
         window.OCID.apiFetch('/archivos/papelera'),
-        window.OCID.apiFetch('/anuncios/papelera')
+        window.OCID.apiFetch('/anuncios/papelera'),
+        window.OCID.apiFetch('/tareas/papelera')
       ]);
 
       if (!dataArchivos.success || !Array.isArray(dataArchivos.archivos) ||
-          !dataAnuncios.success || !Array.isArray(dataAnuncios.anuncios)) {
-        throw new Error(dataArchivos.error || dataAnuncios.error || 'La respuesta de la papelera no es válida.');
+          !dataAnuncios.success || !Array.isArray(dataAnuncios.anuncios) ||
+          !dataTareas.success || !Array.isArray(dataTareas.tareas)) {
+        throw new Error(dataArchivos.error || dataAnuncios.error || dataTareas.error || 'La respuesta de la papelera no es válida.');
       }
       archivosEliminados = dataArchivos.archivos;
       anunciosEliminados = dataAnuncios.anuncios;
+      tareasEliminadas = dataTareas.tareas;
 
       renderizarContenidoActual();
     } catch (error) {
@@ -239,6 +278,33 @@
     } catch (error) {
       console.error('Error al eliminar anuncio:', error);
       mostrarToast(error.message || 'No se pudo eliminar el anuncio.', true);
+    }
+  };
+
+  window.restaurarTarea = async function (id) {
+    try {
+      const data = await window.OCID.apiFetch(`/tareas/${id}/restaurar`, { method: 'PUT' });
+      if (!data.success) throw new Error(data.error || 'No se pudo restaurar la tarea.');
+      tareasEliminadas = tareasEliminadas.filter(item => Number(item.id) !== Number(id));
+      renderizarContenidoActual();
+      mostrarToast('Tarea restaurada con éxito.');
+    } catch (error) {
+      console.error('Error al restaurar tarea:', error);
+      mostrarToast(error.message || 'No se pudo restaurar la tarea.', true);
+    }
+  };
+
+  window.eliminarDefinitivoTarea = async function (id) {
+    if (!window.confirm('¿Eliminar esta tarea de forma permanente?')) return;
+    try {
+      const data = await window.OCID.apiFetch(`/tareas/${id}/permanente`, { method: 'DELETE' });
+      if (!data.success) throw new Error(data.error || 'No se pudo eliminar permanentemente la tarea.');
+      tareasEliminadas = tareasEliminadas.filter(item => Number(item.id) !== Number(id));
+      renderizarContenidoActual();
+      mostrarToast('Tarea eliminada permanentemente.');
+    } catch (error) {
+      console.error('Error al eliminar tarea permanentemente:', error);
+      mostrarToast(error.message || 'No se pudo eliminar permanentemente la tarea.', true);
     }
   };
 

@@ -1104,27 +1104,27 @@ textarea {
 }
 
 .boton_azul_morado {
-    border-color: #dce8ff;
-    background: #eff5ff;
-    color: #1d4ed8;
+    border-color: #1d4ed8;
+    background: #2563eb;
+    color: #ffffff;
 }
 
 .boton_azul_cian {
-    border-color: #d8f0f3;
-    background: #effbfc;
-    color: #0e7490;
+    border-color: #047857;
+    background: #059669;
+    color: #ffffff;
 }
 
 .boton_verde_esmeralda {
-    border-color: #d8f1e5;
-    background: #effaf4;
-    color: #047857;
+    border-color: #6d28d9;
+    background: #7c3aed;
+    color: #ffffff;
 }
 
 .boton_oscuro {
-    border-color: #e2e8f0;
-    background: #f8fafc;
-    color: #334155;
+    border-color: #334155;
+    background: #334155;
+    color: #ffffff;
 }
 
 .boton_accion_rapida:focus-visible,

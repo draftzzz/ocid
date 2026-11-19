@@ -316,6 +316,8 @@
 
   function iniciarNavegacionCompartida() {
     actualizarCabeceraUsuario();
+    document.querySelectorAll('.perfil_usuario_barra > .icono_dropdown, .perfil_usuario_barra > .fa-chevron-down')
+      .forEach(icono => icono.remove());
     configurarCierreSesion();
     configurarMenuMovil();
     configurarBloqueoScrollModal();
@@ -458,7 +460,8 @@
         });
         const enlace = crearElemento('a', {
           className: 'panel_notificacion_contenido',
-          href: item.tipo === 'tarea' ? 'tareas.html' : 'anuncios.html'
+          href: item.tipo === 'tarea' ? 'tareas.html'
+            : item.tipo === 'archivo' ? 'archivos.html' : 'anuncios.html'
         });
         enlace.appendChild(crearElemento('strong', {
           textContent: item.titulo || (item.tipo === 'tarea' ? 'Tarea pendiente' : 'Anuncio')
@@ -468,24 +471,24 @@
         }));
         tarjeta.appendChild(enlace);
 
-        if (item.tipo === 'anuncio' && !item.leida && Number.isSafeInteger(Number(item.id))) {
-          const marcarLeida = crearElemento('button', {
+        if (!item.visto && Number.isSafeInteger(Number(item.elemento_id))) {
+          const marcarVisto = crearElemento('button', {
             className: 'panel_notificacion_marcar_leida',
             type: 'button',
-            textContent: 'Marcar leída'
+            textContent: 'Marcar como visto'
           });
-          marcarLeida.addEventListener('click', async () => {
-            marcarLeida.disabled = true;
+          marcarVisto.addEventListener('click', async () => {
+            marcarVisto.disabled = true;
             try {
-              await apiFetch(`/notificaciones/${Number(item.id)}/leer`, { method: 'PUT' });
+              await marcarElementoVisto(item.tipo, Number(item.elemento_id));
               await cargarPanelNotificaciones(panel, false);
               actualizarContadorNotificaciones();
             } catch (error) {
-              mostrarToast(error.message || 'No se pudo marcar como leída.', 'error');
-              marcarLeida.disabled = false;
+              mostrarToast(error.message || 'No se pudo marcar como visto.', 'error');
+              marcarVisto.disabled = false;
             }
           });
-          tarjeta.appendChild(marcarLeida);
+          tarjeta.appendChild(marcarVisto);
         }
         lista.appendChild(tarjeta);
       });
@@ -516,10 +519,33 @@
         const lista = Array.isArray(datos)
           ? datos
           : (Array.isArray(datos.notificaciones) ? datos.notificaciones : []);
-        const noLeidas = Array.isArray(lista) ? lista.filter((n) => !n.leida).length : 0;
+        const noLeidas = Array.isArray(lista) ? lista.filter(n => !n.leida && !n.visto).length : 0;
+        const porTipo = lista.reduce((conteos, item) => {
+          if (!item.leida && !item.visto) conteos[item.tipo] = (conteos[item.tipo] || 0) + 1;
+          return conteos;
+        }, {});
         document.querySelectorAll('#indicador_notificaciones, .badge_campana').forEach((indicador) => {
           indicador.textContent = String(noLeidas);
           indicador.style.display = noLeidas === 0 ? 'none' : '';
+        });
+        document.querySelectorAll('.enlace_navegacion[href]').forEach(enlace => {
+          const ruta = enlace.getAttribute('href').split('/').pop();
+          const tipo = ruta === 'notificaciones.html' ? 'notificacion'
+            : ruta === 'anuncios.html' ? 'anuncio'
+            : ruta === 'archivos.html' ? 'archivo'
+              : ruta === 'tareas.html' ? 'tarea' : null;
+          if (!tipo) return;
+          let insignia = enlace.querySelector('.insignia_notificacion');
+          if (!insignia) {
+            insignia = crearElemento('span', { className: 'insignia_notificacion' });
+            enlace.appendChild(insignia);
+          }
+          const cantidad = tipo === 'notificacion' ? noLeidas : (porTipo[tipo] || 0);
+          insignia.textContent = String(cantidad);
+          insignia.classList.toggle('visible', cantidad > 0);
+          const etiqueta = tipo === 'notificacion' ? 'notificaciones'
+            : tipo === 'anuncio' ? 'anuncios' : tipo === 'archivo' ? 'archivos' : 'tareas';
+          insignia.setAttribute('aria-label', `${cantidad} ${etiqueta} sin ver`);
         });
         document.querySelectorAll('.boton_campana').forEach((boton) => {
           boton.setAttribute('aria-label', `Notificaciones, ${noLeidas} sin leer`);
@@ -533,6 +559,17 @@
       });
     return solicitudNotificaciones;
   }
+
+  async function marcarElementoVisto(tipo, elementoId) {
+    if (!DEFINICIONES_TIPOS_VISTO.has(tipo) || !Number.isSafeInteger(elementoId) || elementoId <= 0) {
+      throw new Error('El elemento no es válido.');
+    }
+    const resultado = await apiFetch(`/elementos/${tipo}/${elementoId}/visto`, { method: 'POST' });
+    await actualizarContadorNotificaciones();
+    return resultado;
+  }
+
+  const DEFINICIONES_TIPOS_VISTO = new Set(['anuncio', 'archivo', 'tarea']);
 
   window.OCID = {
     API_BASE,
@@ -553,6 +590,7 @@
     configurarMenuMovil,
     configurarCampanaGlobal,
     actualizarContadorNotificaciones,
+    marcarElementoVisto,
   };
 
   window.mostrarMensaje = (mensaje, esError = false) => mostrarToast(mensaje, esError);

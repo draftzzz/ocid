@@ -21,11 +21,13 @@
     const leidas = total - sinLeer;
     const anuncios = notificaciones.filter(item => item.tipo === 'anuncio').length;
     const tareas = notificaciones.filter(item => item.tipo === 'tarea').length;
+    const archivos = notificaciones.filter(item => item.tipo === 'archivo').length;
     const valores = {
       conteo_total_notificaciones: total,
       conteo_sin_leer: sinLeer,
       conteo_leidas: leidas,
       conteo_anuncios: anuncios,
+      conteo_archivos: archivos,
       conteo_tareas_pendientes: tareas,
       badge_notificaciones: sinLeer,
       badge_lateral: sinLeer,
@@ -46,7 +48,7 @@
 
     const botonTodas = document.getElementById('boton_marcar_leidas');
     if (botonTodas) {
-      botonTodas.disabled = !notificaciones.some(item => item.tipo === 'anuncio' && !item.leida);
+      botonTodas.disabled = !notificaciones.some(item => !item.visto);
     }
   }
 
@@ -75,23 +77,29 @@
     if (vacio) vacio.style.display = 'none';
     contenedor.innerHTML = visibles.map(item => {
       const esAnuncio = item.tipo === 'anuncio';
+      const esArchivo = item.tipo === 'archivo';
       const id = Number(item.id);
-      const acciones = Number.isSafeInteger(id) && id > 0 && esAnuncio
-        ? `${!item.leida ? `<button class="boton_marcar_leido" type="button" onclick="marcarLeida(${id})" title="Marcar como leída" aria-label="Marcar como leída"><i class="fa-regular fa-circle-check"></i></button>` : ''}
-           <button class="boton_borrar" type="button" onclick="borrarNotificacion(${id})" title="Eliminar notificación" aria-label="Eliminar notificación"><i class="fa-regular fa-trash-can"></i></button>`
-        : '';
+      const elementoId = Number(item.elemento_id);
+      const acciones = [
+        !item.visto && Number.isSafeInteger(elementoId) && elementoId > 0
+          ? `<button class="boton_marcar_leido" type="button" onclick="marcarElementoComoVisto('${escaparHTML(item.tipo)}', ${elementoId})" title="Marcar como visto" aria-label="Marcar como visto"><i class="fa-regular fa-circle-check"></i></button>`
+          : '',
+        esAnuncio && Number.isSafeInteger(id) && id > 0
+          ? `<button class="boton_borrar" type="button" onclick="borrarNotificacion(${id})" title="Eliminar notificación" aria-label="Eliminar notificación"><i class="fa-regular fa-trash-can"></i></button>`
+          : ''
+      ].join('');
       const fecha = item.fecha ? new Date(item.fecha) : null;
       const fechaTexto = fecha && !Number.isNaN(fecha.getTime())
         ? fecha.toLocaleDateString('es-MX')
         : '';
 
       return `<article class="item_notificacion ${item.leida ? 'leido' : 'no_leido'}" data-id="${id}" data-tipo="${escaparHTML(item.tipo)}">
-        <div class="icono_item"><i class="${esAnuncio ? 'fa-solid fa-bullhorn' : 'fa-solid fa-list-check'}" aria-hidden="true"></i></div>
+        <div class="icono_item"><i class="${esAnuncio ? 'fa-solid fa-bullhorn' : esArchivo ? 'fa-regular fa-folder-open' : 'fa-solid fa-list-check'}" aria-hidden="true"></i></div>
         <div class="contenido_item">
           <div class="titulo_item">${escaparHTML(item.titulo || 'Notificación')}</div>
           <div class="descripcion_item">${escaparHTML(item.contenido || '')}</div>
           <div class="meta_item">
-            <span class="tipo_item">${esAnuncio ? 'Anuncio' : 'Tarea pendiente'}</span>
+            <span class="tipo_item">${esAnuncio ? 'Anuncio' : esArchivo ? 'Archivo' : 'Tarea'}</span>
             ${item.departamento_nombre ? `<span class="depto_item">${escaparHTML(item.departamento_nombre)}</span>` : ''}
             ${fechaTexto ? `<span class="fecha_item">${escaparHTML(fechaTexto)}</span>` : ''}
           </div>
@@ -157,17 +165,31 @@
 
   window.marcarLeida = async function (id) {
     try {
-      const resultado = await window.OCID.apiFetch(`/notificaciones/${Number(id)}/leer`, { method: 'PUT' });
-      if (!resultado.success) throw new Error(resultado.error || 'No se pudo marcar como leída.');
-      notificaciones = notificaciones.map(item =>
-        item.tipo === 'anuncio' && Number(item.id) === Number(id) ? { ...item, leida: true } : item
+      const item = notificaciones.find(notificacion =>
+        notificacion.tipo === 'anuncio' && Number(notificacion.id) === Number(id)
       );
-      actualizarContadores();
-      renderizarNotificaciones();
-      window.OCID.mostrarToast('Notificación marcada como leída.', 'exito');
+      if (!item || !item.elemento_id) throw new Error('No se encontró el anuncio relacionado.');
+      await window.marcarElementoComoVisto('anuncio', Number(item.elemento_id));
     } catch (error) {
       console.error('Error al marcar notificación como leída:', error);
       window.OCID.mostrarToast(error.message || 'No se pudo marcar como leída.', 'error');
+    }
+  };
+
+  window.marcarElementoComoVisto = async function (tipo, elementoId) {
+    try {
+      await window.OCID.marcarElementoVisto(tipo, Number(elementoId));
+      notificaciones = notificaciones.map(item =>
+        item.tipo === tipo && Number(item.elemento_id) === Number(elementoId)
+          ? { ...item, visto: true, leida: true }
+          : item
+      );
+      actualizarContadores();
+      renderizarNotificaciones();
+      window.OCID.mostrarToast('Elemento marcado como visto.', 'exito');
+    } catch (error) {
+      console.error('Error al marcar elemento como visto:', error);
+      window.OCID.mostrarToast(error.message || 'No se pudo marcar como visto.', 'error');
     }
   };
 
@@ -189,16 +211,16 @@
   };
 
   window.marcarTodasLeidas = async function () {
-    const pendientes = notificaciones.filter(item => item.tipo === 'anuncio' && !item.leida);
+    const pendientes = notificaciones.filter(item => !item.visto && Number(item.elemento_id) > 0);
     if (!pendientes.length) {
-      window.OCID.mostrarToast('No hay anuncios sin leer.', 'advertencia');
+      window.OCID.mostrarToast('No hay elementos sin leer.', 'advertencia');
       return;
     }
 
     const boton = document.getElementById('boton_marcar_leidas');
     if (boton) boton.disabled = true;
     const resultados = await Promise.allSettled(pendientes.map(item =>
-      window.OCID.apiFetch(`/notificaciones/${Number(item.id)}/leer`, { method: 'PUT' })
+      window.OCID.marcarElementoVisto(item.tipo, Number(item.elemento_id))
     ));
     const recargada = await cargarNotificaciones(false);
     const fallas = resultados.filter(resultado =>
@@ -212,7 +234,7 @@
     } else if (!recargada) {
       window.OCID.mostrarToast('Notificaciones marcadas, pero no se pudo actualizar la lista.', 'advertencia');
     } else {
-      window.OCID.mostrarToast('Todas las notificaciones de anuncios fueron marcadas como leídas.', 'exito');
+      window.OCID.mostrarToast('Todos los elementos fueron marcados como vistos.', 'exito');
     }
     if (boton) boton.disabled = false;
   };

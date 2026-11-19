@@ -120,6 +120,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.OCID.mostrarToast(mensaje, tipo);
   }
 
+  function puedeGestionarTarea(tarea, usuario = window.OCID.obtenerUsuarioSesion()) {
+    if (!usuario || !tarea) return false;
+    const esJefe = usuario.es_jefe === true || usuario.es_jefe === 't';
+    const esAdministrador = ['administrador', 'administrador general']
+      .includes(String(usuario.rol || '').trim().toLowerCase());
+    const departamentoUsuarioId = Number(usuario.departamento_id);
+    const perteneceAlDepartamento = Number(tarea.departamento_emisor_id) === departamentoUsuarioId ||
+      (Array.isArray(tarea.departamentos_destino_ids) &&
+        tarea.departamentos_destino_ids.some(id => Number(id) === departamentoUsuarioId));
+    return Number(usuario.id) === Number(tarea.autor_id) ||
+      esAdministrador ||
+      (esJefe && perteneceAlDepartamento);
+  }
+
   async function cargarCatalogosServidor() {
     try {
       const [departamentos, docentes, datosTareas] = await Promise.all([
@@ -427,9 +441,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  window.prepararEdicionTarea = function(id, esAutor, titulo, descripcion, deptoCreador, asignadoTexto, fechaISO, estadoValor) {
-    if (!esAutor) {
-      mostrarToastTareas('No tienes permisos para editar esta tarea porque no eres el autor.', 'error');
+  window.prepararEdicionTarea = function(id, puedeGestionar, titulo, descripcion, departamentoDestino, asignadoTexto, fechaISO, estadoValor) {
+    const tarea = tareas.find(item => Number(item.id) === Number(id));
+    if (!puedeGestionar || !puedeGestionarTarea(tarea)) {
+      mostrarToastTareas('No tienes permisos para editar esta tarea.', 'error');
       return;
     }
 
@@ -437,16 +452,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tituloModalTexto) tituloModalTexto.textContent = 'Editar Tarea';
     if (botonGuardarTexto) botonGuardarTexto.textContent = 'Guardar cambios';
 
-    document.getElementById('campo_modal_titulo').value = titulo || '';
-    document.getElementById('campo_modal_descripcion').value = descripcion !== '-' ? descripcion : '';
+    document.getElementById('campo_modal_titulo').value = decodeURIComponent(titulo || '');
+    const descripcionDecodificada = decodeURIComponent(descripcion || '');
+    document.getElementById('campo_modal_descripcion').value = descripcionDecodificada !== '-' ? descripcionDecodificada : '';
 
     departamentosSeleccionadosIDs.clear();
     const checkGen = document.getElementById('check_general_depto');
-    const esGen = deptoCreador.includes('General');
+    departamentoDestino = decodeURIComponent(departamentoDestino || '');
+    asignadoTexto = decodeURIComponent(asignadoTexto || '');
+    const esGen = departamentoDestino.includes('General');
     if (checkGen) checkGen.checked = esGen;
 
     if (!esGen) {
-      deptoCreador.split(',').forEach(d => {
+      departamentoDestino.split(',').forEach(d => {
         const trimmed = d.trim();
         if (trimmed) departamentosSeleccionadosIDs.add(trimmed);
       });
@@ -471,14 +489,13 @@ document.addEventListener('DOMContentLoaded', () => {
     abrir_modal();
   };
 
-  window.cambiarEstadoTareaDirecto = async function(id, esAutor, nuevoEstado) {
-    if (!esAutor) {
-      mostrarToastTareas('No tienes permisos para modificar esta tarea porque no eres el autor.', 'error');
-      return;
-    }
-
+  window.cambiarEstadoTareaDirecto = async function(id, puedeGestionar, nuevoEstado) {
     const tarea = tareas.find(t => Number(t.id) === Number(id));
     if (!tarea) return;
+    if (!puedeGestionar || !puedeGestionarTarea(tarea)) {
+      mostrarToastTareas('No tienes permisos para modificar esta tarea.', 'error');
+      return;
+    }
 
     try {
       const datos = await window.OCID.apiFetch(`/tareas/${id}`, {
@@ -495,9 +512,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.eliminarTareaDirecto = async function(id, esAutor) {
-    if (!esAutor) {
-      mostrarToastTareas('No tienes permisos para eliminar esta tarea porque no eres el autor.', 'error');
+  window.eliminarTareaDirecto = async function(id, puedeGestionar) {
+    const tarea = tareas.find(item => Number(item.id) === Number(id));
+    if (!tarea || !puedeGestionar || !puedeGestionarTarea(tarea)) {
+      mostrarToastTareas('No tienes permisos para eliminar esta tarea.', 'error');
       return;
     }
 
@@ -552,10 +570,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const asignadoTexto = tarea.asignado || tarea.asignado_a || tarea.personas || 'General / Sin asignar';
       
       const nombreCreador = tarea.autor_nombre || 'Sistema';
-      const deptoCreador = tarea.autor_departamento || tarea.departamento || 'General';
-      const textoCreadorConDepto = `${nombreCreador} (${deptoCreador})`;
+      const deptoDestino = tarea.departamento || 'General';
+      const textoCreadorConDepto = `${nombreCreador} (${tarea.autor_departamento || 'General'})`;
 
-      const esAutor = usuarioActual && (Number(usuarioActual.id) === Number(tarea.autor_id));
+      const puedeGestionar = puedeGestionarTarea(tarea, usuarioActual);
       const esLarga = descripcionTexto.length > 80;
 
       fila.innerHTML = `
@@ -569,27 +587,46 @@ document.addEventListener('DOMContentLoaded', () => {
           ${esLarga ? `<button type="button" class="class_btn_ver_mas" style="background: transparent; border: none; color: #2563eb; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; margin-top: 4px; display: inline-block;">Ver tarea completa</button>` : ''}
         </td>
         <td>${escaparHTML(asignadoTexto)}</td>
-        <td>${escaparHTML(deptoCreador)}</td>
+        <td>${escaparHTML(deptoDestino)}</td>
         <td>${formatearFecha(tarea.fecha)}</td>
         <td><span class="${claseBadge}">${escaparHTML(estadoValor)}</span></td>
         <td class="columna_acciones" style="position: relative;">
-          <button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>
+          ${puedeGestionar ? `<button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>` : ''}
+          ${puedeGestionar ? `
           <div id="menu_opciones_tarea_${tarea.id}" style="display: none; position: absolute; right: 0; top: 35px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;">
-            <button onclick="prepararEdicionTarea(${tarea.id}, ${esAutor}, '${encodeURIComponent(tituloTexto)}', '${encodeURIComponent(descripcionTexto)}', '${encodeURIComponent(deptoCreador)}', '${encodeURIComponent(asignadoTexto)}', '${tarea.fecha}', '${estadoValor}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#0f172a' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;">
+            <button onclick="prepararEdicionTarea(${tarea.id}, ${puedeGestionar}, '${encodeURIComponent(tituloTexto)}', '${encodeURIComponent(descripcionTexto)}', '${encodeURIComponent(deptoDestino)}', '${encodeURIComponent(asignadoTexto)}', '${tarea.fecha}', '${estadoValor}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; display: flex; align-items: center; gap: 8px;">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               Editar
             </button>
-            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${esAutor}, 'Pendiente')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">Pendiente</button>
-            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${esAutor}, 'En proceso')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">En proceso</button>
-            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${esAutor}, 'Completado')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">Completado</button>
-            <button onclick="eliminarTareaDirecto(${tarea.id}, ${esAutor})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#ef4444' : '#94a3b8'}; display: flex; align-items: center; gap: 8px;">
+            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${puedeGestionar}, 'Pendiente')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">Pendiente</button>
+            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${puedeGestionar}, 'En proceso')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">En proceso</button>
+            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${puedeGestionar}, 'Completado')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">Completado</button>
+            <button onclick="eliminarTareaDirecto(${tarea.id}, ${puedeGestionar})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; display: flex; align-items: center; gap: 8px;">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Eliminar
             </button>
           </div>
+          ` : ''}
         </td>
       `;
 
+      const botonVisto = document.createElement('button');
+      botonVisto.type = 'button';
+      botonVisto.className = 'boton_visto_elemento';
+      botonVisto.textContent = tarea.visto ? 'Visto' : 'Marcar como visto';
+      botonVisto.disabled = Boolean(tarea.visto);
+      botonVisto.addEventListener('click', async () => {
+        botonVisto.disabled = true;
+        try {
+          await window.OCID.marcarElementoVisto('tarea', Number(tarea.id));
+          tarea.visto = true;
+          renderizarTabla();
+        } catch (error) {
+          mostrarToastTareas(error.message || 'No se pudo marcar la tarea como vista.', 'error');
+          botonVisto.disabled = false;
+        }
+      });
+      fila.querySelector('.texto_titulo_tarea').appendChild(botonVisto);
       const btnVerMas = fila.querySelector('.class_btn_ver_mas');
       if (btnVerMas) {
         btnVerMas.addEventListener('click', () => {

@@ -42,6 +42,18 @@ function usuarioEsJefeDepartamento(usuario) {
   return Boolean(usuario && (usuario.es_jefe === true || usuario.es_jefe === 't'));
 }
 
+function puedeGestionarAnuncio(anuncio, usuario = window.OCID.obtenerUsuarioSesion()) {
+  if (!usuario) return false;
+  const esAdministrador = ['administrador', 'administrador general']
+    .includes(String(usuario.rol || '').trim().toLowerCase());
+  const departamentoUsuarioId = Number(usuario.departamento_id);
+  const perteneceAlDepartamento = [anuncio.departamento_emisor_id, anuncio.departamento_id]
+    .some(id => Number(id) === departamentoUsuarioId);
+  return Number(usuario.id) === Number(anuncio.autor_id) ||
+    esAdministrador ||
+    (usuarioEsJefeDepartamento(usuario) && perteneceAlDepartamento);
+}
+
 async function cargar_anuncios_desde_servidor() {
   try {
     const [datosAnuncios, datosDepartamentos, datosConteos, datosArchivos] = await Promise.all([
@@ -61,6 +73,7 @@ async function cargar_anuncios_desde_servidor() {
       ...anuncio,
       tipo: anuncio.prioridad || 'Urgente',
       departamento: anuncio.departamento_nombre || 'General',
+      departamento_emisor: anuncio.departamento_emisor_nombre || '',
       autor: anuncio.autor_nombre || 'Coordinación',
       fecha: anuncio.fecha ? new Date(anuncio.fecha).toLocaleDateString('es-MX') : ''
     }));
@@ -111,7 +124,8 @@ function renderizar_interfaz() {
 
   const anuncios_filtrados = lista_de_anuncios.filter(item => {
     const coincide_titulo = String(item.titulo || '').toLowerCase().includes(termino_busqueda);
-    const coincide_depto = !depto_seleccionado || item.departamento === depto_seleccionado;
+    const coincide_depto = !depto_seleccionado || item.departamento === depto_seleccionado ||
+      item.departamento_emisor === depto_seleccionado;
     const coincide_tipo = !tipo_seleccionado || item.tipo === tipo_seleccionado;
     return coincide_titulo && coincide_depto && coincide_tipo;
   });
@@ -131,12 +145,7 @@ function renderizar_interfaz() {
       if (anuncio.tipo === 'Urgente') clase_etiqueta = 'etiqueta_urgente';
       if (anuncio.tipo === 'Moderado') clase_etiqueta = 'etiqueta_moderado';
 
-      const mismoDepartamento = Number(usuarioActual && usuarioActual.departamento_id) > 0 &&
-        Number(usuarioActual.departamento_id) === Number(anuncio.departamento_id);
-      const anuncioGeneralPropio = !anuncio.departamento_id &&
-        Number(usuarioActual && usuarioActual.id) === Number(anuncio.autor_id);
-      const puedeGestionar = usuarioEsJefeDepartamento(usuarioActual) &&
-        (mismoDepartamento || anuncioGeneralPropio);
+      const puedeGestionar = puedeGestionarAnuncio(anuncio, usuarioActual);
 
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_anuncio';
@@ -214,6 +223,23 @@ function renderizar_interfaz() {
       filaMeta.appendChild(crearMeta('M8 7V3m8 7V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', anuncio.fecha));
 
       tarjeta.appendChild(filaMeta);
+      const botonVisto = document.createElement('button');
+      botonVisto.type = 'button';
+      botonVisto.className = 'boton_visto_elemento';
+      botonVisto.textContent = anuncio.visto ? 'Visto' : 'Marcar como visto';
+      botonVisto.disabled = Boolean(anuncio.visto);
+      botonVisto.addEventListener('click', async () => {
+        botonVisto.disabled = true;
+        try {
+          await window.OCID.marcarElementoVisto('anuncio', Number(anuncio.id));
+          anuncio.visto = true;
+          renderizar_interfaz();
+        } catch (error) {
+          mostrarErrorAnuncios(error.message || 'No se pudo marcar el anuncio como visto.', 'error');
+          botonVisto.disabled = false;
+        }
+      });
+      tarjeta.appendChild(botonVisto);
       contenedor.appendChild(tarjeta);
     });
   }
@@ -239,14 +265,13 @@ window.addEventListener('click', () => {
   });
 });
 
-function prepararEdicionAnuncio(id, puedeGestionar) {
-  if (!puedeGestionar) {
-    mostrarErrorAnuncios('Solo el jefe del departamento puede editar este anuncio.', 'error');
-    return;
-  }
-
+function prepararEdicionAnuncio(id) {
   const anuncio = lista_de_anuncios.find(a => a.id === id);
   if (!anuncio) return;
+  if (!puedeGestionarAnuncio(anuncio)) {
+    mostrarErrorAnuncios('No tienes permiso para editar este anuncio.', 'error');
+    return;
+  }
 
   anuncioEnEdicionId = id;
   document.getElementById('campo_titulo').value = anuncio.titulo;
@@ -260,9 +285,10 @@ function prepararEdicionAnuncio(id, puedeGestionar) {
   abrir_modal();
 }
 
-async function eliminarAnuncio(id, puedeGestionar) {
-  if (!puedeGestionar) {
-    mostrarErrorAnuncios('Solo el jefe del departamento puede eliminar este anuncio.', 'error');
+async function eliminarAnuncio(id) {
+  const anuncio = lista_de_anuncios.find(item => Number(item.id) === Number(id));
+  if (!anuncio || !puedeGestionarAnuncio(anuncio)) {
+    mostrarErrorAnuncios('No tienes permiso para eliminar este anuncio.', 'error');
     return;
   }
 

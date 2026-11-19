@@ -4,6 +4,36 @@
   --ocid-header-height: 72px;
 }
 
+body {
+  --sb-track-color: #383838;
+  --sb-thumb-color: #cccccc;
+  --sb-size: 9px;
+}
+
+body::-webkit-scrollbar,
+.area_principal::-webkit-scrollbar {
+  width: var(--sb-size);
+}
+
+body::-webkit-scrollbar-track,
+.area_principal::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 1px;
+}
+
+body::-webkit-scrollbar-thumb,
+.area_principal::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 1px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  body,
+  .area_principal {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
+}
+
 textarea {
   resize: none;
 }
@@ -30,7 +60,12 @@ textarea {
 .area_principal {
   min-width: 0;
   width: calc(100% - var(--ocid-sidebar-width)) !important;
+  height: 100vh;
+  height: 100dvh;
   margin-left: var(--ocid-sidebar-width) !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .area_principal .barra_superior {
@@ -109,9 +144,30 @@ textarea {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.boton_campana {
-  position: relative;
+.insignia_notificacion {
+  display: none;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.insignia_notificacion.visible {
   display: inline-flex;
+}
+
+.area_principal .barra_superior .boton_campana,
+.area_principal .barra_superior .boton_notificaciones {
+  position: relative;
+  display: none !important;
   flex: 0 0 38px;
   width: 38px;
   height: 38px;
@@ -288,9 +344,42 @@ textarea {
     display: inline-flex !important;
   }
 
+  .area_principal .barra_superior .boton_campana,
+  .area_principal .barra_superior .boton_notificaciones {
+    display: inline-flex !important;
+  }
+
   .fondo_menu_movil {
     display: block;
     pointer-events: none;
+  }
+
+  .area_principal .perfil_usuario_barra > .icono_dropdown,
+  .area_principal .perfil_usuario_barra > .fa-chevron-down {
+    display: none !important;
+  }
+
+  .boton_visto_elemento {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border: 1px solid #bfdbfe;
+    border-radius: 7px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 11px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .boton_visto_elemento:disabled {
+    border-color: #d1fae5;
+    background: #ecfdf5;
+    color: #047857;
+    cursor: default;
   }
 
   .fondo_menu_movil.activo,

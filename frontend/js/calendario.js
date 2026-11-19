@@ -69,6 +69,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return fecha.getFullYear() + '-' + String(fecha.getMonth() + 1).padStart(2, '0') + '-' + String(fecha.getDate()).padStart(2, '0');
   }
 
+  function puedeGestionarTarea(tarea, usuario) {
+    if (!tarea || !usuario) return false;
+    const esJefe = usuario.es_jefe === true || usuario.es_jefe === 't';
+    const esAdmin = ['administrador', 'administrador general']
+      .includes(String(usuario.rol || '').trim().toLowerCase());
+    const departamentoUsuarioId = Number(usuario.departamento_id);
+    const enAlcance = Number(tarea.departamento_emisor_id) === departamentoUsuarioId ||
+      (Array.isArray(tarea.departamentos_destino_ids) &&
+        tarea.departamentos_destino_ids.some(id => Number(id) === departamentoUsuarioId));
+    return Number(usuario.id) === Number(tarea.autor_id) || esAdmin || (esJefe && enAlcance);
+  }
+
 async function cargarTareasDesdeDB() {
     try {
       const datos = await window.OCID.apiFetch('/tareas');
@@ -127,7 +139,7 @@ async function cargarTareasDesdeDB() {
     });
   });
 
-  window.prepararEdicionTarea = function(id, esAutor) {
+  window.prepararEdicionTarea = function(id, puedeGestionar) {
     let usuarioActual = null;
     try {
       usuarioActual = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
@@ -135,13 +147,11 @@ async function cargarTareasDesdeDB() {
       usuarioActual = null;
     }
 
-    const tarea = tareas.find(t => t.id === id);
+    const tarea = tareas.find(t => Number(t.id) === Number(id));
     if (!tarea) return;
 
-    const autorVerificado = usuarioActual && (Number(usuarioActual.id) === Number(tarea.autor_id));
-
-    if (!esAutor || !autorVerificado) {
-      mostrarToastCalendario('No tienes permisos para editar esta tarea porque no eres el autor.', 'error');
+    if (!puedeGestionar || !puedeGestionarTarea(tarea, usuarioActual)) {
+      mostrarToastCalendario('No tienes permisos para editar esta tarea.', 'error');
       return;
     }
 
@@ -158,7 +168,7 @@ async function cargarTareasDesdeDB() {
     modal.style.display = 'flex';
   };
 
-  window.eliminarTareaBD = async function(id, esAutor) {
+  window.eliminarTareaBD = async function(id, puedeGestionar) {
     let usuarioActual = null;
     try {
       usuarioActual = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
@@ -167,10 +177,8 @@ async function cargarTareasDesdeDB() {
     }
 
     const tarea = tareas.find(t => t.id === id);
-    const autorVerificado = tarea && usuarioActual && (Number(usuarioActual.id) === Number(tarea.autor_id));
-
-    if (!esAutor || !autorVerificado) {
-      mostrarToastCalendario('No tienes permisos para eliminar esta tarea porque no eres el autor.', 'error');
+    if (!puedeGestionar || !puedeGestionarTarea(tarea, usuarioActual)) {
+      mostrarToastCalendario('No tienes permisos para eliminar esta tarea.', 'error');
       return;
     }
 
@@ -200,11 +208,11 @@ async function cargarTareasDesdeDB() {
       usuarioActual = null;
     }
 
-    const ordenados = tareas.slice().sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+    const ordenados = tareas.slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
 
     ordenados.forEach(tarea => {
       const f = new Date((tarea.fecha.includes('T') ? tarea.fecha : tarea.fecha + 'T00:00:00'));
-      const esAutor = usuarioActual && (Number(usuarioActual.id) === Number(tarea.autor_id));
+      const puedeGestionar = puedeGestionarTarea(tarea, usuarioActual);
 
       let horaCreacionTexto = '';
       if (tarea.fecha_creacion) {
@@ -234,19 +242,39 @@ async function cargarTareasDesdeDB() {
           </div>
         </div>
         <div style="position: relative;">
-          <button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>
+          ${puedeGestionar ? `<button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>` : ''}
+          ${puedeGestionar ? `
           <div id="menu_opciones_tarea_${tarea.id}" style="display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;">
-            <button onclick="prepararEdicionTarea(${tarea.id}, ${esAutor})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#0f172a' : '#94a3b8'}; flex-direction: row; gap: 8px; display: flex; align-items: center;">
+            <button onclick="prepararEdicionTarea(${tarea.id}, ${puedeGestionar})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; flex-direction: row; gap: 8px; display: flex; align-items: center;">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               Editar
             </button>
-            <button onclick="eliminarTareaBD(${tarea.id}, ${esAutor})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: ${esAutor ? '#ef4444' : '#94a3b8'}; flex-direction: row; gap: 8px; display: flex; align-items: center;">
+            <button onclick="eliminarTareaBD(${tarea.id}, ${puedeGestionar})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; flex-direction: row; gap: 8px; display: flex; align-items: center;">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Eliminar
             </button>
           </div>
+          ` : ''}
         </div>
       `;
+
+      const botonVisto = document.createElement('button');
+      botonVisto.type = 'button';
+      botonVisto.className = 'boton_visto_elemento';
+      botonVisto.textContent = tarea.visto ? 'Visto' : 'Marcar como visto';
+      botonVisto.disabled = Boolean(tarea.visto);
+      botonVisto.addEventListener('click', async () => {
+        botonVisto.disabled = true;
+        try {
+          await window.OCID.marcarElementoVisto('tarea', Number(tarea.id));
+          tarea.visto = true;
+          dibujarListaEventos();
+        } catch (error) {
+          mostrarToastCalendario(error.message || 'No se pudo marcar la tarea como vista.', 'error');
+          botonVisto.disabled = false;
+        }
+      });
+      item.querySelector('.detalles_evento').appendChild(botonVisto);
 
       listaEventos.appendChild(item);
     });
@@ -365,14 +393,12 @@ async function cargarTareasDesdeDB() {
       return;
     }
 
-    if (tareaEnEdicionId !== null) {
-      const tareaAEditar = tareas.find(t => t.id === tareaEnEdicionId);
-      if (tareaAEditar && usuario && Number(tareaAEditar.autor_id) !== Number(usuario.id)) {
-        mostrarToastCalendario('No tienes permisos para editar esta tarea porque no eres el autor.', 'error');
-        modal.style.display = 'none';
-        tareaEnEdicionId = null;
-        return;
-      }
+    const tareaAEditar = tareaEnEdicionId !== null
+      ? tareas.find(t => Number(t.id) === Number(tareaEnEdicionId))
+      : null;
+    if (tareaEnEdicionId !== null && !puedeGestionarTarea(tareaAEditar, usuario)) {
+      mostrarToastCalendario('No tienes permisos para editar esta tarea.', 'error');
+      return;
     }
 
     try {
@@ -391,6 +417,9 @@ async function cargarTareasDesdeDB() {
           fecha,
           horario: horario || 'Horario a confirmar',
           departamento: depto || 'General',
+          descripcion: tareaAEditar ? tareaAEditar.descripcion || '' : '',
+          asignado: tareaAEditar ? tareaAEditar.asignado || 'General / Sin asignar' : 'General / Sin asignar',
+          estado: tareaAEditar ? tareaAEditar.estado || 'Pendiente' : 'Pendiente',
           autor_id: usuario ? usuario.id : null
         })
       });

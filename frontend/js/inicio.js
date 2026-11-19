@@ -124,7 +124,7 @@
     establecerTexto('metrica_conteo_eventos', String(proximas.length));
   }
 
-  function renderizarTareas(tareas, nombreDepartamento) {
+  function renderizarTareas(tareas, usuario) {
     const contenedor = obtenerElemento('contenedor_lista_tareas');
     if (!contenedor) return;
     contenedor.replaceChildren();
@@ -134,8 +134,14 @@
       .replace(/[\u0300-\u036f]/g, '')
       .trim()
       .toLowerCase();
-    const departamentoClave = normalizarTexto(nombreDepartamento);
+    const departamentoClave = normalizarTexto(usuario.departamento_nombre || usuario.departamento);
+    const departamentoId = Number(usuario.departamento_id);
     const tareasDelDepartamento = tareas.filter(tarea => {
+      if (Number.isSafeInteger(departamentoId) && departamentoId > 0) {
+        return Number(tarea.departamento_emisor_id) === departamentoId ||
+          (Array.isArray(tarea.departamentos_destino_ids) &&
+            tarea.departamentos_destino_ids.some(id => Number(id) === departamentoId));
+      }
       const departamentosTarea = normalizarTexto(tarea.departamento || tarea.departamento_nombre)
         .split(',')
         .map(nombre => nombre.trim())
@@ -158,7 +164,7 @@
     const tareasVisibles = (mostrarPendientes
       ? pendientes
       : tareasDelDepartamento.slice().sort((a, b) => (fechaTarea(b) ?? 0) - (fechaTarea(a) ?? 0))
-    ).slice(0, 5);
+    ).slice(0, 3);
 
     if (!tareasVisibles.length) {
       const vacio = document.createElement('p');
@@ -254,7 +260,7 @@
     const nombreDepartamento = departamento
       ? departamento.nombre
       : (usuario.departamento_nombre || (typeof usuario.departamento === 'string' ? usuario.departamento : ''));
-    renderizarTareas(tareas, nombreDepartamento);
+    renderizarTareas(tareas, usuario);
   }
 
   window.filtrarAnunciosEnTiempoReal = function () {

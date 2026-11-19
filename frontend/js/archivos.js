@@ -61,6 +61,7 @@ const modalArchivo = document.getElementById('modal_subir_archivo');
 const selectorArchivo = document.getElementById('input_archivo_oculto');
 const cuerpoArchivos = document.getElementById('cuerpo_tabla_archivos');
 let archivosCargados = [];
+let archivoEnEdicionId = null;
 
 function sesionArchivos() {
   try {
@@ -79,6 +80,63 @@ function mostrarToastArchivos(mensaje, tipo = 'exito') {
 function formatearTamano(bytes) {
   if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+
+function puedeGestionarArchivo(archivo) {
+  const usuario = sesionArchivos();
+  if (!usuario) return false;
+  const esJefe = usuario.es_jefe === true || usuario.es_jefe === 't';
+  const departamentoId = Number(usuario.departamento_id);
+  const perteneceAlDepartamento = [archivo.departamento_emisor_id, archivo.departamento_id]
+    .some(id => Number(id) === departamentoId);
+  const esAdmin = ['administrador', 'administrador general']
+    .includes(String(usuario.rol || '').trim().toLowerCase());
+  return Number(usuario.id) === Number(archivo.autor_id) || esAdmin || (esJefe && perteneceAlDepartamento);
+}
+
+function crearBotonVisto(tipo, elemento) {
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'boton_visto_elemento';
+  boton.textContent = elemento.visto ? 'Visto' : 'Marcar como visto';
+  boton.disabled = Boolean(elemento.visto);
+  boton.setAttribute('aria-label', elemento.visto ? 'Archivo visto' : 'Marcar archivo como visto');
+  boton.addEventListener('click', async () => {
+    boton.disabled = true;
+    try {
+      await window.OCID.marcarElementoVisto(tipo, Number(elemento.id));
+      elemento.visto = true;
+      dibujarArchivos();
+    } catch (error) {
+      mostrarToastArchivos(error.message || 'No se pudo marcar el archivo como visto.', 'error');
+      boton.disabled = false;
+    }
+  });
+  return boton;
+}
+
+function abrirEdicionArchivo(id) {
+  const archivo = archivosCargados.find(item => Number(item.id) === Number(id));
+  if (!archivo || !puedeGestionarArchivo(archivo)) {
+    mostrarToastArchivos('No tienes permiso para editar este archivo.', 'error');
+    return;
+  }
+  archivoEnEdicionId = Number(archivo.id);
+  document.getElementById('titulo_modal_archivo').textContent = 'Editar documento';
+  document.getElementById('zona_archivo').hidden = true;
+  document.getElementById('nombre_documento').value = archivo.nombre;
+  document.getElementById('departamento_seleccion').value = String(archivo.departamento_id || '');
+  document.getElementById('guardar_archivo').textContent = 'Guardar cambios';
+  modalArchivo.classList.add('modal_activo');
+}
+
+function prepararNuevaCarga() {
+  archivoEnEdicionId = null;
+  if (selectorArchivo) selectorArchivo.value = '';
+  document.getElementById('titulo_modal_archivo').textContent = 'Subir nuevo documento';
+  document.getElementById('zona_archivo').hidden = false;
+  document.getElementById('nombre_documento').value = '';
+  document.getElementById('guardar_archivo').textContent = 'Subir archivo';
 }
 
 function dibujarArchivos() {
@@ -152,9 +210,20 @@ function dibujarArchivos() {
     botonEliminar.className = 'boton_accion_icono';
     botonEliminar.title = 'Eliminar';
     botonEliminar.innerHTML = '<svg fill="none" height="17" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="17"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
-    botonEliminar.addEventListener('click', () => eliminarArchivo(archivo.id, archivo.autor_id));
+    botonEliminar.addEventListener('click', () => eliminarArchivo(archivo.id));
 
-    contenedorAcciones.append(botonDescargar, botonEliminar);
+    contenedorAcciones.append(botonDescargar, crearBotonVisto('archivo', archivo));
+    if (puedeGestionarArchivo(archivo)) {
+      const botonEditar = document.createElement('button');
+      botonEditar.type = 'button';
+      botonEditar.className = 'boton_accion_icono';
+      botonEditar.title = 'Editar';
+      botonEditar.setAttribute('aria-label', 'Editar archivo');
+      botonEditar.innerHTML = '<svg fill="none" height="17" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="17"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg>';
+      botonEditar.addEventListener('click', () => abrirEdicionArchivo(archivo.id));
+      contenedorAcciones.appendChild(botonEditar);
+    }
+    if (puedeGestionarArchivo(archivo)) contenedorAcciones.appendChild(botonEliminar);
     celdaAcciones.appendChild(contenedorAcciones);
 
     fila.append(celdaNombre, celdaTipo, celdaDepartamento, celdaAutor, celdaFecha, celdaAcciones);
@@ -234,10 +303,9 @@ async function descargarArchivo(id) {
 }
 
 async function eliminarArchivo(id, autorId) {
-  const usuario = sesionArchivos();
-  
-  if (!usuario || Number(usuario.id) !== Number(autorId)) {
-    mostrarToastArchivos('No puedes eliminar este archivo porque no te pertenece.', 'error');
+  const archivo = archivosCargados.find(item => Number(item.id) === Number(id));
+  if (!archivo || !puedeGestionarArchivo(archivo)) {
+    mostrarToastArchivos('No tienes permiso para eliminar este archivo.', 'error');
     return;
   }
 
@@ -258,14 +326,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelarModalBtn = document.getElementById('cancelar_modal');
   const zonaArchivo = document.getElementById('zona_archivo');
 
-  if (abrirModalBtn) abrirModalBtn.addEventListener('click', () => { if (modalArchivo) modalArchivo.classList.add('modal_activo'); });
-  if (cerrarModalBtn) cerrarModalBtn.addEventListener('click', () => { if (modalArchivo) modalArchivo.classList.remove('modal_activo'); });
-  if (cancelarModalBtn) cancelarModalBtn.addEventListener('click', () => { if (modalArchivo) modalArchivo.classList.remove('modal_activo'); });
+  if (abrirModalBtn) abrirModalBtn.addEventListener('click', () => {
+    prepararNuevaCarga();
+    if (modalArchivo) modalArchivo.classList.add('modal_activo');
+  });
+  const cerrarModal = () => {
+    if (modalArchivo) modalArchivo.classList.remove('modal_activo');
+    prepararNuevaCarga();
+  };
+  if (cerrarModalBtn) cerrarModalBtn.addEventListener('click', cerrarModal);
+  if (cancelarModalBtn) cancelarModalBtn.addEventListener('click', cerrarModal);
   
   if (modalArchivo) {
-    modalArchivo.addEventListener('click', evento => {
-      if (evento.target === modalArchivo) modalArchivo.classList.remove('modal_activo');
-    });
+    modalArchivo.addEventListener('click', evento => { if (evento.target === modalArchivo) cerrarModal(); });
   }
 
   if (zonaArchivo && selectorArchivo) {
@@ -288,48 +361,54 @@ document.addEventListener('DOMContentLoaded', () => {
   const guardarBtn = document.getElementById('guardar_archivo');
   if (guardarBtn) {
     guardarBtn.addEventListener('click', async () => {
+      const esEdicion = archivoEnEdicionId !== null;
       const archivo = selectorArchivo.files[0];
       const usuario = sesionArchivos();
       const departamentoIdSelect = document.getElementById('departamento_seleccion').value;
       const departamentoId = departamentoIdSelect ? Number(departamentoIdSelect) : null;
 
-      if (!archivo || !usuario || !usuario.id || !departamentoId) {
+      if ((!archivo && archivoEnEdicionId === null) || !usuario || !usuario.id || !departamentoId) {
         mostrarToastArchivos('Inicia sesión, selecciona un archivo y elige un departamento de destino.', 'advertencia');
         return;
       }
-      if (archivo.size > 10 * 1024 * 1024) {
+      if (archivo && archivo.size > 10 * 1024 * 1024) {
         mostrarToastArchivos('El archivo supera el límite de 10 MB.', 'advertencia');
         return;
       }
 
       try {
-        const contenido = await new Promise((resolver, rechazar) => {
-          const lector = new FileReader();
-          lector.onload = () => resolver(lector.result);
-          lector.onerror = () => rechazar(new Error('No se pudo leer el archivo seleccionado.'));
-          lector.readAsDataURL(archivo);
-        });
+        const nombre = document.getElementById('nombre_documento').value.trim() || (archivo && archivo.name);
+        if (esEdicion) {
+          await window.OCID.apiFetch(`/archivos/${archivoEnEdicionId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ nombre, departamento_id: departamentoId })
+          });
+        } else {
+          const contenido = await new Promise((resolver, rechazar) => {
+            const lector = new FileReader();
+            lector.onload = () => resolver(lector.result);
+            lector.onerror = () => rechazar(new Error('No se pudo leer el archivo seleccionado.'));
+            lector.readAsDataURL(archivo);
+          });
+          await window.OCID.apiFetch('/archivos', {
+            method: 'POST',
+            body: JSON.stringify({
+              nombre,
+              contenido,
+              tipo: archivo.type || 'application/octet-stream',
+              tamano: archivo.size,
+              autor_id: usuario.id,
+              departamento_id: departamentoId
+            })
+          });
+        }
 
-        await window.OCID.apiFetch('/archivos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nombre: document.getElementById('nombre_documento').value.trim() || archivo.name,
-            contenido,
-            tipo: archivo.type || 'application/octet-stream',
-            tamano: archivo.size,
-            autor_id: usuario.id,
-            departamento_id: departamentoId
-          })
-        });
-
-        if (modalArchivo) modalArchivo.classList.remove('modal_activo');
-        selectorArchivo.value = '';
-        document.getElementById('nombre_documento').value = '';
-        mostrarToastArchivos('Archivo subido correctamente.', 'exito');
+        cerrarModal();
+        mostrarToastArchivos(esEdicion ? 'Archivo actualizado.' : 'Archivo subido correctamente.', 'exito');
         await cargarArchivos();
       } catch (error) {
-        mostrarToastArchivos('No se pudo cargar', 'error');
+        console.error('Error al guardar archivo:', error);
+        mostrarToastArchivos(error.message || 'No se pudo guardar el archivo.', 'error');
       }
     });
   }

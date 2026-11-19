@@ -4,6 +4,17 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Organización y Comunicación Interna para Docentes</title>
+    <script>
+        try {
+            const usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
+            const departamentoId = Number(usuario && usuario.departamento_id);
+            if (usuario && usuario.id && Number.isSafeInteger(departamentoId) && departamentoId > 0) {
+                window.location.replace('html/inicio.html');
+            }
+        } catch (error) {
+            localStorage.removeItem('usuario_ocid');
+        }
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
