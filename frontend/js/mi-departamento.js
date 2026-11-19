@@ -19,25 +19,45 @@
     return esMiembroJefe(miembro) ? 'Jefe de Departamento' : (miembro.rol || 'Docente');
   }
 
+  const PALETA_ROLES_PASTEL = [
+    { bg: '#ede9fe', text: '#6d28d9', border: '#ddd6fe' }, // Jefe de Departamento (Lila pastel / Morado)
+    { bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd' }, // Docente (Azul cielo pastel / Azul)
+    { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' }, // Verde menta pastel / Esmeralda
+    { bg: '#fef3c7', text: '#b45309', border: '#fde68a' }, // Ámbar pastel / Ocre
+    { bg: '#ffe4e6', text: '#be123c', border: '#fecdd3' }, // Rosa pastel / Carmesí
+    { bg: '#e0e7ff', text: '#4338ca', border: '#c7d2fe' }, // Índigo pastel / Azul marino
+    { bg: '#ccfbf1', text: '#0f766e', border: '#99f6e4' }, // Turquesa pastel / Teal
+    { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' }, // Naranja melocotón / Naranja
+    { bg: '#fae8ff', text: '#a21caf', border: '#f5d0fe' }, // Fucsia orquídea / Magenta
+    { bg: '#cffafe', text: '#0e7490', border: '#a5f3fc' }, // Cian pastel / Azul verdoso
+  ];
+
+  function obtenerColoresRol(nombreRol) {
+    const norm = normalizar(nombreRol);
+    if (norm.includes('jefe')) {
+      return PALETA_ROLES_PASTEL[0];
+    }
+    if (norm === 'docente') {
+      return PALETA_ROLES_PASTEL[1];
+    }
+    let hash = 0;
+    for (let i = 0; i < norm.length; i++) {
+      hash = norm.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const indice = 2 + (Math.abs(hash) % (PALETA_ROLES_PASTEL.length - 2));
+    return PALETA_ROLES_PASTEL[indice];
+  }
+
   function crearEtiquetaRol(nombre) {
     const etiqueta = document.createElement('span');
     etiqueta.className = 'badge_rol_departamento';
     etiqueta.textContent = nombre;
 
-    const nombreNormalizado = normalizar(nombre);
-    if (nombreNormalizado === 'jefe de departamento' || nombreNormalizado === 'jefe') {
-      etiqueta.classList.add('badge_rol_jefe');
-      etiqueta.style.backgroundColor = COLOR_ROL_JEFE;
-    } else {
-      const detalle = rolesDepartamentoDetalle.find(rol => normalizar(rol.nombre) === nombreNormalizado);
-      if (detalle && /^#[0-9A-Fa-f]{6}$/.test(detalle.color || '')) {
-        etiqueta.style.backgroundColor = detalle.color;
-      } else if (nombreNormalizado === 'administrador general') {
-        etiqueta.style.backgroundColor = '#6D28D9';
-      } else if (nombreNormalizado === 'docente') {
-        etiqueta.style.backgroundColor = '#475569';
-      }
-    }
+    const colores = obtenerColoresRol(nombre);
+    etiqueta.style.backgroundColor = colores.bg;
+    etiqueta.style.color = colores.text;
+    etiqueta.style.borderColor = colores.border;
+
     return etiqueta;
   }
 

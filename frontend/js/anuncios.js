@@ -137,7 +137,7 @@ function renderizar_interfaz() {
   if (anuncios_filtrados.length === 0) {
     const divVacio = document.createElement('div');
     divVacio.className = 'estado_vacio';
-    divVacio.textContent = 'No se encontraron anuncios que coincidan con los filtros seleccionados.';
+    divVacio.textContent = 'AÃºn no has recibido anuncios.';
     contenedor.appendChild(divVacio);
   } else {
     anuncios_filtrados.forEach(anuncio => {
@@ -225,9 +225,12 @@ function renderizar_interfaz() {
       tarjeta.appendChild(filaMeta);
       const botonVisto = document.createElement('button');
       botonVisto.type = 'button';
-      botonVisto.className = 'boton_visto_elemento';
-      botonVisto.textContent = anuncio.visto ? 'Visto' : 'Marcar como visto';
+      botonVisto.className = 'boton_visto_elemento' + (anuncio.visto ? ' visto' : ' pendiente');
+      botonVisto.innerHTML = anuncio.visto
+        ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
+        : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(anuncio.visto);
+      botonVisto.setAttribute('aria-label', anuncio.visto ? 'Anuncio visto' : 'Marcar anuncio como visto');
       botonVisto.addEventListener('click', async () => {
         botonVisto.disabled = true;
         try {

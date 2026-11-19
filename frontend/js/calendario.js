@@ -260,9 +260,12 @@ async function cargarTareasDesdeDB() {
 
       const botonVisto = document.createElement('button');
       botonVisto.type = 'button';
-      botonVisto.className = 'boton_visto_elemento';
-      botonVisto.textContent = tarea.visto ? 'Visto' : 'Marcar como visto';
+      botonVisto.className = 'boton_visto_elemento' + (tarea.visto ? ' visto' : ' pendiente');
+      botonVisto.innerHTML = tarea.visto
+        ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
+        : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(tarea.visto);
+      botonVisto.setAttribute('aria-label', tarea.visto ? 'Evento visto' : 'Marcar evento como visto');
       botonVisto.addEventListener('click', async () => {
         botonVisto.disabled = true;
         try {
@@ -283,7 +286,7 @@ async function cargarTareasDesdeDB() {
       const vacio = document.createElement('p');
       vacio.style.fontSize = '13px';
       vacio.style.color = '#64748b';
-      vacio.textContent = 'No hay tareas registradas.';
+      vacio.textContent = 'AÃºn no has recibido eventos.';
       listaEventos.appendChild(vacio);
     }
   }

@@ -58,7 +58,8 @@ body {
     border: 1px solid #bfdbfe;
 }
 
-.titulo_registro {
+.titulo_registro,
+.titulo_login {
     font-size: 25.6px;
     font-weight: 800;
     color: #17365d;
@@ -66,7 +67,8 @@ body {
     margin-bottom: 4px;
 }
 
-.subtitulo_registro {
+.subtitulo_registro,
+.subtitulo_login {
     font-size: 14.4px;
     color: #475569;
 }
@@ -199,14 +201,14 @@ body {
     color: #475569;
 }
 
-.enlace_login {
+.enlace_registro {
     color: #17365d;
     text-decoration: none;
     font-weight: 700;
     margin-left: 4px;
 }
 
-.enlace_login:hover {
+.enlace_registro:hover {
     text-decoration: underline;
 }
 

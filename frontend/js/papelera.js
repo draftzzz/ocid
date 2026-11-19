@@ -82,15 +82,15 @@
 
     tbody.innerHTML = lista.map(archivo => `
       <tr>
-        <td>
+        <td data-etiqueta="Documento">
           <div class="celda_documento">
             <div class="icono_archivo_papelera"><i class="fa-regular fa-file-lines"></i></div>
             <span>${escaparHTML(archivo.nombre)}</span>
           </div>
         </td>
-        <td>${escaparHTML(archivo.departamento_nombre || 'General')}</td>
-        <td>${archivo.fecha_eliminacion ? new Date(archivo.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
-        <td class="columna_centrada">
+        <td data-etiqueta="Departamento">${escaparHTML(archivo.departamento_nombre || 'General')}</td>
+        <td data-etiqueta="Eliminado el">${archivo.fecha_eliminacion ? new Date(archivo.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+        <td class="columna_centrada" data-etiqueta="Acciones">
           <div class="grupo_acciones_papelera">
             <button type="button" class="boton_restaurar" onclick="restaurarArchivo(${archivo.id})">
               <i class="fa-solid fa-arrow-rotate-left"></i>
@@ -130,7 +130,7 @@
       const resumen = String(anuncio.contenido || '').slice(0, 60);
       return `
         <tr>
-          <td>
+          <td data-etiqueta="Titulo del anuncio">
             <div class="celda_documento">
               <div class="icono_archivo_papelera"><i class="fa-solid fa-bullhorn"></i></div>
               <div>
@@ -139,9 +139,9 @@
               </div>
             </div>
           </td>
-          <td>${escaparHTML(anuncio.prioridad || 'Informativo')}</td>
-          <td>${anuncio.fecha_eliminacion ? new Date(anuncio.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
-          <td class="columna_centrada">
+          <td data-etiqueta="Prioridad">${escaparHTML(anuncio.prioridad || 'Informativo')}</td>
+          <td data-etiqueta="Eliminado el">${anuncio.fecha_eliminacion ? new Date(anuncio.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+          <td class="columna_centrada" data-etiqueta="Acciones">
             <div class="grupo_acciones_papelera">
               <button type="button" class="boton_restaurar" onclick="restaurarAnuncio(${anuncio.id})">
                 <i class="fa-solid fa-arrow-rotate-left"></i>
@@ -176,10 +176,10 @@
     }
     tbody.innerHTML = lista.map(tarea => `
       <tr>
-        <td><div class="celda_documento"><div class="icono_archivo_papelera"><i class="fa-solid fa-list-check"></i></div><span>${escaparHTML(tarea.titulo)}</span></div></td>
-        <td>${escaparHTML(tarea.departamento || 'General')}</td>
-        <td>${tarea.fecha_eliminacion ? new Date(tarea.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
-        <td class="columna_centrada">
+        <td data-etiqueta="Tarea"><div class="celda_documento"><div class="icono_archivo_papelera"><i class="fa-solid fa-list-check"></i></div><span>${escaparHTML(tarea.titulo)}</span></div></td>
+        <td data-etiqueta="Departamento(s)">${escaparHTML(tarea.departamento || 'General')}</td>
+        <td data-etiqueta="Eliminada el">${tarea.fecha_eliminacion ? new Date(tarea.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
+        <td class="columna_centrada" data-etiqueta="Acciones">
           <div class="grupo_acciones_papelera">
             <button type="button" class="boton_restaurar" onclick="restaurarTarea(${tarea.id})"><i class="fa-solid fa-arrow-rotate-left"></i><span>Restaurar</span></button>
             <button type="button" class="boton_eliminar_definitivo" onclick="eliminarDefinitivoTarea(${tarea.id})"><i class="fa-regular fa-trash-can"></i><span>Eliminar</span></button>

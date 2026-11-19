@@ -37,7 +37,7 @@
     if (!anuncios.length) {
       const vacio = document.createElement('p');
       vacio.className = 'texto_vacio';
-      vacio.textContent = 'No hay anuncios disponibles.';
+      vacio.textContent = 'AÃºn no has recibido anuncios.';
       contenedor.appendChild(vacio);
       return;
     }
@@ -169,7 +169,7 @@
     if (!tareasVisibles.length) {
       const vacio = document.createElement('p');
       vacio.className = 'texto_vacio';
-      vacio.textContent = 'No hay tareas pendientes o recientes.';
+      vacio.textContent = 'AÃºn no has recibido tareas.';
       contenedor.appendChild(vacio);
       return;
     }

@@ -97,8 +97,10 @@ function puedeGestionarArchivo(archivo) {
 function crearBotonVisto(tipo, elemento) {
   const boton = document.createElement('button');
   boton.type = 'button';
-  boton.className = 'boton_visto_elemento';
-  boton.textContent = elemento.visto ? 'Visto' : 'Marcar como visto';
+  boton.className = 'boton_visto_elemento' + (elemento.visto ? ' visto' : ' pendiente');
+  boton.innerHTML = elemento.visto
+    ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
+    : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
   boton.disabled = Boolean(elemento.visto);
   boton.setAttribute('aria-label', elemento.visto ? 'Archivo visto' : 'Marcar archivo como visto');
   boton.addEventListener('click', async () => {
@@ -213,16 +215,6 @@ function dibujarArchivos() {
     botonEliminar.addEventListener('click', () => eliminarArchivo(archivo.id));
 
     contenedorAcciones.append(botonDescargar, crearBotonVisto('archivo', archivo));
-    if (puedeGestionarArchivo(archivo)) {
-      const botonEditar = document.createElement('button');
-      botonEditar.type = 'button';
-      botonEditar.className = 'boton_accion_icono';
-      botonEditar.title = 'Editar';
-      botonEditar.setAttribute('aria-label', 'Editar archivo');
-      botonEditar.innerHTML = '<svg fill="none" height="17" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="17"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg>';
-      botonEditar.addEventListener('click', () => abrirEdicionArchivo(archivo.id));
-      contenedorAcciones.appendChild(botonEditar);
-    }
     if (puedeGestionarArchivo(archivo)) contenedorAcciones.appendChild(botonEliminar);
     celdaAcciones.appendChild(contenedorAcciones);
 
@@ -236,7 +228,7 @@ function dibujarArchivos() {
     celda.colSpan = 6;
     celda.style.textAlign = 'center';
     celda.style.padding = '20px';
-    celda.textContent = archivosCargados.length ? 'No hay archivos para esos filtros.' : 'No hay archivos disponibles.';
+    celda.textContent = archivosCargados.length ? 'AÃºn no has recibido archivos.' : 'AÃºn no has recibido archivos.';
     filaVacia.appendChild(celda);
     cuerpoArchivos.appendChild(filaVacia);
   }

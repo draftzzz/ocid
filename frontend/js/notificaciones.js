@@ -67,8 +67,8 @@
     if (!visibles.length) {
       if (vacio) {
         vacio.textContent = filtroActual === 'todas'
-          ? 'No hay notificaciones registradas.'
-          : 'No hay notificaciones en esta categoría.';
+          ? 'Aún no has recibido notificaciones.'
+          : 'Aún no has recibido notificaciones en esta categoría.';
         vacio.style.display = 'block';
       }
       return;

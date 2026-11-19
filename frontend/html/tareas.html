@@ -146,32 +146,38 @@
                 </select>
             </section>
 
-            <!-- Tabla de datos -->
-            <section class="tarjeta_tabla" data-purpose="tabla_de_datos">
-                <div style="overflow-x: auto;">
-                    <table class="tabla_tareas">
-                        <thead>
-                            <tr>
-                                <th style="min-width: 150px;">Título</th>
-                                <th style="min-width: 220px;">Descripción</th>
-                                <th style="min-width: 160px;">Asignado a</th>
-                                <th style="min-width: 140px;">Departamento</th>
-                                <th style="min-width: 110px;">Fecha límite</th>
-                                <th style="min-width: 110px;">Estado</th>
-                                <th style="width: 60px; text-align: center;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpo_tabla_tareas">
-                            <!-- Filas renderizadas por JS -->
-                        </tbody>
-                    </table>
-                </div>
+            <!-- Distribución en 2 Columnas idéntica a Anuncios -->
+            <div class="contenedor_dos_columnas">
+                <!-- Columna Izquierda: Listado dinámico de tarjetas de tareas -->
+                <section class="columna_lista_anuncios" data-purpose="listado_tarjetas" id="contenedor_tarjetas_tareas">
+                    <!-- Se renderiza desde JS como tarjetas modernas -->
+                </section>
 
-                <footer class="pie_tabla">
-                    <span class="texto_conteo_filas" id="texto_resumen_conteo">Mostrando 0 de 0 tareas</span>
-                    <div class="bloque_paginacion" id="contenedor_botones_paginacion"></div>
-                </footer>
-            </section>
+                <!-- Columna Derecha: Paneles laterales de resumen -->
+                <aside class="columna_lateral_derecha">
+                    <div class="tarjeta_lateral_panel" data-purpose="resumen_por_estado">
+                        <div class="encabezado_conteo_departamentos">
+                            <h2 class="titulo_bloque_lateral">Por estado</h2>
+                            <button class="boton_ver_todo_conteo" id="boton_ver_todo_estados" type="button">Ver todas</button>
+                        </div>
+                        <div class="lista_conteo_departamentos" id="lista_conteo_estados"></div>
+                    </div>
+
+                    <div class="tarjeta_lateral_panel" data-purpose="resumen_por_departamento">
+                        <div class="encabezado_conteo_departamentos">
+                            <h2 class="titulo_bloque_lateral">Por departamento</h2>
+                            <button class="boton_ver_todo_conteo" id="boton_ver_todo_departamentos" type="button">Ver todos</button>
+                        </div>
+                        <div class="lista_conteo_departamentos" id="lista_conteo_departamentos"></div>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- Paginación y Resumen -->
+            <footer class="pie_tabla" style="margin-top: 20px; border: none; background: transparent; padding: 0;">
+                <span class="texto_conteo_filas" id="texto_resumen_conteo">Mostrando 0 de 0 tareas</span>
+                <div class="bloque_paginacion" id="contenedor_botones_paginacion"></div>
+            </footer>
         </div>
         <!-- END: ContenidoPrincipalTareas -->
     </main>

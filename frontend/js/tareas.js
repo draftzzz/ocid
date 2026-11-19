@@ -63,7 +63,7 @@
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
-  const cuerpoTabla = document.getElementById('cuerpo_tabla_tareas');
+  const cuerpoTabla = document.getElementById('contenedor_tarjetas_tareas') || document.getElementById('cuerpo_tabla_tareas');
   const formularioTarea = document.getElementById('formulario_crear_tarea');
   const modal = document.getElementById('modal_nueva_tarea');
   const botonAbrir = document.getElementById('boton_abrir_modal');
@@ -535,6 +535,130 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  window.toggleMenuOpcionesTarea = function(evento, id) {
+    evento.stopPropagation();
+    document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
+      if (menu.id !== `menu_opciones_tarea_${id}`) menu.style.display = 'none';
+    });
+    const menu = document.getElementById(`menu_opciones_tarea_${id}`);
+    if (menu) {
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+  };
+
+  window.addEventListener('click', () => {
+    document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
+      menu.style.display = 'none';
+    });
+  });
+
+  function actualizarPanelesLaterales() {
+    // 1. Panel Por Estado
+    const contenedorEstados = document.getElementById('lista_conteo_estados');
+    if (contenedorEstados) {
+      contenedorEstados.replaceChildren();
+      const estadosDef = [
+        { nombre: 'Pendiente', color: 'punto_departamento_0' },
+        { nombre: 'En proceso', color: 'punto_departamento_1' },
+        { nombre: 'Completado', color: 'punto_departamento_2' }
+      ];
+
+      estadosDef.forEach(est => {
+        const cantidad = tareas.filter(t => (t.estado || 'Pendiente').toLowerCase() === est.nombre.toLowerCase()).length;
+        const fila = document.createElement('div');
+        fila.className = 'fila_conteo_departamento';
+        fila.style.cursor = 'pointer';
+
+        const etiqueta = document.createElement('span');
+        etiqueta.className = 'indicador_con_nombre';
+        const punto = document.createElement('span');
+        punto.className = `punto_departamento ${est.color}`;
+        const nombre = document.createElement('span');
+        nombre.textContent = est.nombre;
+        etiqueta.append(punto, nombre);
+
+        const cifra = document.createElement('span');
+        cifra.className = 'cifra_departamento';
+        cifra.textContent = String(cantidad);
+
+        fila.append(etiqueta, cifra);
+        fila.addEventListener('click', () => {
+          if (selectEstado) selectEstado.value = est.nombre;
+          paginaActual = 1;
+          renderizarTabla();
+        });
+        contenedorEstados.appendChild(fila);
+      });
+
+      const btnVerTodoEstados = document.getElementById('boton_ver_todo_estados');
+      if (btnVerTodoEstados) {
+        btnVerTodoEstados.onclick = () => {
+          if (selectEstado) selectEstado.value = 'todos';
+          paginaActual = 1;
+          renderizarTabla();
+        };
+      }
+    }
+
+    // 2. Panel Por Departamento
+    const contenedorDeptos = document.getElementById('lista_conteo_departamentos');
+    if (contenedorDeptos) {
+      contenedorDeptos.replaceChildren();
+      const deptosMap = new Map();
+      tareas.forEach(t => {
+        const depto = t.departamento || 'General';
+        deptosMap.set(depto, (deptosMap.get(depto) || 0) + 1);
+      });
+
+      let idx = 0;
+      deptosMap.forEach((cantidad, deptoNombre) => {
+        const fila = document.createElement('div');
+        fila.className = 'fila_conteo_departamento';
+        fila.style.cursor = 'pointer';
+
+        const etiqueta = document.createElement('span');
+        etiqueta.className = 'indicador_con_nombre';
+        const punto = document.createElement('span');
+        punto.className = `punto_departamento punto_departamento_${idx % 5}`;
+        const nombre = document.createElement('span');
+        nombre.textContent = deptoNombre;
+        etiqueta.append(punto, nombre);
+
+        const cifra = document.createElement('span');
+        cifra.className = 'cifra_departamento';
+        cifra.textContent = String(cantidad);
+
+        fila.append(etiqueta, cifra);
+        fila.addEventListener('click', () => {
+          if (selectDepartamento) {
+            const match = Array.from(selectDepartamento.options).find(opt => opt.text.toLowerCase() === deptoNombre.toLowerCase() || opt.value.toLowerCase() === deptoNombre.toLowerCase());
+            if (match) selectDepartamento.value = match.value;
+          }
+          paginaActual = 1;
+          renderizarTabla();
+        });
+        contenedorDeptos.appendChild(fila);
+        idx++;
+      });
+
+      if (!deptosMap.size) {
+        const vacio = document.createElement('p');
+        vacio.className = 'estado_conteo_vacio';
+        vacio.textContent = 'AÃºn no has recibido tareas.';
+        contenedorDeptos.appendChild(vacio);
+      }
+
+      const btnVerTodoDeptos = document.getElementById('boton_ver_todo_departamentos');
+      if (btnVerTodoDeptos) {
+        btnVerTodoDeptos.onclick = () => {
+          if (selectDepartamento) selectDepartamento.value = 'todos';
+          paginaActual = 1;
+          renderizarTabla();
+        };
+      }
+    }
+  }
+
   function renderizarTabla() {
     if (!cuerpoTabla) return;
     cuerpoTabla.replaceChildren();
@@ -555,67 +679,168 @@ document.addEventListener('DOMContentLoaded', () => {
     const fin = inicio + elementosPorPagina;
     const tareasPagina = tareasFiltradas.slice(inicio, fin);
 
+    if (!tareasFiltradas.length) {
+      const vacio = document.createElement('div');
+      vacio.className = 'tarjeta_anuncio';
+      vacio.style.cssText = 'text-align: center; padding: 48px 20px; color: #64748b; font-size: 13.5px;';
+      vacio.innerHTML = '<i class="fa-solid fa-list-check" style="font-size: 32px; color: #94a3b8; margin-bottom: 12px; display: block;"></i> AÃºn no has recibido tareas.';
+      cuerpoTabla.appendChild(vacio);
+    }
+
     tareasPagina.forEach(tarea => {
-      const fila = document.createElement('tr');
-      fila.dataset.id = tarea.id;
+      const tarjeta = document.createElement('article');
+      tarjeta.className = 'tarjeta_anuncio tarjeta_tarea';
+      tarjeta.dataset.id = String(tarea.id);
 
       const estadoValor = tarea.estado || 'Pendiente';
-      let claseBadge = 'badge_estado ';
-      if (estadoValor === 'En proceso') claseBadge += 'estado_proceso';
-      else if (estadoValor === 'Completado') claseBadge += 'estado_completado';
-      else claseBadge += 'estado_pendiente';
+      let claseBadge = 'etiqueta_urgente';
+      if (estadoValor.toLowerCase().includes('proceso')) claseBadge = 'etiqueta_moderado';
+      else if (estadoValor.toLowerCase().includes('complet')) claseBadge = 'etiqueta_general';
 
       const tituloTexto = tarea.titulo || '-';
       const descripcionTexto = tarea.descripcion || tarea.detalles || '-';
       const asignadoTexto = tarea.asignado || tarea.asignado_a || tarea.personas || 'General / Sin asignar';
-      
       const nombreCreador = tarea.autor_nombre || 'Sistema';
       const deptoDestino = tarea.departamento || 'General';
-      const textoCreadorConDepto = `${nombreCreador} (${tarea.autor_departamento || 'General'})`;
 
       const puedeGestionar = puedeGestionarTarea(tarea, usuarioActual);
-      const esLarga = descripcionTexto.length > 80;
+      const esLarga = descripcionTexto.length > 120;
 
-      fila.innerHTML = `
-        <td class="texto_titulo_tarea">
-          ${escaparHTML(tituloTexto)}
-          <br>
-          <small style="color: #64748b; font-size: 11px; font-weight: normal;">Creado por: ${escaparHTML(textoCreadorConDepto)}</small>
-        </td>
-        <td>
-          <div class="texto_descripcion_tarea" style="max-width: 280px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; word-break: break-word;">${escaparHTML(descripcionTexto)}</div>
-          ${esLarga ? `<button type="button" class="class_btn_ver_mas" style="background: transparent; border: none; color: #2563eb; font-size: 11px; font-weight: 600; cursor: pointer; padding: 0; margin-top: 4px; display: inline-block;">Ver tarea completa</button>` : ''}
-        </td>
-        <td>${escaparHTML(asignadoTexto)}</td>
-        <td>${escaparHTML(deptoDestino)}</td>
-        <td>${formatearFecha(tarea.fecha)}</td>
-        <td><span class="${claseBadge}">${escaparHTML(estadoValor)}</span></td>
-        <td class="columna_acciones" style="position: relative;">
-          ${puedeGestionar ? `<button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>` : ''}
-          ${puedeGestionar ? `
-          <div id="menu_opciones_tarea_${tarea.id}" style="display: none; position: absolute; right: 0; top: 35px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;">
-            <button onclick="prepararEdicionTarea(${tarea.id}, ${puedeGestionar}, '${encodeURIComponent(tituloTexto)}', '${encodeURIComponent(descripcionTexto)}', '${encodeURIComponent(deptoDestino)}', '${encodeURIComponent(asignadoTexto)}', '${tarea.fecha}', '${estadoValor}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-              <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-              Editar
-            </button>
-            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${puedeGestionar}, 'Pendiente')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">Pendiente</button>
-            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${puedeGestionar}, 'En proceso')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">En proceso</button>
-            <button onclick="cambiarEstadoTareaDirecto(${tarea.id}, ${puedeGestionar}, 'Completado')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a;">Completado</button>
-            <button onclick="eliminarTareaDirecto(${tarea.id}, ${puedeGestionar})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; display: flex; align-items: center; gap: 8px;">
-              <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              Eliminar
-            </button>
-          </div>
-          ` : ''}
-        </td>
-      `;
+      // 1. Fila de Estado y Menú de Opciones
+      const filaEtiqueta = document.createElement('div');
+      filaEtiqueta.className = 'fila_etiqueta_anuncio';
 
+      const spanEstado = document.createElement('span');
+      spanEstado.className = `etiqueta_tipo ${claseBadge}`;
+      const punto = document.createElement('span');
+      punto.className = 'punto_etiqueta';
+      spanEstado.appendChild(punto);
+      spanEstado.appendChild(document.createTextNode(` ${estadoValor}`));
+      filaEtiqueta.appendChild(spanEstado);
+
+      if (puedeGestionar) {
+        const contenedorOpciones = document.createElement('div');
+        contenedorOpciones.style.position = 'relative';
+
+        const btnOpciones = document.createElement('button');
+        btnOpciones.className = 'boton_opciones_anuncio';
+        btnOpciones.type = 'button';
+        btnOpciones.title = 'Más opciones';
+        btnOpciones.setAttribute('aria-label', 'Opciones de tarea');
+        btnOpciones.innerHTML = '&#8942;';
+        btnOpciones.addEventListener('click', (e) => toggleMenuOpcionesTarea(e, tarea.id));
+        contenedorOpciones.appendChild(btnOpciones);
+
+        const menuDesplegable = document.createElement('div');
+        menuDesplegable.id = `menu_opciones_tarea_${tarea.id}`;
+        menuDesplegable.style.cssText = 'display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0px 4px 14px rgba(0,0,0,0.12); z-index: 50; width: 160px; padding: 4px 0;';
+
+        const btnEditar = document.createElement('button');
+        btnEditar.type = 'button';
+        btnEditar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; display: flex; align-items: center; gap: 8px;';
+        btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
+        btnEditar.addEventListener('click', () => prepararEdicionTarea(tarea.id, puedeGestionar, encodeURIComponent(tituloTexto), encodeURIComponent(descripcionTexto), encodeURIComponent(deptoDestino), encodeURIComponent(asignadoTexto), tarea.fecha, estadoValor));
+
+        const btnPendiente = document.createElement('button');
+        btnPendiente.type = 'button';
+        btnPendiente.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #c2410c;';
+        btnPendiente.textContent = 'Marcar Pendiente';
+        btnPendiente.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'Pendiente'));
+
+        const btnProceso = document.createElement('button');
+        btnProceso.type = 'button';
+        btnProceso.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #1d4ed8;';
+        btnProceso.textContent = 'Marcar En proceso';
+        btnProceso.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'En proceso'));
+
+        const btnCompletado = document.createElement('button');
+        btnCompletado.type = 'button';
+        btnCompletado.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #047857;';
+        btnCompletado.textContent = 'Marcar Completado';
+        btnCompletado.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'Completado'));
+
+        const btnEliminar = document.createElement('button');
+        btnEliminar.type = 'button';
+        btnEliminar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f1f5f9;';
+        btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
+        btnEliminar.addEventListener('click', () => eliminarTareaDirecto(tarea.id, puedeGestionar));
+
+        menuDesplegable.append(btnEditar, btnPendiente, btnProceso, btnCompletado, btnEliminar);
+        contenedorOpciones.appendChild(menuDesplegable);
+        filaEtiqueta.appendChild(contenedorOpciones);
+      }
+      tarjeta.appendChild(filaEtiqueta);
+
+      // 2. Título de la tarea
+      const h3Titulo = document.createElement('h3');
+      h3Titulo.className = 'titulo_anuncio';
+      h3Titulo.textContent = tituloTexto;
+      tarjeta.appendChild(h3Titulo);
+
+      // 3. Subtítulo de autoría simplificado: Únicamente "Creado por: [Nombre]" (sin departamento)
+      const subtituloAutor = document.createElement('div');
+      subtituloAutor.className = 'subtitulo_autor_tarea';
+      subtituloAutor.textContent = `Creado por: ${nombreCreador}`;
+      tarjeta.appendChild(subtituloAutor);
+
+      // 4. Descripción
+      const pDesc = document.createElement('p');
+      pDesc.className = 'descripcion_anuncio';
+      pDesc.textContent = descripcionTexto;
+      tarjeta.appendChild(pDesc);
+
+      if (esLarga) {
+        const btnVerMas = document.createElement('button');
+        btnVerMas.type = 'button';
+        btnVerMas.className = 'class_btn_ver_mas';
+        btnVerMas.textContent = 'Ver tarea completa';
+        btnVerMas.addEventListener('click', () => {
+          const elTitulo = document.getElementById('detalle_titulo_tarea');
+          const elCreador = document.getElementById('detalle_creador_tarea');
+          const elAsignado = document.getElementById('detalle_asignado_tarea');
+          const elFecha = document.getElementById('detalle_fecha_tarea');
+          const elEstado = document.getElementById('detalle_estado_tarea');
+          const elDesc = document.getElementById('detalle_descripcion_tarea');
+
+          if (elTitulo) elTitulo.textContent = tituloTexto;
+          if (elCreador) elCreador.textContent = `Creado por: ${nombreCreador}`;
+          if (elAsignado) elAsignado.textContent = asignadoTexto;
+          if (elFecha) elFecha.textContent = formatearFecha(tarea.fecha);
+          if (elEstado) elEstado.innerHTML = `<span class="etiqueta_tipo ${claseBadge}"><span class="punto_etiqueta"></span> ${escaparHTML(estadoValor)}</span>`;
+          if (elDesc) elDesc.textContent = descripcionTexto;
+
+          if (modalVerTarea) modalVerTarea.classList.add('modal_activo');
+        });
+        tarjeta.appendChild(btnVerMas);
+      }
+
+      // 5. Metadatos (Asignado a, Departamento, Fecha límite)
+      const filaMeta = document.createElement('div');
+      filaMeta.className = 'fila_metadatos_anuncio';
+
+      const crearMeta = (svgPath, texto) => {
+        const span = document.createElement('span');
+        span.className = 'item_metadato';
+        span.innerHTML = `<svg class="icono_metadato" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${svgPath}"/></svg> ${escaparHTML(texto)}`;
+        return span;
+      };
+
+      filaMeta.appendChild(crearMeta('M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', `Asignado: ${asignadoTexto}`));
+      filaMeta.appendChild(crearMeta('M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5', deptoDestino));
+      filaMeta.appendChild(crearMeta('M8 7V3m8 7V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', `Vence: ${formatearFecha(tarea.fecha)}`));
+      tarjeta.appendChild(filaMeta);
+
+      // 6. Botón "Visto / Marcar como visto" con nuevo diseño compacto tipo pill
       const botonVisto = document.createElement('button');
       botonVisto.type = 'button';
-      botonVisto.className = 'boton_visto_elemento';
-      botonVisto.textContent = tarea.visto ? 'Visto' : 'Marcar como visto';
+      botonVisto.className = 'boton_visto_elemento' + (tarea.visto ? ' visto' : ' pendiente');
+      botonVisto.innerHTML = tarea.visto
+        ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
+        : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(tarea.visto);
-      botonVisto.addEventListener('click', async () => {
+      botonVisto.setAttribute('aria-label', tarea.visto ? 'Tarea vista' : 'Marcar tarea como vista');
+      botonVisto.addEventListener('click', async (e) => {
+        e.stopPropagation();
         botonVisto.disabled = true;
         try {
           await window.OCID.marcarElementoVisto('tarea', Number(tarea.id));
@@ -626,29 +851,9 @@ document.addEventListener('DOMContentLoaded', () => {
           botonVisto.disabled = false;
         }
       });
-      fila.querySelector('.texto_titulo_tarea').appendChild(botonVisto);
-      const btnVerMas = fila.querySelector('.class_btn_ver_mas');
-      if (btnVerMas) {
-        btnVerMas.addEventListener('click', () => {
-          const elTitulo = document.getElementById('detalle_titulo_tarea');
-          const elCreador = document.getElementById('detalle_creador_tarea');
-          const elAsignado = document.getElementById('detalle_asignado_tarea');
-          const elFecha = document.getElementById('detalle_fecha_tarea');
-          const elEstado = document.getElementById('detalle_estado_tarea');
-          const elDesc = document.getElementById('detalle_descripcion_tarea');
+      tarjeta.appendChild(botonVisto);
 
-          if (elTitulo) elTitulo.textContent = tituloTexto;
-          if (elCreador) elCreador.textContent = textoCreadorConDepto;
-          if (elAsignado) elAsignado.textContent = asignadoTexto;
-          if (elFecha) elFecha.textContent = formatearFecha(tarea.fecha);
-          if (elEstado) elEstado.innerHTML = `<span class="${claseBadge}">${escaparHTML(estadoValor)}</span>`;
-          if (elDesc) elDesc.textContent = descripcionTexto;
-
-          if (modalVerTarea) modalVerTarea.classList.add('modal_activo');
-        });
-      }
-
-      cuerpoTabla.appendChild(fila);
+      cuerpoTabla.appendChild(tarjeta);
     });
 
     if (textoConteo) {
@@ -656,6 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderizarPaginacion(totalPaginas);
+    actualizarPanelesLaterales();
   }
 
   if (inputTexto) inputTexto.addEventListener('input', () => { paginaActual = 1; renderizarTabla(); });

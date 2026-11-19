@@ -381,23 +381,25 @@ textarea {
 }
 
 .boton_subir_archivo {
-    background-color: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     color: #ffffff;
     border: none;
-    border-radius: 8px;
-    padding: 11px 20px;
-    font-size: 13.5px;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-size: 13px;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
-    transition: background-color 0.2s ease;
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+    transition: all 0.2s ease;
 }
 
 .boton_subir_archivo:hover {
-    background-color: #1d4ed8;
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 /* Barra de filtros con inputs grandes (44px) */
@@ -586,25 +588,43 @@ textarea {
 }
 
 .boton_accion_icono {
-    background: none;
-    border: none;
+    width: 32px;
+    height: 32px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     color: #64748b;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    border-radius: 6px;
-    transition: all 0.2s;
+    padding: 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
-#zona_archivo[hidden] {
-    display: none !important;
+.boton_accion_icono[title="Descargar"] {
+    color: #2563eb;
 }
 
-.boton_accion_icono:hover {
-    background-color: #f1f5f9;
-    color: #0f172a;
+.boton_accion_icono[title="Descargar"]:hover {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+}
+
+.boton_accion_icono[title="Eliminar"] {
+    color: #ef4444;
+}
+
+.boton_accion_icono[title="Eliminar"]:hover {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
 }
 
 /* Paginador */

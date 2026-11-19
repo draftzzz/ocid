@@ -54,3 +54,113 @@
     flex-direction: column;
   }
 }
+
+/* Papelera en tarjetas verticales (movil) */
+@media (max-width: 768px) {
+    .controles_papelera {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .pestanas_papelera {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .boton_pestana_papelera {
+        min-height: 44px;
+        padding: 8px 6px;
+        font-size: 12px;
+        justify-content: center;
+    }
+
+    .contador_papelera {
+        white-space: normal;
+        text-align: center;
+    }
+
+    .contenedor_tabla_papelera {
+        overflow: visible !important;
+        background: transparent !important;
+    }
+
+    .tabla_papelera,
+    .tabla_papelera tbody,
+    .tabla_papelera tr,
+    .tabla_papelera td {
+        display: block !important;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .tabla_papelera thead {
+        display: none !important;
+    }
+
+    .tabla_papelera tbody tr {
+        margin: 12px;
+        padding: 14px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .tabla_papelera td {
+        border: 0 !important;
+        padding: 7px 0 !important;
+        text-align: left !important;
+        font-size: 13.5px;
+        line-height: 1.45;
+        overflow-wrap: anywhere;
+    }
+
+    .tabla_papelera td::before {
+        content: attr(data-etiqueta);
+        display: block;
+        margin-bottom: 2px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .tabla_papelera td.columna_centrada {
+        padding-top: 12px !important;
+        border-top: 1px dashed #e2e8f0 !important;
+        margin-top: 6px;
+    }
+
+    .grupo_acciones_papelera {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+    }
+
+    .grupo_acciones_papelera button {
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 8px;
+        font-size: 13px;
+        font-weight: 600;
+        justify-content: center;
+    }
+
+    .tabla_papelera td.celda_estado_vacio {
+        margin: 12px;
+        padding: 28px 18px !important;
+        text-align: center !important;
+        color: #64748b;
+        background: #ffffff;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+    }
+
+    .tabla_papelera td.celda_estado_vacio::before {
+        content: none;
+    }
+}

@@ -1345,18 +1345,14 @@ app.get('/anuncios/papelera', async (req, res) => {
          AND (
            a.autor_id = $1
            OR EXISTS (
-             SELECT 1 FROM usuarios gestor
-             WHERE gestor.id = $1
-               AND (
-                 LOWER(BTRIM(COALESCE(gestor.rol, ''))) IN ('administrador', 'administrador general')
-                 OR (
-                   gestor.es_jefe IS TRUE
-                   AND gestor.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
-                 )
-               )
-           )
-         )
-       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
+             SELECT 1 FROM usuarios jefe
+             WHERE jefe.id = a.eliminado_por
+               AND jefe.es_jefe IS TRUE
+               AND jefe.departamento_id = (SELECT u.departamento_id FROM usuarios u WHERE u.id = $1)
+               AND jefe.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+             )
+           
+ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
       [usuarioId]
     );
     res.json({ success: true, anuncios: resultado.rows });
@@ -1687,18 +1683,14 @@ app.get('/archivos/papelera', async (req, res) => {
          AND (
            a.autor_id = $1
            OR EXISTS (
-             SELECT 1 FROM usuarios gestor
-             WHERE gestor.id = $1
-               AND (
-                 LOWER(BTRIM(COALESCE(gestor.rol, ''))) IN ('administrador', 'administrador general')
-                 OR (
-                   gestor.es_jefe IS TRUE
-                   AND gestor.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
-                 )
-               )
-           )
-         )
-       ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
+             SELECT 1 FROM usuarios jefe
+             WHERE jefe.id = a.eliminado_por
+               AND jefe.es_jefe IS TRUE
+               AND jefe.departamento_id = (SELECT u.departamento_id FROM usuarios u WHERE u.id = $1)
+               AND jefe.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
+             )
+           
+ORDER BY a.fecha_eliminacion DESC NULLS LAST, a.id DESC`,
       [usuarioId]
     );
     res.json({ success: true, archivos: resultado.rows });
@@ -2071,21 +2063,17 @@ app.get('/tareas/papelera', async (req, res) => {
          AND (
            t.autor_id = $1
            OR EXISTS (
-             SELECT 1 FROM usuarios gestor
-             WHERE gestor.id = $1
+             SELECT 1 FROM usuarios jefe
+             WHERE jefe.id = t.eliminado_por
+               AND jefe.es_jefe IS TRUE
+               AND jefe.departamento_id = (SELECT u.departamento_id FROM usuarios u WHERE u.id = $1)
                AND (
-                 LOWER(BTRIM(COALESCE(gestor.rol, ''))) IN ('administrador', 'administrador general')
-                 OR (
-                   gestor.es_jefe IS TRUE
-                   AND (
-                     gestor.departamento_id = t.departamento_emisor_id
-                     OR gestor.departamento_id = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
-                   )
-                 )
+                 jefe.departamento_id = t.departamento_emisor_id
+                 OR jefe.departamento_id = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
                )
-           )
-         )
-       ORDER BY t.fecha_eliminacion DESC NULLS LAST, t.id DESC`,
+             )
+           
+ORDER BY t.fecha_eliminacion DESC NULLS LAST, t.id DESC`,
       [Number(req.usuario.id)]
     );
     res.json({ success: true, tareas: resultado.rows });
@@ -2597,9 +2585,8 @@ app.get('/notificaciones', async (req, res) => {
            AND (
              a.autor_id = $1
              OR $2::INTEGER IN (a.departamento_id, a.departamento_emisor_id)
-             OR $3::BOOLEAN
            )`,
-        [usuarioId, departamentoId, esRolAdministrador(usuarioResult.rows[0].rol)]
+        [usuarioId, departamentoId]
       ),
       pool.query(
         `SELECT NULL::INTEGER AS id, t.id AS elemento_id, t.fecha_creacion AS fecha,
@@ -2614,9 +2601,8 @@ app.get('/notificaciones', async (req, res) => {
              t.autor_id = $1
              OR $2::INTEGER = t.departamento_emisor_id
              OR $2::INTEGER = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
-             OR $3::BOOLEAN
            )`,
-        [usuarioId, departamentoId, esRolAdministrador(usuarioResult.rows[0].rol)]
+        [usuarioId, departamentoId]
       ),
       pool.query(
         `SELECT NULL::INTEGER AS id, f.id AS elemento_id, f.fecha,
@@ -2631,9 +2617,8 @@ app.get('/notificaciones', async (req, res) => {
            AND (
              f.autor_id = $1
              OR $2::INTEGER IN (f.departamento_id, f.departamento_emisor_id)
-             OR $3::BOOLEAN
            )`,
-        [usuarioId, departamentoId, esRolAdministrador(usuarioResult.rows[0].rol)]
+        [usuarioId, departamentoId]
       )
     ]);
 

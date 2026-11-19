@@ -312,6 +312,60 @@ textarea {
   transition: opacity 220ms ease;
 }
 
+/* ==========================================================================
+   Badge/Pill Moderno y Discreto: Visto / Marcar como visto
+   ========================================================================== */
+.boton_visto_elemento {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  width: auto !important;
+  max-width: fit-content !important;
+  height: auto !important;
+  min-height: 26px !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  cursor: pointer !important;
+  transition: all 180ms ease !important;
+  text-decoration: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  flex-shrink: 0 !important;
+  align-self: flex-start !important;
+}
+
+.boton_visto_elemento:hover:not(:disabled):not(.visto) {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.08) !important;
+}
+
+.boton_visto_elemento:disabled,
+.boton_visto_elemento.visto {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+  cursor: default !important;
+  opacity: 1 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.boton_visto_elemento .icono_check_visto {
+  display: inline-block !important;
+  width: 13px !important;
+  height: 13px !important;
+  flex-shrink: 0 !important;
+}
+
 @media (max-width: 768px) {
   body.menu_movil_abierto {
     overflow: hidden;
@@ -716,7 +770,27 @@ body.modal_abierto {
   }
 
   .panel_notificaciones_global {
-    right: -44px;
+    right: 0;
+    left: auto;
+    width: min(360px, calc(100vw - 32px));
+    max-height: min(62vh, 480px);
+    border-radius: 12px;
+  }
+
+  .panel_notificaciones_encabezado {
+    padding: 12px 14px;
+  }
+
+  .panel_notificacion_item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 11px 14px;
+  }
+
+  .panel_notificacion_marcar_leida {
+    white-space: nowrap;
+    padding: 7px 10px;
+    font-size: 11px;
   }
 }
 

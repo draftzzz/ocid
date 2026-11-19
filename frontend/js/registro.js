@@ -30,7 +30,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (datos.success) {
-        location.href = 'login.html';
+        const correo = $('correo').value.trim();
+        const password = $('password').value;
+        const sesion = await window.OCID.apiPublico('/login', {
+          method: 'POST',
+          body: JSON.stringify({ correo, password })
+        });
+        if (!sesion.success || !sesion.token || !sesion.usuario) {
+          throw new Error('La cuenta se creÃ³, pero no se pudo iniciar sesiÃ³n automÃ¡ticamente. Inicia sesiÃ³n desde el formulario.');
+        }
+        window.OCID.guardarSesion(sesion.usuario, sesion.token);
+        window.location.href = 'inicio.html';
+        return;
       } else {
         throw new Error(datos.error || 'No se pudo completar el registro.');
       }
