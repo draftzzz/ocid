@@ -2056,26 +2056,51 @@ app.get('/tareas', async (req, res) => {
   }
 });
 
+// Normaliza nombres sin acentos ni espacios extra para compararlos de forma estable
+function normalizarNombreDepartamento(valor) {
+  return String(valor == null ? '' : valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('es-MX')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Acepta IDs o nombres de departamento y Devuelve los destinos existentes
 async function resolverDestinosTarea(db, departamentos, departamento) {
-  const nombres = Array.isArray(departamentos)
+  const valores = Array.isArray(departamentos)
     ? departamentos
     : String(departamento || 'General').split(',');
-  const destinos = [...new Set(nombres.map(nombre => String(nombre).trim()).filter(Boolean))];
-  if (!destinos.length || destinos.some(nombre => nombre.toLocaleLowerCase('es-MX') === 'general')) {
+  const destinos = [...new Set(valores.map(valor => String(valor).trim()).filter(Boolean))];
+  if (!destinos.length || destinos.some(valor => normalizarNombreDepartamento(valor) === 'general')) {
     if (destinos.length > 1) throw new Error('Selecciona General o departamentos específicos, no ambos');
     return { ids: [], nombres: ['General'] };
   }
+  // Carga el catálogo y lo indexa por ID y por nombre normalizado
   const encontrados = await db.query(
-    `SELECT id, nombre FROM departamentos
-     WHERE eliminado = FALSE AND LOWER(BTRIM(nombre)) = ANY($1::TEXT[])`,
-    [destinos.map(nombre => nombre.toLocaleLowerCase('es-MX'))]
+    'SELECT id, nombre FROM departamentos WHERE eliminado = FALSE ORDER BY id ASC'
   );
-  if (encontrados.rowCount !== destinos.length) {
-    throw new Error('Uno o más departamentos destino no existen');
-  }
+  const porId = new Map();
+  const porNombre = new Map();
+  encontrados.rows.forEach(fila => {
+    porId.set(Number(fila.id), fila);
+    porNombre.set(normalizarNombreDepartamento(fila.nombre), fila);
+  });
+  const resueltos = destinos.map(valor => {
+    const id = Number(valor);
+    const fila = Number.isSafeInteger(id) && id > 0
+      ? porId.get(id)
+      : porNombre.get(normalizarNombreDepartamento(valor));
+    // Incluye el valor recibido para diagnosticar departamentos inexistentes
+    if (!fila) {
+      throw new Error(`Uno o más departamentos destino no existen (recibido: ${JSON.stringify(destinos)})`);
+    }
+    return fila;
+  });
+  const unicos = [...new Map(resueltos.map(fila => [Number(fila.id), fila])).values()];
   return {
-    ids: encontrados.rows.map(fila => Number(fila.id)),
-    nombres: encontrados.rows.map(fila => fila.nombre)
+    ids: unicos.map(fila => Number(fila.id)),
+    nombres: unicos.map(fila => fila.nombre)
   };
 }
 

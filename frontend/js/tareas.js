@@ -859,12 +859,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const deptoDestino = personaSeleccionada.departamento || personaSeleccionada.departamento_nombre || 'General';
+      // Envía el ID del departamento cuando existe para evitar ambigüedades con acentos
+      const idDepartamento = Number(personaSeleccionada.departamento_id);
+      const destinosTarea = Number.isSafeInteger(idDepartamento) && idDepartamento > 0
+        ? [idDepartamento]
+        : [deptoDestino];
 
       const objetoTarea = {
         titulo: document.getElementById('campo_modal_titulo').value.trim(),
         descripcion: document.getElementById('campo_modal_descripcion').value.trim(),
         asignado: personaSeleccionada.nombre || personaSeleccionada.correo || personaSeleccionada.usuario,
         departamento: deptoDestino,
+        departamentos: destinosTarea,
         fecha: fechaSeleccionada,
         estado: document.getElementById('campo_modal_estado').value,
         autor_id: Number(usuario.id)
@@ -895,7 +901,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await cargarCatalogosServidor();
       } catch (error) {
-        mostrarToastTareas('Ocurrió un error al guardar la tarea.', 'error');
+        // Muestra el motivo del servidor cuando está disponible
+        mostrarToastTareas(error.message || 'Ocurrió un error al guardar la tarea.', 'error');
       }
     });
   }
