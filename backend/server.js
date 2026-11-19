@@ -2140,7 +2140,7 @@ app.post('/tareas', async (req, res) => {
        )
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE) RETURNING *`,
       [titulo.trim(), descripcion ? descripcion.trim() : null,
-        asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar',
+        asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || '',
         destinos.nombres.join(', '), destinos.ids, usuario.rows[0].departamento_id,
         estado || 'Pendiente', autorId]
     );
@@ -2197,7 +2197,7 @@ app.put('/tareas/:id', async (req, res) => {
     if (camposEnviados.includes('descripcion')) agregar('descripcion', descripcion ? descripcion.trim() : null);
     if (camposEnviados.includes('asignado')) agregar('asignado', asignado ? asignado.trim() : 'General / Sin asignar');
     if (camposEnviados.includes('fecha')) agregar('fecha', fecha);
-    if (camposEnviados.includes('horario')) agregar('horario', horario || 'Horario a confirmar');
+    if (camposEnviados.includes('horario')) agregar('horario', horario || '');
     if (camposEnviados.includes('departamentos') || camposEnviados.includes('departamento')) {
       const destinos = await resolverDestinosTarea(pool, departamentos, departamento);
       agregar('departamento', destinos.nombres.join(', '));

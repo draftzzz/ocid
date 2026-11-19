@@ -51,8 +51,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const mesesCortos = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
   
+  // Calcula el día actual en la zona horaria de Monterrey
+  function fechaActualMonterrey() {
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Monterrey',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+    const valor = tipo => Number(partes.find(parte => parte.type === tipo).value);
+    return new Date(valor('year'), valor('month') - 1, valor('day'));
+  }
+
   let tareas = [];
-  let fechaSeleccionada = new Date(2026, 8, 15);
+  let fechaSeleccionada = fechaActualMonterrey();
   let vistaActual = 'mes';
   let tareaEnEdicionId = null;
 
@@ -226,6 +238,7 @@ async function cargarTareasDesdeDB() {
       }
 
       const nombreDueño = tarea.autor_nombre || 'Coordinación';
+      const horarioTexto = textoHorarioTarea(tarea.horario);
 
       // Estado del evento con la misma píldora que la vista de tareas
       const estadoValor = tarea.estado || 'Pendiente';
@@ -243,7 +256,7 @@ async function cargarTareasDesdeDB() {
         </div>
         <div class="detalles_evento">
           <div class="titulo_item_evento">${escaparHTML(tarea.titulo)}</div>
-          <div class="horario_item_evento">${escaparHTML(tarea.horario || 'Horario a confirmar')}</div>
+          ${horarioTexto ? `<div class="horario_item_evento">${escaparHTML(horarioTexto)}</div>` : ''}
           <div class="departamento_item_evento">
             <span class="etiqueta_tipo etiqueta_departamento_calendario"><span class="punto_etiqueta"></span>${escaparHTML(tarea.departamento || 'General')}</span>
             <span class="etiqueta_tipo ${claseEstado}"><span class="punto_etiqueta"></span>${escaparHTML(estadoValor)}</span>
@@ -288,11 +301,8 @@ async function cargarTareasDesdeDB() {
       });
       item.querySelector('.detalles_evento').appendChild(botonVisto);
 
-      // Clic en el evento abre el detalle, salvo en sus botones de acción
-      item.addEventListener('click', (evento) => {
-        if (evento.target.closest('button, .menu_opciones_evento')) return;
-        abrirDetalleTarea(tarea);
-      });
+      // Un solo clic o toque abre el detalle del evento
+      registrarAperturaTarea(item, tarea);
 
       listaEventos.appendChild(item);
     });
@@ -368,19 +378,20 @@ async function cargarTareasDesdeDB() {
         puntos.className = 'contenedor_puntos_evento';
         tareasDia.forEach(item => {
           const marca = document.createElement('span');
-          // Cada etiqueta del día abre el detalle de su tarea
+          // Cada etiqueta del día abre el detalle con un solo clic o toque
           marca.className = 'marca_evento_item';
+          marca.setAttribute('role', 'button');
+          marca.setAttribute('tabindex', '0');
           marca.textContent = item.titulo;
-          marca.addEventListener('click', (evento) => {
-            evento.stopPropagation();
-            abrirDetalleTarea(item);
-          });
+          registrarAperturaTarea(marca, item);
           puntos.appendChild(marca);
         });
         celda.appendChild(puntos);
       }
 
-      celda.addEventListener('click', () => {
+      // El área de eventos no debe seleccionar el día
+      celda.addEventListener('click', evento => {
+        if (evento.target.closest('.contenedor_puntos_evento, .marca_evento_item')) return;
         fechaSeleccionada = new Date(fecha);
         campoFecha.value = clave;
         dibujarGrilla();
@@ -402,6 +413,63 @@ async function cargarTareasDesdeDB() {
     return String(valor ?? '').replace(/[&<>"']/g, c => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[c]);
+  }
+
+  // Omite el texto de horario pendiente heredado de registros anteriores
+  function textoHorarioTarea(valor) {
+    const texto = String(valor || '').trim();
+    const normalizado = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    return /^horario\s+a\s+confirmar$/.test(normalizado) ? '' : texto;
+  }
+
+  let ultimoDesplazamientoTactil = 0;
+
+  // Abre el detalle con un toque y descarta gestos de desplazamiento
+  function registrarAperturaTarea(elemento, tarea) {
+    let inicio = null;
+    let seDesplazo = false;
+    const esAccion = evento => Boolean(evento.target && evento.target.closest &&
+      evento.target.closest('button, .menu_opciones_evento'));
+    const punto = evento => {
+      const fuente = evento.touches && evento.touches.length ? evento.touches[0] : evento;
+      return { x: fuente.clientX, y: fuente.clientY };
+    };
+    const iniciar = evento => {
+      inicio = punto(evento);
+      seDesplazo = false;
+    };
+    const mover = evento => {
+      if (!inicio) return;
+      if (evento.pointerType && evento.pointerType !== 'touch' && !evento.touches) return;
+      const actual = punto(evento);
+      if (Math.abs(actual.x - inicio.x) + Math.abs(actual.y - inicio.y) > 12) {
+        seDesplazo = true;
+        ultimoDesplazamientoTactil = Date.now();
+      }
+    };
+    elemento.addEventListener('pointerdown', iniciar, { passive: true });
+    elemento.addEventListener('pointermove', mover, { passive: true });
+    elemento.addEventListener('touchstart', iniciar, { passive: true });
+    elemento.addEventListener('touchmove', mover, { passive: true });
+    elemento.addEventListener('touchend', evento => {
+      if (seDesplazo) evento.preventDefault();
+    }, { passive: false });
+    elemento.addEventListener('click', evento => {
+      evento.stopPropagation();
+      if (esAccion(evento)) return;
+      if (seDesplazo || Date.now() - ultimoDesplazamientoTactil < 350) {
+        seDesplazo = false;
+        return;
+      }
+      abrirDetalleTarea(tarea);
+    });
+    elemento.addEventListener('keydown', evento => {
+      if (evento.key !== 'Enter' && evento.key !== ' ') return;
+      if (esAccion(evento)) return;
+      evento.preventDefault();
+      evento.stopPropagation();
+      abrirDetalleTarea(tarea);
+    });
   }
 
   function formatearFechaDetalle(valor) {
@@ -470,7 +538,7 @@ async function cargarTareasDesdeDB() {
         body: JSON.stringify({
           titulo,
           fecha,
-          horario: horario || 'Horario a confirmar',
+          horario: horario || '',
           departamento: depto || 'General',
           descripcion: tareaAEditar ? tareaAEditar.descripcion || '' : '',
           asignado: tareaAEditar ? tareaAEditar.asignado || 'General / Sin asignar' : 'General / Sin asignar',

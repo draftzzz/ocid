@@ -544,6 +544,8 @@ textarea {
     color: #2563eb;
     border-left: 2px solid #2563eb;
     cursor: pointer;
+    /* Toque directo en celdas y listas */
+    touch-action: manipulation;
 }
 
 /* Eventos Laterales y Menú de Opciones */
@@ -581,6 +583,8 @@ textarea {
     padding-bottom: 14px;
     border-bottom: 1px solid #f1f5f9;
     cursor: pointer;
+    /* Toque inmediato sin clic fantasma al soltar el desplazamiento */
+    touch-action: manipulation;
 }
 
 /* Contenedor y menú de opciones sin estilos inline */
@@ -1062,6 +1066,17 @@ textarea {
 
     .departamento_item_evento {
         overflow: hidden;
+    }
+
+    /* Eventos sin desbordamiento horizontal en teléfono */
+    .contenedor_puntos_evento,
+    .detalles_evento {
+        min-width: 0;
+    }
+
+    .marca_evento_item {
+        box-sizing: border-box;
+        width: 100%;
     }
 }
 

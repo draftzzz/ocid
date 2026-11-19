@@ -394,9 +394,6 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 24px;
-    overflow-y: auto;
-    scroll-behavior: smooth;
-    scroll-padding-bottom: 48px;
 }
 
 .cabecera_modulo {
