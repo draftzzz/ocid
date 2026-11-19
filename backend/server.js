@@ -2346,13 +2346,14 @@ app.get('/departamentos', async (req, res) => {
   }
 });
 
+// El código se compara sin importar mayúsculas porque se genera con caso mixto
 app.get('/departamentos/codigo/:codigo', async (req, res) => {
   const { codigo } = req.params;
   try {
     const resultado = await pool.query(
       `SELECT d.id, d.nombre, d.descripcion, d.jefe_id, d.codigo, u.nombre AS nombre_jefe
        FROM departamentos d LEFT JOIN usuarios u ON u.id = d.jefe_id
-       WHERE BTRIM(d.codigo) = BTRIM($1) AND d.eliminado = FALSE
+       WHERE LOWER(BTRIM(d.codigo)) = LOWER(BTRIM($1)) AND d.eliminado = FALSE
        LIMIT 1`,
       [codigo.trim()]
     );
@@ -2363,7 +2364,8 @@ app.get('/departamentos/codigo/:codigo', async (req, res) => {
   }
 });
 
-app.post('/departamentos/unirse', departmentJoinLimiter, async (req, res) => {
+// Ruta protegida que valida el código en PostgreSQL y actualiza el usuario
+app.post('/departamentos/unirse', autenticarJWT, departmentJoinLimiter, async (req, res) => {
   const usuarioId = Number(req.usuario && req.usuario.id);
   const codigo = req.body && typeof req.body.codigo === 'string' ? req.body.codigo.trim() : '';
   if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
@@ -2387,7 +2389,7 @@ app.post('/departamentos/unirse', departmentJoinLimiter, async (req, res) => {
     if (!usuarioActual.rowCount) {
       await client.query('ROLLBACK');
       transaccionAbierta = false;
-      return res.status(404).json({ success: false, error: 'El usuario no existe' });
+      return res.status(401).json({ success: false, error: 'Tu sesión ya no es válida. Inicia sesión nuevamente.' });
     }
     if (usuarioActual.rows[0].departamento_id) {
       await client.query('ROLLBACK');
@@ -2397,14 +2399,14 @@ app.post('/departamentos/unirse', departmentJoinLimiter, async (req, res) => {
 
     const departamento = await client.query(
       `SELECT id FROM departamentos
-       WHERE BTRIM(codigo) = $1 AND eliminado = FALSE
+       WHERE LOWER(BTRIM(codigo)) = LOWER($1) AND eliminado = FALSE
        FOR KEY SHARE`,
       [codigo]
     );
     if (!departamento.rowCount) {
       await client.query('ROLLBACK');
       transaccionAbierta = false;
-      return res.status(404).json({ success: false, error: 'Código de departamento no encontrado' });
+      return res.status(404).json({ success: false, error: 'El código no existe o no pertenece a un departamento activo.' });
     }
 
     await client.query(

@@ -190,6 +190,7 @@ textarea {
 /* ==========================================================================
    3. Área Principal y Barra Superior
    ========================================================================== */
+/* Medidas de referencia del main compartidas con notificaciones.css */
 .area_principal {
     flex: 1;
     display: flex;
@@ -364,6 +365,7 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    overflow-x: hidden;
     overflow-y: auto;
 }
 

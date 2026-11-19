@@ -198,18 +198,17 @@ textarea {
     background-color: rgba(239, 68, 68, 0.12);
 }
 
+/* Main con las mismas medidas y distribución que anuncios.css */
 .area_principal {
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    min-width: 0px;
     width: calc(100% - 256px);
     height: 100vh;
-    height: 100dvh;
     margin-left: 256px;
     overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overflow-y: hidden;
     background-color: #f1f5f9;
 }
 
@@ -391,15 +390,19 @@ textarea {
 /* ==========================================================================
    3. Encabezado y filtros de la sección
    ========================================================================== */
+/* Contenedor interior idéntico a .cuerpo_contenido de anuncios.css */
 .contenido_principal {
     flex: 1;
+    padding: 28px 32px;
+    max-width: 1300px;
+    width: 100%;
+    margin: 0px auto;
     display: flex;
     flex-direction: column;
     gap: 24px;
-    width: 100%;
-    max-width: 1300px;
-    margin: 0px auto;
-    padding: 28px 32px 48px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
 }
 
 .cabecera_seccion_notificaciones {
@@ -1090,9 +1093,10 @@ body.modal_abierto {
 }
 
 @media (max-width: 600px) {
+    /* Mismo padding y separación móvil que anuncios.css */
     .contenido_principal {
         gap: 16px;
-        padding: 16px 12px 32px;
+        padding: 16px 12px;
     }
 
     .area_principal .barra_superior {
