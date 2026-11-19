@@ -36,6 +36,9 @@
 
 html {
     min-width: 320px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 body {
@@ -43,6 +46,8 @@ body {
     color: #0f172a;
     display: flex;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
     overflow-x: hidden;
 }
 
@@ -1492,6 +1497,16 @@ textarea {
 
 /* Barra superior siempre visible al desplazarse en movil */
 @media (max-width: 768px) {
+    /* Pagina al 100% sin desplazamiento horizontal ni cortes */
+    html,
+    body,
+    .area_principal,
+    .contenido_principal {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     .area_principal {
         height: calc(100vh - 64px) !important;
         height: calc(100dvh - 64px) !important;

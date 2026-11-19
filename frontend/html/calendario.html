@@ -217,6 +217,31 @@
     </div>
     <!-- END: ModalNuevoEvento -->
 
+    <!-- BEGIN: ModalDetalleTarea -->
+    <div class="modal_overlay" id="modal_detalle_tarea">
+        <div class="modal_caja modal_detalle_caja">
+            <div class="modal_cabecera">
+                <h3 class="modal_titulo" id="detalle_titulo">Detalle de la tarea</h3>
+                <button class="modal_cerrar" id="cerrar_modal_detalle" type="button" aria-label="Cerrar detalle">×</button>
+            </div>
+            <!-- Campos del detalle con estilos en calendario.css -->
+            <div class="modal_cuerpo modal_detalle_cuerpo">
+                <p class="detalle_descripcion_tarea" id="detalle_descripcion"></p>
+                <dl class="detalle_lista">
+                    <div class="detalle_fila"><dt>Estado</dt><dd id="detalle_estado"></dd></div>
+                    <div class="detalle_fila"><dt>Prioridad</dt><dd id="detalle_prioridad"></dd></div>
+                    <div class="detalle_fila"><dt>Fecha límite</dt><dd id="detalle_fecha"></dd></div>
+                    <div class="detalle_fila"><dt>Departamento</dt><dd id="detalle_departamento"></dd></div>
+                    <div class="detalle_fila"><dt>Creador</dt><dd id="detalle_creador"></dd></div>
+                </dl>
+            </div>
+            <div class="modal_pie">
+                <button class="boton_cancelar" id="cerrar_detalle_pie" type="button">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <!-- END: ModalDetalleTarea -->
+
     <!-- Scripts de la plataforma -->
     <script src="../js/ocid-core.js"></script>
     <script src="../js/calendario.js"></script>

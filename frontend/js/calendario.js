@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const grilla = document.getElementById('contenedor_grilla_dias');
   const listaEventos = document.getElementById('lista_eventos_contenedor');
   const modal = document.getElementById('modal_nuevo_evento');
+  const modalDetalle = document.getElementById('modal_detalle_tarea');
   const campoFecha = document.getElementById('input_dia_evento');
 
   function mostrarToastCalendario(mensaje, tipo = 'exito') {
@@ -286,6 +287,12 @@ async function cargarTareasDesdeDB() {
       });
       item.querySelector('.detalles_evento').appendChild(botonVisto);
 
+      // Clic en el evento abre el detalle, salvo en sus botones de acción
+      item.addEventListener('click', (evento) => {
+        if (evento.target.closest('button, .menu_opciones_evento')) return;
+        abrirDetalleTarea(tarea);
+      });
+
       listaEventos.appendChild(item);
     });
 
@@ -360,8 +367,13 @@ async function cargarTareasDesdeDB() {
         puntos.className = 'contenedor_puntos_evento';
         tareasDia.forEach(item => {
           const marca = document.createElement('span');
+          // Cada etiqueta del día abre el detalle de su tarea
           marca.className = 'marca_evento_item';
           marca.textContent = item.titulo;
+          marca.addEventListener('click', (evento) => {
+            evento.stopPropagation();
+            abrirDetalleTarea(item);
+          });
           puntos.appendChild(marca);
         });
         celda.appendChild(puntos);
@@ -389,6 +401,36 @@ async function cargarTareasDesdeDB() {
     return String(valor ?? '').replace(/[&<>"']/g, c => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[c]);
+  }
+
+  function formatearFechaDetalle(valor) {
+    if (!valor) return 'Sin fecha';
+    const texto = String(valor);
+    const fecha = new Date(texto.includes('T') ? texto : texto + 'T00:00:00');
+    return isNaN(fecha.getTime())
+      ? texto
+      : fecha.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  // Modal de detalle con todos los campos de la tarea
+  function abrirDetalleTarea(tarea) {
+    if (!modalDetalle || !tarea) return;
+    const asignar = (id, valor) => {
+      const elemento = document.getElementById(id);
+      if (elemento) elemento.textContent = valor || 'No disponible';
+    };
+    asignar('detalle_titulo', tarea.titulo);
+    asignar('detalle_descripcion', tarea.descripcion);
+    asignar('detalle_estado', tarea.estado || 'Pendiente');
+    asignar('detalle_prioridad', tarea.prioridad || 'No definida');
+    asignar('detalle_fecha', formatearFechaDetalle(tarea.fecha));
+    asignar('detalle_departamento', tarea.departamento || 'General');
+    asignar('detalle_creador', tarea.autor_nombre || 'Coordinación');
+    modalDetalle.classList.add('modal_activo');
+  }
+
+  function cerrarDetalleTarea() {
+    if (modalDetalle) modalDetalle.classList.remove('modal_activo');
   }
 
   async function guardarTareaBD() {
@@ -491,6 +533,21 @@ async function cargarTareasDesdeDB() {
   });
 
   document.getElementById('boton_guardar_evento').addEventListener('click', guardarTareaBD);
+
+  // Cierre del detalle por botón, fondo y tecla Escape
+  [document.getElementById('cerrar_modal_detalle'), document.getElementById('cerrar_detalle_pie')].forEach(boton => {
+    if (boton) boton.addEventListener('click', cerrarDetalleTarea);
+  });
+
+  if (modalDetalle) {
+    modalDetalle.addEventListener('click', (evento) => {
+      if (evento.target === modalDetalle) cerrarDetalleTarea();
+    });
+  }
+
+  document.addEventListener('keydown', (evento) => {
+    if (evento.key === 'Escape') cerrarDetalleTarea();
+  });
 
   cargarTareasDesdeDB();
 });

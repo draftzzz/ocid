@@ -71,6 +71,10 @@
                 <i class="fa-solid fa-bell icono_nav"></i>
                 <span>Notificaciones</span>
             </a>
+            <a class="enlace_navegacion" href="papelera.html">
+                <i class="fa-solid fa-trash-arrow-up icono_nav"></i>
+                <span>Papelera</span>
+            </a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion" href="mi-perfil.html">
                 <i class="fa-solid fa-user icono_nav"></i>
@@ -89,7 +93,8 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior" data-purpose="cabecera_global">
             <div class="seccion_superior_izquierda">
-                <button type="button" class="boton_menu_hamburguesa" aria-label="Abrir menú de navegación" aria-expanded="false">
+                <button type="button" class="boton_menu_hamburguesa" aria-label="Abrir menú de navegación"
+                    aria-expanded="false">
                     <i class="fa-solid fa-bars" aria-hidden="true"></i>
                 </button>
             </div>
@@ -112,6 +117,7 @@
         </header>
 
         <!-- BEGIN: ContenidoPrincipal / DepartmentDashboard -->
+        <!-- Contenedor a ancho completo sin desbordamiento horizontal en móvil -->
         <div class="contenido_principal" data-purpose="department_view">
             <!-- Título de sección -->
             <div class="cabecera_modulo">
@@ -125,8 +131,11 @@
                 <div class="tarjeta_general" data-purpose="tarjeta_resumen_departamento">
                     <div class="encabezado_departamento">
                         <div class="icono_dep_destacado">
-                            <svg fill="none" height="26" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="26">
-                                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                            <svg fill="none" height="26" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                                width="26">
+                                <path
+                                    d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z">
+                                </path>
                                 <path d="m3.3 7 8.7 5 8.7-5"></path>
                                 <path d="M12 22V12"></path>
                             </svg>
@@ -135,21 +144,21 @@
                             <h2 class="nombre_departamento" id="nombre_departamento_texto"></h2>
                             <button class="boton_codigo_acceso" id="boton_codigo_acceso" type="button" hidden>
                                 <svg aria-hidden="true" fill="none" height="16" stroke="currentColor"
-                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    viewBox="0 0 24 24" width="16">
+                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"
+                                    width="16">
                                     <circle cx="8" cy="15" r="5"></circle>
                                     <path d="m21 2-9.6 9.6M15.5 7.5l3 3M18.5 4.5l3 3"></path>
                                 </svg>
                                 <span id="detalle_departamento_texto"></span>
                             </button>
                         </div>
-                        <button
-                            aria-label="Opciones de departamento"
-                            class="boton_acciones"
-                            hidden
-                            id="boton_opciones_departamento"
-                            type="button">
-                            <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+                        <button aria-label="Opciones de departamento" class="boton_acciones" hidden
+                            id="boton_opciones_departamento" type="button">
+                            <svg fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
+                                <circle cx="12" cy="5" r="1.5"></circle>
+                                <circle cx="12" cy="12" r="1.5"></circle>
+                                <circle cx="12" cy="19" r="1.5"></circle>
+                            </svg>
                         </button>
                     </div>
 
@@ -157,7 +166,11 @@
                     <div class="fila_metricas">
                         <div class="caja_metrica" data-purpose="metrica_docentes">
                             <div class="icono_metrica icono_docentes">
-                                <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                                <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                                    width="18">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                </svg>
                             </div>
                             <div>
                                 <div class="etiqueta_metrica">Docentes</div>
@@ -166,7 +179,11 @@
                         </div>
                         <div class="caja_metrica" data-purpose="metrica_documentos">
                             <div class="icono_metrica icono_documentos">
-                                <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                                    width="18">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
                             </div>
                             <div>
                                 <div class="etiqueta_metrica">Documentos</div>
@@ -175,7 +192,13 @@
                         </div>
                         <div class="caja_metrica" data-purpose="metrica_eventos">
                             <div class="icono_metrica icono_eventos">
-                                <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="18"><rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                                <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                                    width="18">
+                                    <rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect>
+                                    <line x1="16" x2="16" y1="2" y2="6"></line>
+                                    <line x1="8" x2="8" y1="2" y2="6"></line>
+                                    <line x1="3" x2="21" y1="10" y2="10"></line>
+                                </svg>
                             </div>
                             <div>
                                 <div class="etiqueta_metrica">Eventos</div>
@@ -205,18 +228,21 @@
             <div class="tarjeta_integrantes" data-purpose="bloque_integrantes">
                 <div class="cabecera_integrantes">
                     <div class="titulo_seccion_bloque titulo_integrantes_margen">Integrantes del departamento</div>
-                    <a class="enlace_ver_todos" href="#ver_todos_integrantes"
-                        aria-controls="modal_todos_integrantes" aria-haspopup="dialog">
+                    <a class="enlace_ver_todos" href="#ver_todos_integrantes" aria-controls="modal_todos_integrantes"
+                        aria-haspopup="dialog">
                         Ver todos
-                        <svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        <svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                            width="14">
+                            <line x1="5" x2="19" y1="12" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
                     </a>
                 </div>
                 <label class="busqueda_integrantes" for="campo_busqueda_general">
                     <span>Buscar integrantes</span>
                     <span class="campo_busqueda_integrantes">
-                        <svg aria-hidden="true" fill="none" height="18" stroke="currentColor"
-                            stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                            viewBox="0 0 24 24" width="18">
+                        <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" stroke-linecap="round"
+                            stroke-linejoin="round" stroke-width="1.8" viewBox="0 0 24 24" width="18">
                             <circle cx="11" cy="11" r="7"></circle>
                             <path d="m20 20-4-4"></path>
                         </svg>
@@ -268,8 +294,8 @@
                 </section>
                 <div class="acciones_gestion_departamento">
                     <p>La baja lógica conserva el registro y desvincula a los integrantes.</p>
-                    <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento"
-                        type="button" hidden>Borrar departamento</button>
+                    <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento" type="button"
+                        hidden>Borrar departamento</button>
                 </div>
             </section>
         </div>
@@ -282,8 +308,8 @@
         <section class="caja_modal modal_caja_integrantes">
             <header class="modal_cabecera_custom">
                 <h2 class="modal_titulo_custom" id="titulo_modal_todos_integrantes">Integrantes del departamento</h2>
-                <button class="boton_cerrar_custom" id="cerrar_modal_todos_integrantes"
-                    type="button" aria-label="Cerrar">×</button>
+                <button class="boton_cerrar_custom" id="cerrar_modal_todos_integrantes" type="button"
+                    aria-label="Cerrar">×</button>
             </header>
             <div class="modal_formulario_custom">
                 <ul class="lista_todos_integrantes" id="lista_todos_integrantes"></ul>
@@ -319,10 +345,11 @@
             <div class="modal_formulario_custom">
                 <label for="asunto_mensaje" class="modal_label_custom">Asunto</label>
                 <input id="asunto_mensaje" class="modal_input_custom" placeholder="Ingresa el asunto..." type="text" />
-                
+
                 <label for="cuerpo_mensaje" class="modal_label_custom">Mensaje</label>
-                <textarea id="cuerpo_mensaje" class="modal_textarea_custom" placeholder="Escribe tu mensaje institucional aquí..." rows="4"></textarea>
-                
+                <textarea id="cuerpo_mensaje" class="modal_textarea_custom"
+                    placeholder="Escribe tu mensaje institucional aquí..." rows="4"></textarea>
+
                 <div class="modal_botones_custom">
                     <button id="boton_cancelar_modal" class="boton_cancelar_custom" type="button">Cancelar</button>
                     <button id="boton_enviar_mensaje" class="boton_enviar_custom" type="button">Enviar Mensaje</button>
@@ -342,13 +369,15 @@
             <div class="modal_formulario_custom">
                 <label for="input_editar_nombre_depto" class="modal_label_custom">Nombre del departamento</label>
                 <input id="input_editar_nombre_depto" class="modal_input_custom" type="text" />
-                
+
                 <label for="input_editar_desc_depto" class="modal_label_custom">Descripción</label>
                 <textarea id="input_editar_desc_depto" class="modal_textarea_custom" rows="3"></textarea>
-                
+
                 <div class="modal_botones_custom">
-                    <button id="boton_cancelar_modal_depto" class="boton_cancelar_custom" type="button">Cancelar</button>
-                    <button id="boton_guardar_modal_depto" class="boton_guardar_custom" type="button">Guardar cambios</button>
+                    <button id="boton_cancelar_modal_depto" class="boton_cancelar_custom"
+                        type="button">Cancelar</button>
+                    <button id="boton_guardar_modal_depto" class="boton_guardar_custom" type="button">Guardar
+                        cambios</button>
                 </div>
             </div>
         </div>
@@ -363,14 +392,16 @@
                 <button class="boton_cerrar_custom" id="cerrar_modal_baja" type="button" aria-label="Cerrar">✕</button>
             </div>
             <div class="modal_formulario_custom">
-                <p class="texto_confirmacion_baja">Escribe exactamente <strong>Confirmar eliminacion</strong> y el nombre exacto del departamento.</p>
+                <p class="texto_confirmacion_baja">Escribe exactamente <strong>Confirmar eliminacion</strong> y el
+                    nombre exacto del departamento.</p>
                 <label class="modal_label_custom" for="confirmacion_baja_texto">Confirmación</label>
                 <input class="modal_input_custom" id="confirmacion_baja_texto" type="text"
                     placeholder="Confirmar eliminacion" autocomplete="off" />
                 <label class="modal_label_custom" for="nombre_baja_texto">Nombre del departamento</label>
                 <input class="modal_input_custom" id="nombre_baja_texto" type="text" autocomplete="off" />
                 <div class="modal_botones_custom">
-                    <button class="boton_cancelar_custom" id="cancelar_baja_departamento" type="button">Cancelar</button>
+                    <button class="boton_cancelar_custom" id="cancelar_baja_departamento"
+                        type="button">Cancelar</button>
                     <button class="boton_peligro_departamento" id="confirmar_baja_departamento" type="button" disabled>
                         Confirmar baja lógica
                     </button>
@@ -383,7 +414,8 @@
         aria-labelledby="titulo_confirmar_transferencia">
         <section class="caja_modal">
             <header class="modal_cabecera_custom">
-                <h2 class="modal_titulo_custom" id="titulo_confirmar_transferencia">Confirmar transferencia de jefatura</h2>
+                <h2 class="modal_titulo_custom" id="titulo_confirmar_transferencia">Confirmar transferencia de jefatura
+                </h2>
                 <button class="boton_cerrar_custom" id="cerrar_modal_transferencia" type="button"
                     aria-label="Cerrar">✕</button>
             </header>
@@ -399,8 +431,8 @@
                 </p>
                 <label class="modal_label_custom" for="confirmacion_transferencia_texto">Confirmación</label>
                 <input class="modal_input_custom" id="confirmacion_transferencia_texto" type="text"
-                    placeholder="Transferir propiedad" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false"
-                    aria-describedby="ayuda_confirmacion_transferencia" />
+                    placeholder="Transferir propiedad" maxlength="20" autocomplete="off" autocapitalize="off"
+                    spellcheck="false" aria-describedby="ayuda_confirmacion_transferencia" />
                 <p class="ayuda_confirmacion_transferencia" id="ayuda_confirmacion_transferencia">
                     La frase distingue entre mayúsculas, minúsculas y espacios.
                 </p>
@@ -415,10 +447,9 @@
     </div>
 
     <!-- Menú desplegable para los tres puntitos del departamento -->
-    <div id="menu_opciones_departamento" class="menu_desplegable_opciones"
-        role="menu" aria-label="Acciones del departamento">
-        <button id="opcion_editar_departamento" class="boton_opcion_dropdown" hidden type="button"
-            role="menuitem">
+    <div id="menu_opciones_departamento" class="menu_desplegable_opciones" role="menu"
+        aria-label="Acciones del departamento">
+        <button id="opcion_editar_departamento" class="boton_opcion_dropdown" hidden type="button" role="menuitem">
             <i class="fa-solid fa-pen"></i> Editar departamento
         </button>
     </div>

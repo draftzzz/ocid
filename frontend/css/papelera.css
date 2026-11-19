@@ -63,10 +63,133 @@
 }
 
 .tabla_papelera td {
-  padding: 10px 14px;
+  padding: 12px 14px;
   font-size: 13px;
   color: #334155;
   border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.tabla_papelera tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.tabla_papelera tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Filas limpias y espaciadas para documentos, anuncios y tareas */
+.columna_centrada {
+  text-align: center;
+}
+
+.celda_documento {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.celda_documento > span,
+.celda_documento > div:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.icono_archivo_papelera {
+  flex: 0 0 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 14px;
+}
+
+.meta_tamano_archivo {
+  display: block;
+  max-width: 320px;
+  margin-top: 2px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.celda_estado_vacio {
+  padding: 34px 18px !important;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Botones modernos con iconos alineados y radios suaves */
+.grupo_acciones_papelera {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.boton_restaurar,
+.boton_eliminar_definitivo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.boton_restaurar i,
+.boton_eliminar_definitivo i {
+  line-height: 1;
+}
+
+.boton_restaurar {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.boton_restaurar:hover {
+  border-color: #93c5fd;
+  background: #dbeafe;
+}
+
+.boton_restaurar:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.boton_eliminar_definitivo {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.boton_eliminar_definitivo:hover {
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+
+.boton_eliminar_definitivo:focus-visible {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
 }
 
 .controles_papelera {

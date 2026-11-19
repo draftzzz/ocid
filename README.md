@@ -27,7 +27,7 @@ ocid/
 | Interfaz | HTML, CSS y JavaScript | Presenta las pantallas, valida interacciones sencillas y muestra los datos recibidos. |
 | API | Node.js y Express | Recibe las peticiones del navegador, verifica sesiones y ejecuta operaciones de datos. |
 | Persistencia | PostgreSQL, mediante `pg` y `Pool` | Guarda usuarios, departamentos, anuncios, archivos, tareas y notificaciones. |
-| Seguridad | `bcrypt`, `jsonwebtoken`, `helmet`, `cors`, `express-rate-limit` | Protege contraseñas y sesiones, establece cabeceras, controla orígenes y limita peticiones. |
+| Seguridad y acceso | `bcrypt`, `jsonwebtoken`, `cors`, `express-rate-limit` | Hashea contraseñas, valida JWT, controla orígenes y limita operaciones seleccionadas. |
 
 El frontend envía peticiones HTTP con `fetch`. El backend procesa la ruta, consulta PostgreSQL con consultas parametrizadas y devuelve respuestas JSON. La URL de API que usan los scripts del frontend está configurada como `https://ocid.onrender.com`.
 
@@ -39,7 +39,7 @@ El frontend envía peticiones HTTP con `fetch`. El backend procesa la ruta, cons
 4. **Operaciones:** los módulos consultan la API para listar, crear, editar o eliminar datos y actualizan la interfaz.
 5. **Cierre o expiración:** se limpia la sesión local y se vuelve a la pantalla de acceso cuando corresponde.
 
-El token también se envía en una cookie `httpOnly` desde el servidor. La interfaz almacena datos de sesión en `localStorage`; por ello, el token que el frontend conserva no tiene las mismas propiedades de protección que la cookie.
+El servidor recibe el JWT en el encabezado `Authorization: Bearer ...`; no lee ni establece cookies de sesión. El frontend conserva el token en `localStorage`, por lo que queda accesible desde JavaScript del navegador.
 
 ## 4. Pantallas del frontend
 
@@ -263,15 +263,25 @@ El listado de administración se construye dinámicamente:
 
 #### `frontend/js/mi-departamento.js`
 
-La vista carga varias fuentes en paralelo con `Promise.all`: departamentos, usuarios, archivos y tareas.
+El script está encapsulado en una IIFE y mantiene en memoria el departamento seleccionado, sus integrantes y los roles. Al iniciar, actualiza la cabecera y conecta el cierre de sesión; luego consulta departamentos, usuarios, archivos y tareas en paralelo mediante `Promise.all` y `OCID.apiFetch`. Selecciona el departamento asociado al usuario (o aquel donde figura como jefe) y consulta sus roles.
 
-- `iniciarInterfaz()` presenta el usuario actual, carga el contador de notificaciones, configura menú móvil y salida.
-- `inicializar_modulo_departamento()` selecciona el departamento del usuario (o el primero disponible), filtra miembros por `departamento_id`, encuentra a la jefatura y actualiza descripción y contadores.
-- `renderizar_miembros(lista)` crea filas con puesto y estado, más un menú por integrante.
-- La acción de estado cambia la etiqueta visualmente en el navegador; el propio código señala que ese estado no tiene columna persistida en la base.
-- La acción de eliminar hace una solicitud a la API y luego recarga el módulo.
-- El menú de opciones del departamento abre el modal y carga los valores actuales. Guardar cambios envía `PUT /departamentos/:id`; si falla, el `catch` actualiza solamente el texto visible como fallback.
-- `ocultar_modal()` se usa para cerrar el modal.
+La vista calcula el total de docentes, archivos y tareas relacionadas con ese departamento. La búsqueda filtra integrantes en el navegador, sin volver a solicitar los datos. Las tablas, etiquetas de rol y estados se construyen con nodos del DOM y `textContent`.
+
+El acceso a los controles se muestra según el rol y la jefatura del usuario. La interfaz permite editar los datos del departamento, crear y eliminar roles, cambiar el rol o estado de integrantes, transferir la jefatura y solicitar la baja lógica del departamento. Estas operaciones usan `OCID.apiFetch` y las rutas de la API descritas abajo. Los formularios de confirmación requieren frases específicas para la transferencia y la baja. Los diálogos se cierran con sus botones, al pulsar Escape o al hacer clic en el fondo cuando corresponde.
+
+El contacto con la jefatura valida correo, asunto y mensaje, y prepara un enlace `mailto:` para abrir el cliente de correo del usuario; no envía el mensaje desde el backend. Los errores y resultados de las operaciones se muestran con `OCID.mostrarToast`.
+
+##### Cómo se construyó `mi-departamento.html`
+
+La página se compone en tres capas que colaboran mediante identificadores del DOM:
+
+1. **Estructura HTML:** `frontend/html/mi-departamento.html` define el menú lateral, la cabecera, el resumen del departamento, la tarjeta de jefatura, la descripción, la tabla de integrantes, el panel de gestión y los diálogos. Las filas iniciales se dejan vacías para que JavaScript las complete con los datos del servidor.
+2. **Presentación CSS:** `frontend/css/mi-departamento.css` da estilo al menú, tarjetas, métricas, tabla, etiquetas, formularios y diálogos. Usa Flexbox y CSS Grid para distribuir los elementos y reglas `@media` para adaptar la cuadrícula, la tabla y los controles a pantallas más estrechas. `frontend/css/navigation.css` aporta los estilos de navegación compartidos.
+3. **Comportamiento JavaScript:** `frontend/js/mi-departamento.js` espera `DOMContentLoaded`, obtiene los elementos por `id`, conecta eventos y usa `frontend/js/ocid-core.js` para sesión, peticiones autenticadas y mensajes temporales. Las respuestas se transforman en texto, insignias, filas, listas y opciones de formulario.
+
+El recorrido de carga es: validar que haya usuario y token; solicitar los datos necesarios en paralelo; localizar el departamento y sus roles; calcular las métricas; y renderizar el contenido. Si no existe sesión, la pantalla redirige a `login.html`; si una petición falla, muestra un aviso y registra el error en la consola.
+
+Las rutas utilizadas por esta pantalla son `GET /departamentos`, `GET /usuarios`, `GET /archivos`, `GET /tareas` y `GET /departamentos/:id/roles` para cargar información. Para cambios utiliza `PUT /departamentos/:id`, `PATCH /usuarios/:id/estado`, `PATCH /usuarios/:id/rol`, `POST /departamentos/:id/roles`, `DELETE /departamentos/:id/roles/:rolId`, `PATCH /departamentos/:id/transferir-jefatura` y `DELETE /departamentos/:id`. La presencia u ocultación de controles en el navegador organiza la experiencia, pero los permisos efectivos deben ser validados también por el servidor.
 
 ### 5.9 Notificaciones, papelera y perfil
 
@@ -326,13 +336,36 @@ La carga de página dispara varias consultas y configura el menú móvil. Esta i
 
 ## 6. Backend y API
 
-El servidor vive en `backend/server.js`. Las rutas de salud y las de acceso/registro son públicas. Después de `app.use(autenticarJWT)`, las demás rutas requieren un token válido.
+El servidor vive en `backend/server.js` y está construido con Express, un framework para Node.js que permite definir rutas HTTP y encadenar middleware. Las rutas de salud y las de acceso/registro son públicas. Después de `app.use(autenticarJWT)`, las demás rutas requieren un token válido.
+
+### Cómo se aplica Express en este proyecto
+
+1. `express()` crea la aplicación HTTP y `app.set('trust proxy', 1)` le indica que está detrás de un proxy.
+2. `app.use(cors(...))` configura los orígenes, métodos y encabezados permitidos para que el frontend pueda llamar a la API. `express.json({ limit: '15mb' })` analiza cuerpos JSON.
+3. Las funciones middleware se aplican antes o junto a las rutas: los limitadores protegen operaciones seleccionadas y `autenticarJWT` verifica el Bearer token. Esta última se registra después de las rutas públicas para proteger las rutas que vienen a continuación.
+4. `app.get`, `app.post`, `app.put`, `app.patch` y `app.delete` conectan cada URL con su función. Las funciones validan los datos, consultan PostgreSQL mediante `Pool` y responden normalmente con JSON y un código HTTP.
+5. `app.listen(PORT, ...)` inicia el servidor en el puerto configurado o en el `3000` predeterminado.
+
+### Dependencias del backend
+
+Estas son las dependencias externas que `backend/server.js` importa y utiliza:
+
+| Dependencia | Uso en el proyecto |
+|---|---|
+| `express` | Crea el servidor, define rutas y ejecuta middleware como `express.json`. |
+| `cors` | Configura los dominios, métodos y encabezados permitidos para las peticiones del frontend. |
+| `bcrypt` | Crea hashes de contraseñas al registrar o cambiar una clave y compara hashes al iniciar sesión. |
+| `jsonwebtoken` | Firma JWT para las sesiones y verifica el token en el middleware de autenticación. |
+| `express-rate-limit` | Limita intentos de acceso/registro y operaciones de crear o unirse a departamentos. |
+| `pg` | Proporciona `Pool` y conexiones para ejecutar consultas PostgreSQL. |
+
+`crypto` también se utiliza para generar valores aleatorios, pero forma parte de Node.js y no se instala desde npm. Se quitaron `cookie-parser`, `dotenv` y `helmet` de `package.json` porque `server.js` no los importa ni los usa. En particular, el servidor no carga automáticamente un archivo `.env`; las variables deben definirse en el entorno de ejecución.
 
 ### Funciones y configuración del servidor
 
-- `autenticarJWT(req, res, next)`: busca el token en el encabezado Bearer o en la cookie, lo verifica y adjunta el usuario decodificado a `req`.
+- `autenticarJWT(req, res, next)`: busca el token en el encabezado Bearer, lo verifica y adjunta el usuario decodificado a `req`.
 - `Pool`: mantiene el conjunto de conexiones PostgreSQL usado por las rutas.
-- `helmet()`, `cors(...)` y los limitadores: configuran cabeceras, orígenes permitidos y límites de frecuencia.
+- `cors(...)`, `express.json(...)` y los limitadores: configuran orígenes, lectura de cuerpos JSON y límites de frecuencia.
 - Las funciones asíncronas dentro de cada ruta validan la petición, ejecutan consultas SQL y devuelven un resultado o un error HTTP.
 
 ### Rutas disponibles
@@ -369,18 +402,17 @@ El backend lee estas variables de entorno:
 | `DATABASE_URL` | Cadena de conexión a PostgreSQL. |
 | `JWT_SECRET` | Clave para firmar y verificar los JWT. |
 | `PORT` | Puerto del servidor; si no se define, usa `3000`. |
-| `NODE_ENV` | Determina opciones de la cookie en producción. |
 
 Medidas presentes en el código:
 
-- Las contraseñas se cifran con `bcrypt` usando 10 rondas de salt.
+- Las contraseñas se hashean con `bcrypt` usando 10 rondas de salt.
 - Los JWT expiran a las 8 horas.
-- El middleware global limita a 100 peticiones por IP cada 15 minutos; las rutas de acceso y registro tienen un límite adicional de 15.
+- Las rutas de acceso y registro permiten hasta 15 peticiones por ventana de 15 minutos; crear y unirse a departamentos tienen límites de 10 por ventana de 15 minutos. No hay un limitador global.
 - CORS permite los dominios configurados y direcciones localhost.
 - El JSON de entrada tiene un límite de 15 MB.
 - Las consultas SQL usan parámetros para separar los valores del texto SQL.
 
-**Importante:** configura `JWT_SECRET` con un valor secreto y único en cada entorno. El código contiene una clave de respaldo para desarrollo; no debe usarse en producción. No publiques el contenido de `backend/.env`.
+**Importante:** configura `DATABASE_URL` y `JWT_SECRET` como variables del entorno donde ejecutas el backend. El código contiene una clave de respaldo para desarrollo; no debe usarse en producción. El servidor no carga `backend/.env` por sí solo; no publiques secretos.
 
 La autenticación JWT protege las rutas, pero no se debe asumir que cada ruta aplica permisos por rol: la presencia de `rol` o `es_jefe` en los datos no sustituye una autorización explícita en el servidor.
 
@@ -396,7 +428,7 @@ npm install
 npm start
 ```
 
-Antes de iniciarlo, configura `DATABASE_URL` y `JWT_SECRET` en el entorno o en `backend/.env`. El comando `npm start` ejecuta `node server.js`. Para verificar el servidor, consulta `/health`; para probar también la conexión a la base, consulta `/db-test`.
+Antes de iniciarlo, configura `DATABASE_URL` y `JWT_SECRET` en el entorno del proceso o del servicio de despliegue. El comando `npm start` ejecuta `node server.js`. Para verificar el servidor, consulta `/health`; para probar también la conexión a la base, consulta `/db-test`.
 
 ### Abrir el frontend
 
@@ -417,15 +449,15 @@ Las siguientes diferencias se observan al comparar los scripts del frontend con 
 
 | Código frontend | Diferencia observada |
 |---|---|
-| `inicio.js`, `docentes.js` y `mi-departamento.js` | Algunos consultan `GET /login`, pero el backend ofrece los listados en `GET /usuarios` y `GET /docentes`. |
-| `docentes.js` y `mi-departamento.js` | El borrado se solicita como `DELETE /login/:id`; el backend declara `DELETE /usuarios/:id`. |
+| `inicio.js` y `docentes.js` | Algunos consultan `GET /login`, pero el backend ofrece los listados en `GET /usuarios` y `GET /docentes`. |
+| `docentes.js` | El borrado se solicita como `DELETE /login/:id`; el backend declara `DELETE /usuarios/:id`. |
 | `inicio.js` | Solicita `GET /calendario`; el backend no tiene esa ruta. Las fechas del calendario se gestionan como tareas mediante `/tareas`. |
 | `bienvenida.js` | Envía el código a `POST /departamentos/unirse`, ruta que no está declarada en el servidor actual. |
 | `archivos.js` | La descarga espera `GET /archivos/:id`, pero esa ruta tampoco aparece en el backend revisado. |
 | `registro.html` | No incluye `ocid-core.js`, aunque `registro.js` espera `window.OCID`. |
 | `frontend/index.html` | Carga `index.js` desde la raíz de `frontend`; el archivo está en `frontend/js/index.js`. También navega a `login.html` aunque el documento está bajo `frontend/html/`. |
 
-Además, varias pantallas hacen llamadas directas con `fetch` a rutas protegidas sin agregar `Authorization: Bearer`. En una petición entre dominios, el navegador tampoco adjunta cookies por defecto. Esto afecta especialmente las operaciones de `crear-departamento.js`, `archivos.js`, `tareas.js`, `calendario.js`, `docentes.js`, `mi-departamento.js` y `perfil.js`. `anuncios.js`, `inicio.js` y `papelera.js` sí tienen helpers que agregan el token para parte de sus llamadas, aunque conservan las diferencias de rutas indicadas arriba.
+Además, varias pantallas hacen llamadas directas con `fetch` a rutas protegidas sin agregar `Authorization: Bearer`. En una petición entre dominios, el navegador tampoco adjunta cookies por defecto. Esto afecta especialmente las operaciones de `crear-departamento.js`, `archivos.js`, `tareas.js`, `calendario.js`, `docentes.js` y `perfil.js`. `mi-departamento.js` usa `OCID.apiFetch`, que agrega el token. `anuncios.js`, `inicio.js` y `papelera.js` también tienen helpers que agregan el token para parte de sus llamadas, aunque conservan las diferencias de rutas indicadas arriba.
 
 ## 10. Presentación breve del proyecto
 

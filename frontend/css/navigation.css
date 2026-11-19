@@ -4,33 +4,51 @@
   --ocid-header-height: 72px;
 }
 
-body {
-  --sb-track-color: #383838;
-  --sb-thumb-color: #cccccc;
-  --sb-size: 9px;
-}
+/* Scrollbar discreta estilo Gemini únicamente en escritorio */
+@media (min-width: 769px) {
+  body {
+    --sb-track-color: #1e1f20;
+    --sb-thumb-color: #444746;
+    --sb-size: 8px;
+  }
 
-body::-webkit-scrollbar,
-.area_principal::-webkit-scrollbar {
-  width: var(--sb-size);
-}
+  body::-webkit-scrollbar,
+  .area_principal::-webkit-scrollbar {
+    width: var(--sb-size);
+    height: var(--sb-size);
+  }
 
-body::-webkit-scrollbar-track,
-.area_principal::-webkit-scrollbar-track {
-  background: var(--sb-track-color);
-  border-radius: 1px;
-}
+  body::-webkit-scrollbar-track,
+  .area_principal::-webkit-scrollbar-track {
+    background: var(--sb-track-color);
+    border-radius: 999px;
+  }
 
-body::-webkit-scrollbar-thumb,
-.area_principal::-webkit-scrollbar-thumb {
-  background: var(--sb-thumb-color);
-  border-radius: 1px;
-}
+  body::-webkit-scrollbar-thumb,
+  .area_principal::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb-color);
+    border: 2px solid var(--sb-track-color);
+    border-radius: 999px;
+  }
 
-@supports not selector(::-webkit-scrollbar) {
-  body,
-  .area_principal {
-    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  body::-webkit-scrollbar-thumb:hover,
+  .area_principal::-webkit-scrollbar-thumb:hover {
+    background: #5f6368;
+  }
+
+  body::-webkit-scrollbar-button,
+  .area_principal::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    body,
+    .area_principal {
+      scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+      scrollbar-width: thin;
+    }
   }
 }
 
@@ -259,6 +277,11 @@ textarea {
 .toast_mensaje.toast_visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Éxito con acento verde; los errores conservan el rojo */
+.toast_mensaje.toast_exito {
+  border-left-color: #10b981;
 }
 
 .toast_mensaje.toast_error {
