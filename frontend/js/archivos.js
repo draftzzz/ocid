@@ -34,8 +34,8 @@
         .join('')
         .toUpperCase();
       avatar.textContent = iniciales;
-      avatar.style.fontSize = '14px';
-      avatar.style.fontWeight = '700';
+      // Iniciales con estilo definido en CSS
+      avatar.classList.add('avatar_usuario_iniciales');
     }
 
     barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
@@ -80,6 +80,26 @@ function mostrarToastArchivos(mensaje, tipo = 'exito') {
 function formatearTamano(bytes) {
   if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+
+// Tipos reconocidos y su presentación visual
+const TIPOS_ARCHIVO_CONOCIDOS = {
+  pdf: { etiqueta: 'PDF', icono: 'icono_tipo_pdf', badge: 'badge_pdf' },
+  xlsx: { etiqueta: 'XLSX', icono: 'icono_tipo_xlsx', badge: 'badge_xlsx' },
+  docx: { etiqueta: 'DOCX', icono: 'icono_tipo_docx', badge: 'badge_docx' }
+};
+
+// Resuelve la extensión desde el nombre o el MIME; vacío significa desconocido
+function obtenerClaveTipoArchivo(archivo) {
+  const nombre = String(archivo.nombre || '');
+  const extension = nombre.includes('.') ? nombre.split('.').pop().toLowerCase() : '';
+  if (TIPOS_ARCHIVO_CONOCIDOS[extension]) return extension;
+
+  const mime = String(archivo.tipo || '').toLowerCase();
+  if (mime.includes('pdf')) return 'pdf';
+  if (mime.includes('spreadsheet') || mime.includes('excel')) return 'xlsx';
+  if (mime.includes('wordprocessing') || mime.includes('msword')) return 'docx';
+  return '';
 }
 
 function puedeGestionarArchivo(archivo) {
@@ -151,10 +171,10 @@ function dibujarArchivos() {
 
   const visibles = archivosCargados.filter(archivo => {
     const departamento = String(archivo.departamento_id || '');
-    const extension = (archivo.nombre.split('.').pop() || '').toLowerCase();
+    const claveTipo = obtenerClaveTipoArchivo(archivo) || 'otro';
     return (filtroDepartamento === 'todos' || filtroDepartamento === departamento) &&
-      (filtroTipo === 'todos' || filtroTipo === extension) &&
-      archivo.nombre.toLowerCase().includes(filtroNombre);
+      (filtroTipo === 'todos' || filtroTipo === claveTipo) &&
+      String(archivo.nombre || '').toLowerCase().includes(filtroNombre);
   });
 
   visibles.forEach(archivo => {
@@ -164,10 +184,13 @@ function dibujarArchivos() {
     const contenedorNombre = document.createElement('div');
     contenedorNombre.className = 'contenedor_nombre_archivo';
     
-    const extension = (archivo.nombre.split('.').pop() || '').toUpperCase();
+    // Tipo conocido o etiqueta genérica para MIME desconocido
+    const claveTipo = obtenerClaveTipoArchivo(archivo);
+    const tipoArchivo = TIPOS_ARCHIVO_CONOCIDOS[claveTipo];
+    const etiquetaTipo = tipoArchivo ? tipoArchivo.etiqueta : 'Otro tipo de archivo';
     const iconoTipo = document.createElement('div');
-    iconoTipo.className = extension === 'PDF' ? 'icono_tipo_pdf' : 'icono_tipo_xlsx';
-    iconoTipo.textContent = extension.slice(0, 4);
+    iconoTipo.className = tipoArchivo ? tipoArchivo.icono : 'icono_tipo_otro';
+    iconoTipo.textContent = tipoArchivo ? etiquetaTipo.slice(0, 4) : 'OTRO';
 
     const textosDiv = document.createElement('div');
     const nombreDiv = document.createElement('div');
@@ -183,8 +206,8 @@ function dibujarArchivos() {
 
     const celdaTipo = document.createElement('td');
     const badge = document.createElement('span');
-    badge.className = extension === 'PDF' ? 'badge_pdf' : 'badge_xlsx';
-    badge.textContent = extension;
+    badge.className = tipoArchivo ? tipoArchivo.badge : 'badge_otro';
+    badge.textContent = etiquetaTipo;
     celdaTipo.appendChild(badge);
 
     const celdaDepartamento = document.createElement('td');
@@ -227,9 +250,9 @@ function dibujarArchivos() {
     const filaVacia = document.createElement('tr');
     const celda = document.createElement('td');
     celda.colSpan = 6;
-    celda.style.textAlign = 'center';
-    celda.style.padding = '20px';
-    celda.textContent = archivosCargados.length ? 'Aún no has recibido archivos.' : 'Aún no has recibido archivos.';
+    // Alineación y padding del estado vacío en archivos.css
+    celda.className = 'celda_estado_vacio_archivos';
+    celda.textContent = 'Aún no has recibido archivos.';
     filaVacia.appendChild(celda);
     cuerpoArchivos.appendChild(filaVacia);
   }

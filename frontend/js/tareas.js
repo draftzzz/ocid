@@ -36,13 +36,8 @@
         .join('')
         .toUpperCase();
       avatar.textContent = iniciales;
-      avatar.style.fontSize = '14px';
-      avatar.style.fontWeight = '700';
-      avatar.style.display = 'flex';
-      avatar.style.alignItems = 'center';
-      avatar.style.justifyContent = 'center';
-      avatar.style.color = '#ffffff';
-      avatar.style.backgroundColor = '#2563eb';
+      // Iniciales con estilo definido en tareas.css
+      avatar.classList.add('avatar_usuario_iniciales');
     }
 
     const botonCerrarSesion = document.getElementById('boton_cerrar_sesion');
@@ -79,12 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectDepartamento = document.getElementById('filtro_departamento');
   const selectEstado = document.getElementById('filtro_estado');
   const campoFechaModal = document.getElementById('campo_modal_fecha');
-
-  const buscadorDeptosModal = document.getElementById('buscador_deptos_modal');
   const buscadorPersonasModal = document.getElementById('buscador_personas_modal');
-  const contenedorPersonas = document.getElementById('contenedor_lista_personas');
-  const contenedorCheckboxesDeptos = document.getElementById('lista_checkboxes_deptos_servidor');
-  const checkGeneralDepto = document.getElementById('check_general_depto');
+  const listaPersonasDatalist = document.getElementById('lista_personas_tarea');
+  const textoDeptoPersona = document.getElementById('depto_persona_seleccionada');
 
   const modalVerTarea = document.getElementById('modal_ver_tarea');
   const btnCerrarDetalleCruz = document.getElementById('cerrar_modal_detalle');
@@ -94,19 +86,38 @@ document.addEventListener('DOMContentLoaded', () => {
   let listaDepartamentos = [];
   let listaDocentesUsuarios = [];
   let paginaActual = 1;
-  const elementosPorPagina = 3; 
+  // Máximo de cuatro tareas por página
+  const elementosPorPagina = 4;
   let tareaEnEdicionId = null;
   let alcanceActualTareas = 'todas'; // 'todas' | 'mias' | 'departamento'
 
-  let departamentosSeleccionadosIDs = new Set();
-  let personasSeleccionadasIDs = new Set();
+  // Una sola persona por tarea
+  let personaSeleccionada = null;
 
-  function obtenerFechaActualISO() {
-    const ahora = new Date();
-    const anio = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-    const dia = String(ahora.getDate()).padStart(2, '0');
+  // Convierte una fecha local a texto YYYY-MM-DD
+  function formatearISO(fecha) {
+    const anio = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
     return `${anio}-${mes}-${dia}`;
+  }
+
+  // Rango permitido: desde hoy hasta seis meses después
+  function obtenerLimitesFecha() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 6, hoy.getDate());
+    return { min: formatearISO(hoy), max: formatearISO(fin) };
+  }
+
+  // Valida formato estricto y rango de la fecha límite
+  function fechaLimiteEsValida(valor) {
+    const textoFecha = String(valor || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(textoFecha)) return false;
+    const fecha = new Date(`${textoFecha}T00:00:00`);
+    if (Number.isNaN(fecha.getTime()) || formatearISO(fecha) !== textoFecha) return false;
+    const limites = obtenerLimitesFecha();
+    return textoFecha >= limites.min && textoFecha <= limites.max;
   }
 
   function escaparHTML(valor) {
@@ -145,7 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
       listaDepartamentos = Array.isArray(departamentos) ? departamentos : [];
       poblarFiltrosYModalDepartamentos(listaDepartamentos);
       listaDocentesUsuarios = Array.isArray(docentes) ? docentes : [];
-      tareas = Array.isArray(datosTareas) ? datosTareas : [];
+      // Las tareas más nuevas aparecen primero
+      tareas = Array.isArray(datosTareas)
+        ? datosTareas.slice().sort((a, b) =>
+            new Date(b.fecha || b.fecha_creacion || 0) - new Date(a.fecha || a.fecha_creacion || 0))
+        : [];
     } catch (error) {
       console.error('Error cargando catálogos:', error);
       mostrarToastTareas('Error al sincronizar datos con el servidor.', 'error');
@@ -154,149 +169,87 @@ document.addEventListener('DOMContentLoaded', () => {
     renderizarTabla();
   }
 
+  // Pobla únicamente el filtro de departamentos de la lista
   function poblarFiltrosYModalDepartamentos(deptos) {
-    if (selectDepartamento) {
-      selectDepartamento.innerHTML = '<option value="todos">Todos los departamentos</option>';
-      deptos.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.nombre;
-        opt.textContent = d.nombre;
-        selectDepartamento.appendChild(opt);
-      });
-    }
-    renderizarListaDepartamentosModal();
+    if (!selectDepartamento) return;
+    selectDepartamento.replaceChildren(new Option('Todos los departamentos', 'todos'));
+    deptos.forEach(d => selectDepartamento.appendChild(new Option(d.nombre, d.nombre)));
   }
 
-  function renderizarListaDepartamentosModal() {
-    if (!contenedorCheckboxesDeptos) return;
-    contenedorCheckboxesDeptos.replaceChildren();
+  // Llena el datalist con las personas disponibles
+  function poblarListaPersonasModal() {
+    if (!listaPersonasDatalist) return;
+    listaPersonasDatalist.replaceChildren();
+    listaDocentesUsuarios.forEach(persona => {
+      const nombre = persona.nombre || persona.correo || persona.usuario;
+      if (!nombre) return;
+      const opcion = document.createElement('option');
+      opcion.value = nombre;
+      opcion.label = persona.departamento || persona.departamento_nombre || 'General';
+      listaPersonasDatalist.appendChild(opcion);
+    });
+  }
 
-    const filtroTexto = buscadorDeptosModal ? buscadorDeptosModal.value.toLowerCase().trim() : '';
+  // Resuelve la persona elegida y muestra su departamento
+  function resolverPersonaSeleccionada() {
+    const valor = buscadorPersonasModal ? buscadorPersonasModal.value.trim().toLowerCase() : '';
+    personaSeleccionada = valor
+      ? listaDocentesUsuarios.find(persona =>
+          String(persona.nombre || persona.correo || persona.usuario || '').toLowerCase() === valor) || null
+      : null;
+    if (textoDeptoPersona) {
+      textoDeptoPersona.textContent = personaSeleccionada
+        ? `Departamento destino: ${personaSeleccionada.departamento || personaSeleccionada.departamento_nombre || 'General'}`
+        : 'Se asignará una sola persona.';
+    }
+  }
 
-    listaDepartamentos.forEach(d => {
-      const nombreDepto = d.nombre;
-      const coincideBusqueda = filtroTexto.length > 0 && nombreDepto.toLowerCase().includes(filtroTexto);
-      const estaSeleccionado = departamentosSeleccionadosIDs.has(nombreDepto);
-
-      if (coincideBusqueda || estaSeleccionado) {
-        const lbl = document.createElement('label');
-        lbl.className = 'item_checkbox_diseno wrapper_depto_item';
-        
-        lbl.innerHTML = `
-          <input type="checkbox" class="check_depto_item" value="${escaparHTML(nombreDepto)}" ${estaSeleccionado ? 'checked' : ''} /> 
-          <span>${escaparHTML(nombreDepto)}</span>
-        `;
-
-        const inputCheck = lbl.querySelector('input');
-        inputCheck.addEventListener('change', (e) => {
-          if (e.target.checked) {
-            departamentosSeleccionadosIDs.add(nombreDepto);
-            if (checkGeneralDepto) checkGeneralDepto.checked = false;
-          } else {
-            departamentosSeleccionadosIDs.delete(nombreDepto);
-          }
-          renderizarListaPersonasModal();
-        });
-
-        contenedorCheckboxesDeptos.appendChild(lbl);
+  // Bloquea la entrada manual inválida en el selector de fecha
+  function configurarCampoFecha() {
+    if (!campoFechaModal) return;
+    const limites = obtenerLimitesFecha();
+    campoFechaModal.min = limites.min;
+    campoFechaModal.max = limites.max;
+    // Si escriben una fecha fuera de rango, se descarta y se avisa
+    const validarEntrada = () => {
+      if (campoFechaModal.value && !fechaLimiteEsValida(campoFechaModal.value)) {
+        campoFechaModal.value = '';
+        mostrarToastTareas('La fecha debe estar entre hoy y los próximos 6 meses.', 'advertencia');
       }
-    });
-
-    if (contenedorCheckboxesDeptos.children.length === 0) {
-      contenedorCheckboxesDeptos.innerHTML = '<span style="font-size: 12px; color: #94a3b8; padding: 6px;">Escribe para buscar departamentos...</span>';
-    }
-  }
-
-  function renderizarListaPersonasModal() {
-    if (!contenedorPersonas) return;
-    contenedorPersonas.replaceChildren();
-
-    const filtroTexto = buscadorPersonasModal ? buscadorPersonasModal.value.toLowerCase().trim() : '';
-    const esGen = checkGeneralDepto && checkGeneralDepto.checked;
-
-    const personasFiltradas = listaDocentesUsuarios.filter(persona => {
-      const nombrePersona = (persona.nombre || persona.correo || persona.usuario || '').toLowerCase();
-      const deptoPersona = persona.departamento || persona.departamento_nombre || '';
-
-      const coincideTexto = filtroTexto.length > 0 && nombrePersona.includes(filtroTexto);
-      const estaSeleccionada = personasSeleccionadasIDs.has(persona.nombre || persona.correo || persona.usuario);
-      const coincideDepto = esGen || (departamentosSeleccionadosIDs.size > 0 && departamentosSeleccionadosIDs.has(deptoPersona));
-
-      return (coincideTexto && (departamentosSeleccionadosIDs.size === 0 || coincideDepto)) || estaSeleccionada || (filtroTexto.length === 0 && coincideDepto);
-    });
-
-    if (personasFiltradas.length === 0) {
-      contenedorPersonas.innerHTML = '<span style="font-size: 12px; color: #94a3b8; padding: 6px;">Selecciona un departamento o busca docentes por nombre...</span>';
-      return;
-    }
-
-    personasFiltradas.forEach(p => {
-      const nombreP = p.nombre || p.correo || p.usuario || 'Colaborador';
-      const deptoP = p.departamento || p.departamento_nombre || 'General';
-
-      const lblPersona = document.createElement('label');
-      lblPersona.className = 'item_checkbox_diseno';
-      
-      const estaChecked = personasSeleccionadasIDs.has(nombreP);
-
-      lblPersona.innerHTML = `
-        <input type="checkbox" class="check_persona_asignada" value="${escaparHTML(nombreP)}" ${estaChecked ? 'checked' : ''} /> 
-        <span>${escaparHTML(nombreP)} <small style="color: #64748b;">(${escaparHTML(deptoP)})</small></span>
-      `;
-
-      const inputCheck = lblPersona.querySelector('input');
-      inputCheck.addEventListener('change', (e) => {
-        if (e.target.checked) {
-          personasSeleccionadasIDs.add(nombreP);
-        } else {
-          personasSeleccionadasIDs.delete(nombreP);
-        }
-      });
-
-      contenedorPersonas.appendChild(lblPersona);
-    });
-  }
-
-  if (buscadorDeptosModal) {
-    buscadorDeptosModal.addEventListener('input', renderizarListaDepartamentosModal);
-  }
-
-  if (buscadorPersonasModal) {
-    buscadorPersonasModal.addEventListener('input', renderizarListaPersonasModal);
-  }
-
-  if (checkGeneralDepto) {
-    checkGeneralDepto.addEventListener('change', () => {
-      if (checkGeneralDepto.checked) {
-        departamentosSeleccionadosIDs.clear();
-        document.querySelectorAll('.check_depto_item').forEach(ch => ch.checked = false);
-      }
-      renderizarListaDepartamentosModal();
-      renderizarListaPersonasModal();
-    });
+    };
+    campoFechaModal.addEventListener('input', validarEntrada);
+    campoFechaModal.addEventListener('change', validarEntrada);
+    campoFechaModal.addEventListener('blur', validarEntrada);
   }
 
   function abrir_modal() {
-    if (modal) {
-      if (campoFechaModal) campoFechaModal.min = obtenerFechaActualISO();
-      modal.classList.add('modal_activo');
-      renderizarListaDepartamentosModal();
-      renderizarListaPersonasModal();
+    if (!modal) return;
+    const limites = obtenerLimitesFecha();
+    if (campoFechaModal) {
+      campoFechaModal.min = limites.min;
+      campoFechaModal.max = limites.max;
     }
+    poblarListaPersonasModal();
+    modal.classList.add('modal_activo');
   }
 
   function cerrar_modal() {
     if (modal) modal.classList.remove('modal_activo');
     if (formularioTarea) formularioTarea.reset();
-    if (buscadorDeptosModal) buscadorDeptosModal.value = '';
     if (buscadorPersonasModal) buscadorPersonasModal.value = '';
-    departamentosSeleccionadosIDs.clear();
-    personasSeleccionadasIDs.clear();
+    personaSeleccionada = null;
+    if (textoDeptoPersona) textoDeptoPersona.textContent = 'Se asignará una sola persona.';
     tareaEnEdicionId = null;
   }
 
   function cerrarModalDetalle() {
     if (modalVerTarea) modalVerTarea.classList.remove('modal_activo');
+  }
+
+  // Sincroniza la persona al escribir o elegir del datalist
+  if (buscadorPersonasModal) {
+    buscadorPersonasModal.addEventListener('input', resolverPersonaSeleccionada);
+    buscadorPersonasModal.addEventListener('change', resolverPersonaSeleccionada);
   }
 
   if (btnCerrarDetalleCruz) btnCerrarDetalleCruz.addEventListener('click', cerrarModalDetalle);
@@ -310,12 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (botonAbrir) {
     botonAbrir.addEventListener('click', () => {
       tareaEnEdicionId = null;
-      departamentosSeleccionadosIDs.clear();
-      personasSeleccionadasIDs.clear();
       if (tituloModalTexto) tituloModalTexto.textContent = 'Nueva Tarea';
       if (botonGuardarTexto) botonGuardarTexto.textContent = 'Guardar tarea';
-      
-      if (checkGeneralDepto) checkGeneralDepto.checked = false;
       abrir_modal();
     });
   }
@@ -393,51 +342,72 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Devuelve hasta cuatro números de página con elipsis si hay más de diez
+  function obtenerPaginasVisibles(actual, total) {
+    if (total <= 4) return Array.from({ length: total }, (_, indice) => indice + 1);
+    if (total > 10) {
+      if (actual <= 4) return [1, 2, 3, '...', total];
+      if (actual >= total - 3) return [1, '...', total - 2, total - 1, total];
+      return [1, '...', actual - 1, actual, '...', total];
+    }
+    const inicio = Math.min(Math.max(actual - 1, 1), total - 3);
+    return [inicio, inicio + 1, inicio + 2, inicio + 3];
+  }
+
+  // Paginación con flechas y máximo cuatro números visibles
   function renderizarPaginacion(totalPaginas) {
     if (!contenedorPaginacion) return;
     contenedorPaginacion.replaceChildren();
 
-    for (let i = 1; i <= totalPaginas; i++) {
-      const btnPag = document.createElement('button');
-      btnPag.type = 'button';
-      btnPag.className = 'boton_pagina' + (i === paginaActual ? ' boton_pagina_activo' : '');
-      btnPag.textContent = i;
-      btnPag.addEventListener('click', () => {
-        paginaActual = i;
-        renderizarTabla();
-      });
-      contenedorPaginacion.appendChild(btnPag);
-    }
+    const agregarBoton = (texto, pagina, etiqueta, deshabilitado = false, clase = '') => {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = `boton_pagina ${clase} ${pagina === paginaActual && !deshabilitado ? 'boton_pagina_activo' : ''}`.trim();
+      boton.textContent = texto;
+      boton.setAttribute('aria-label', etiqueta);
+      boton.disabled = deshabilitado;
+      if (!deshabilitado) {
+        boton.addEventListener('click', () => {
+          paginaActual = pagina;
+          renderizarTabla();
+        });
+      }
+      contenedorPaginacion.appendChild(boton);
+    };
 
-    const btnSiguiente = document.createElement('button');
-    btnSiguiente.type = 'button';
-    btnSiguiente.className = 'boton_pagina';
-    btnSiguiente.innerHTML = '&gt;';
-    btnSiguiente.disabled = paginaActual >= totalPaginas;
-    btnSiguiente.addEventListener('click', () => {
-      if (paginaActual < totalPaginas) {
-        paginaActual++;
-        renderizarTabla();
+    // Flecha izquierda siempre visible
+    agregarBoton('<', Math.max(1, paginaActual - 1), 'Página anterior', paginaActual === 1, 'boton_pagina_flecha');
+
+    // Números y puntos suspensivos
+    obtenerPaginasVisibles(paginaActual, totalPaginas).forEach(valor => {
+      if (valor === '...') {
+        const puntos = document.createElement('span');
+        puntos.className = 'elipsis_paginacion';
+        puntos.textContent = '…';
+        contenedorPaginacion.appendChild(puntos);
+      } else {
+        agregarBoton(String(valor), valor, `Página ${valor}`);
       }
     });
-    contenedorPaginacion.appendChild(btnSiguiente);
+
+    // Flecha derecha siempre visible
+    agregarBoton('>', Math.min(totalPaginas, paginaActual + 1), 'Página siguiente', paginaActual === totalPaginas, 'boton_pagina_flecha');
   }
 
+  // Abre o cierra el menú de opciones de una tarea
   window.toggleMenuOpcionesTarea = function(evento, idTarea) {
     evento.stopPropagation();
     document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
-      if (menu.id !== `menu_opciones_tarea_${idTarea}`) menu.style.display = 'none';
+      if (menu.id !== `menu_opciones_tarea_${idTarea}`) menu.classList.remove('menu_abierto');
     });
-
     const menu = document.getElementById(`menu_opciones_tarea_${idTarea}`);
-    if (menu) {
-      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-    }
+    if (menu) menu.classList.toggle('menu_abierto');
   };
 
+  // Cierra los menús al hacer clic fuera
   window.addEventListener('click', () => {
     document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
-      menu.style.display = 'none';
+      menu.classList.remove('menu_abierto');
     });
   });
 
@@ -456,33 +426,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const descripcionDecodificada = decodeURIComponent(descripcion || '');
     document.getElementById('campo_modal_descripcion').value = descripcionDecodificada !== '-' ? descripcionDecodificada : '';
 
-    departamentosSeleccionadosIDs.clear();
-    const checkGen = document.getElementById('check_general_depto');
-    departamentoDestino = decodeURIComponent(departamentoDestino || '');
+    // Edición con una sola persona asignada
     asignadoTexto = decodeURIComponent(asignadoTexto || '');
-    const esGen = departamentoDestino.includes('General');
-    if (checkGen) checkGen.checked = esGen;
-
-    if (!esGen) {
-      departamentoDestino.split(',').forEach(d => {
-        const trimmed = d.trim();
-        if (trimmed) departamentosSeleccionadosIDs.add(trimmed);
-      });
+    const primerNombre = (asignadoTexto || '').split(',')[0].trim();
+    if (buscadorPersonasModal) {
+      buscadorPersonasModal.value = primerNombre === 'General / Sin asignar' ? '' : primerNombre;
     }
-
-    personasSeleccionadasIDs.clear();
-    (asignadoTexto || '').split(',').forEach(s => {
-      const trimName = s.trim();
-      if (trimName && trimName !== 'General / Sin asignar' && trimName !== '-') {
-        personasSeleccionadasIDs.add(trimName);
-      }
-    });
-
-    renderizarListaDepartamentosModal();
-    renderizarListaPersonasModal();
+    resolverPersonaSeleccionada();
 
     let fechaLimpia = fechaISO || '';
     if (fechaLimpia.includes('T')) fechaLimpia = fechaLimpia.split('T')[0];
+    if (fechaLimpia && !fechaLimiteEsValida(fechaLimpia)) {
+      fechaLimpia = '';
+      mostrarToastTareas('La fecha límite debe estar entre hoy y los próximos 6 meses.', 'advertencia');
+    }
     document.getElementById('campo_modal_fecha').value = fechaLimpia;
     document.getElementById('campo_modal_estado').value = estadoValor;
 
@@ -500,7 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const datos = await window.OCID.apiFetch(`/tareas/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ ...tarea, estado: nuevoEstado })
+        // Actualización parcial: no reenvía una fecha antigua que ya no sería válida
+        body: JSON.stringify({ estado: nuevoEstado })
       });
       if (!datos.success) throw new Error('No se pudo actualizar el estado');
 
@@ -535,23 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  window.toggleMenuOpcionesTarea = function(evento, id) {
-    evento.stopPropagation();
-    document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
-      if (menu.id !== `menu_opciones_tarea_${id}`) menu.style.display = 'none';
-    });
-    const menu = document.getElementById(`menu_opciones_tarea_${id}`);
-    if (menu) {
-      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-    }
-  };
-
-  window.addEventListener('click', () => {
-    document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
-      menu.style.display = 'none';
-    });
-  });
-
   function actualizarPanelesLaterales() {
     // 1. Panel Por Estado
     const contenedorEstados = document.getElementById('lista_conteo_estados');
@@ -567,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cantidad = tareas.filter(t => (t.estado || 'Pendiente').toLowerCase() === est.nombre.toLowerCase()).length;
         const fila = document.createElement('div');
         fila.className = 'fila_conteo_departamento';
-        fila.style.cursor = 'pointer';
+        fila.classList.add('fila_conteo_clicable');
 
         const etiqueta = document.createElement('span');
         etiqueta.className = 'indicador_con_nombre';
@@ -614,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
       deptosMap.forEach((cantidad, deptoNombre) => {
         const fila = document.createElement('div');
         fila.className = 'fila_conteo_departamento';
-        fila.style.cursor = 'pointer';
+        fila.classList.add('fila_conteo_clicable');
 
         const etiqueta = document.createElement('span');
         etiqueta.className = 'indicador_con_nombre';
@@ -682,10 +623,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Estado vacío de la tabla con acento correcto
     if (!tareasFiltradas.length) {
+      // Estado vacío con estilos en tareas.css
       const vacio = document.createElement('div');
-      vacio.className = 'tarjeta_anuncio';
-      vacio.style.cssText = 'text-align: center; padding: 48px 20px; color: #64748b; font-size: 13.5px;';
-      vacio.innerHTML = '<i class="fa-solid fa-list-check" style="font-size: 32px; color: #94a3b8; margin-bottom: 12px; display: block;"></i> Aún no has recibido tareas.';
+      vacio.className = 'tarjeta_anuncio estado_vacio_tareas';
+      const iconoVacio = document.createElement('i');
+      iconoVacio.className = 'fa-solid fa-list-check icono_estado_vacio';
+      vacio.append(iconoVacio, document.createTextNode(' Aún no has recibido tareas.'));
       cuerpoTabla.appendChild(vacio);
     }
 
@@ -722,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (puedeGestionar) {
         const contenedorOpciones = document.createElement('div');
-        contenedorOpciones.style.position = 'relative';
+        contenedorOpciones.className = 'contenedor_opciones_tarea';
 
         const btnOpciones = document.createElement('button');
         btnOpciones.className = 'boton_opciones_anuncio';
@@ -735,35 +678,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const menuDesplegable = document.createElement('div');
         menuDesplegable.id = `menu_opciones_tarea_${tarea.id}`;
-        menuDesplegable.style.cssText = 'display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0px 4px 14px rgba(0,0,0,0.12); z-index: 50; width: 160px; padding: 4px 0;';
+        menuDesplegable.className = 'menu_opciones_tarea';
 
         const btnEditar = document.createElement('button');
         btnEditar.type = 'button';
-        btnEditar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; display: flex; align-items: center; gap: 8px;';
+        btnEditar.className = 'boton_menu_tarea';
         btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
         btnEditar.addEventListener('click', () => prepararEdicionTarea(tarea.id, puedeGestionar, encodeURIComponent(tituloTexto), encodeURIComponent(descripcionTexto), encodeURIComponent(deptoDestino), encodeURIComponent(asignadoTexto), tarea.fecha, estadoValor));
 
         const btnPendiente = document.createElement('button');
         btnPendiente.type = 'button';
-        btnPendiente.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #c2410c;';
+        btnPendiente.className = 'boton_menu_tarea boton_menu_tarea_pendiente';
         btnPendiente.textContent = 'Marcar Pendiente';
         btnPendiente.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'Pendiente'));
 
         const btnProceso = document.createElement('button');
         btnProceso.type = 'button';
-        btnProceso.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #1d4ed8;';
+        btnProceso.className = 'boton_menu_tarea boton_menu_tarea_proceso';
         btnProceso.textContent = 'Marcar En proceso';
         btnProceso.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'En proceso'));
 
         const btnCompletado = document.createElement('button');
         btnCompletado.type = 'button';
-        btnCompletado.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #047857;';
+        btnCompletado.className = 'boton_menu_tarea boton_menu_tarea_completado';
         btnCompletado.textContent = 'Marcar Completado';
         btnCompletado.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'Completado'));
 
         const btnEliminar = document.createElement('button');
         btnEliminar.type = 'button';
-        btnEliminar.style.cssText = 'width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; display: flex; align-items: center; gap: 8px; border-top: 1px solid #f1f5f9;';
+        btnEliminar.className = 'boton_menu_tarea boton_menu_tarea_eliminar';
         btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
         btnEliminar.addEventListener('click', () => eliminarTareaDirecto(tarea.id, puedeGestionar));
 
@@ -859,7 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (textoConteo) {
-      textoConteo.textContent = `Mostrando ${tareasFiltradas.length > 0 ? inicio + 1 : 0} a ${Math.min(fin, tareasFiltradas.length)} de ${tareasFiltradas.length} tareas`;
+      // Formato solicitado: Mostrando X de 4 por página
+      textoConteo.textContent = `Mostrando ${tareasPagina.length} de ${elementosPorPagina}`;
     }
 
     renderizarPaginacion(totalPaginas);
@@ -886,37 +830,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const esGeneralChecked = checkGeneralDepto && checkGeneralDepto.checked;
-      let deptosSeleccionados = [];
-
-      if (esGeneralChecked) {
-        deptosSeleccionados = ['General'];
-      } else {
-        deptosSeleccionados = Array.from(departamentosSeleccionadosIDs);
-      }
-
-      if (deptosSeleccionados.length === 0) {
-        mostrarToastTareas('Selecciona al menos un departamento o marca General.', 'advertencia');
+      // Validación de la persona única asignada
+      resolverPersonaSeleccionada();
+      if (!personaSeleccionada) {
+        mostrarToastTareas('Selecciona una persona de la lista desplegable.', 'advertencia');
         return;
       }
 
-      const personasArray = Array.from(personasSeleccionadasIDs);
-      const textoAsignadoFinal = personasArray.length > 0 ? personasArray.join(', ') : 'General / Sin asignar';
-
-      const fechaSeleccionada = document.getElementById('campo_modal_fecha').value;
-      const fechaActualStr = obtenerFechaActualISO();
-
-      if (fechaSeleccionada < fechaActualStr) {
-        mostrarToastTareas('La fecha límite no puede ser anterior al día de hoy.', 'advertencia');
+      const fechaSeleccionada = campoFechaModal ? campoFechaModal.value : '';
+      if (!fechaLimiteEsValida(fechaSeleccionada)) {
+        mostrarToastTareas('La fecha límite debe estar entre hoy y los próximos 6 meses.', 'advertencia');
         return;
       }
+
+      const deptoDestino = personaSeleccionada.departamento || personaSeleccionada.departamento_nombre || 'General';
 
       const objetoTarea = {
         titulo: document.getElementById('campo_modal_titulo').value.trim(),
         descripcion: document.getElementById('campo_modal_descripcion').value.trim(),
-        asignado: textoAsignadoFinal,
-        departamentos: deptosSeleccionados,
-        departamento: deptosSeleccionados.join(', '),
+        asignado: personaSeleccionada.nombre || personaSeleccionada.correo || personaSeleccionada.usuario,
+        departamento: deptoDestino,
         fecha: fechaSeleccionada,
         estado: document.getElementById('campo_modal_estado').value,
         autor_id: Number(usuario.id)
@@ -952,5 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Rango de fecha y carga inicial
+  configurarCampoFecha();
   cargarCatalogosServidor();
 });

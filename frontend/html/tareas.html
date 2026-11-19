@@ -2,7 +2,8 @@
 <html lang="es">
 
 <head>
-    <meta charset="utf-8" />
+    <!-- Codificación UTF-8 para textos en español -->
+    <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Tareas</title>
     <script src="../js/route-guard.js"></script>
@@ -105,8 +106,7 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario"
-                            style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -174,8 +174,9 @@
             </div>
 
             <!-- Paginación y Resumen -->
-            <footer class="pie_tabla" style="margin-top: 20px; border: none; background: transparent; padding: 0;">
-                <span class="texto_conteo_filas" id="texto_resumen_conteo">Mostrando 0 de 0 tareas</span>
+            <!-- Contador y paginación compacta -->
+            <footer class="pie_tabla pie_tabla_tareas">
+                <span class="texto_conteo_filas" id="texto_resumen_conteo">Mostrando 0 de 4</span>
                 <div class="bloque_paginacion" id="contenedor_botones_paginacion"></div>
             </footer>
         </div>
@@ -193,7 +194,7 @@
                 <h3 class="titulo_modal" id="titulo_modal_texto">Nueva Tarea</h3>
                 <button class="boton_cerrar_modal" id="boton_cerrar_cruz" type="button">×</button>
             </div>
-            <form id="formulario_crear_tarea" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+            <form class="formulario_tarea" id="formulario_crear_tarea">
                 <div class="cuerpo_modal">
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo" for="campo_modal_titulo">Título</label>
@@ -207,39 +208,22 @@
                             placeholder="Detalles de la tarea..." required=""></textarea>
                     </div>
 
-                    <!-- Buscador de Departamentos -->
+                    <!-- Asignación única: búsqueda con lista desplegable -->
                     <div class="grupo_campo_modal">
-                        <label class="etiqueta_campo">Departamentos de destino (Selecciona uno o varios)</label>
-                        <input class="input_campo_modal" id="buscador_deptos_modal" placeholder="Buscar departamento..."
-                            type="text" style="margin-bottom: 6px;" />
-                        <div class="contenedor_lista_custom"
-                            style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;">
-                            <label class="item_checkbox_diseno destacado" id="wrapper_check_general">
-                                <input type="checkbox" id="check_general_depto" value="General" />
-                                <span>General (Para todos los departamentos)</span>
-                            </label>
-                            <div id="lista_checkboxes_deptos_servidor"
-                                style="display: flex; flex-direction: column; gap: 4px;"></div>
-                        </div>
+                        <label class="etiqueta_campo" for="buscador_personas_modal">Asignar a</label>
+                        <input class="input_campo_modal" id="buscador_personas_modal" list="lista_personas_tarea"
+                            placeholder="Buscar docente por nombre..." autocomplete="off" required="" type="text" />
+                        <datalist id="lista_personas_tarea"></datalist>
+                        <p class="texto_ayuda_campo" id="depto_persona_seleccionada">Se asignará una sola persona.</p>
                     </div>
 
-                    <!-- Buscador de Personas/Docentes -->
-                    <div class="grupo_campo_modal">
-                        <label class="etiqueta_campo" for="buscador_personas_modal">Asignar a persona(s)</label>
-                        <input class="input_campo_modal" id="buscador_personas_modal"
-                            placeholder="Buscar docente o colaborador por nombre..." type="text"
-                            style="margin-bottom: 6px;" />
-                        <div id="contenedor_lista_personas" class="contenedor_lista_custom"
-                            style="display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 6px; border-radius: 6px; background: #ffffff;">
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <div class="grupo_campo_modal" style="flex: 1; min-width: 180px;">
+                    <div class="fila_campos_modal">
+                        <div class="grupo_campo_modal grupo_campo_modal_expandido">
                             <label class="etiqueta_campo" for="campo_modal_fecha">Fecha límite</label>
                             <input class="input_campo_modal" id="campo_modal_fecha" required="" type="date" />
+                            <p class="texto_ayuda_campo">Desde hoy hasta 6 meses en adelante.</p>
                         </div>
-                        <div class="grupo_campo_modal" style="flex: 1; min-width: 180px;">
+                        <div class="grupo_campo_modal grupo_campo_modal_expandido">
                             <label class="etiqueta_campo" for="campo_modal_estado">Estado inicial</label>
                             <select class="selector_campo_modal" id="campo_modal_estado">
                                 <option value="Pendiente">Pendiente</option>
@@ -267,18 +251,19 @@
                 <h3 class="titulo_modal" id="detalle_titulo_tarea">Detalle de la Tarea</h3>
                 <button class="boton_cerrar_modal" id="cerrar_modal_detalle" type="button">×</button>
             </div>
-            <div class="cuerpo_modal" style="gap: 12px;">
+            <!-- Detalle de la tarea con estilos en tareas.css -->
+            <div class="cuerpo_modal cuerpo_modal_detalle">
                 <div>
                     <label class="etiqueta_campo">Creado por:</label>
-                    <p id="detalle_creador_tarea" style="font-size: 13px; color: #334155; font-weight: 600;"></p>
+                    <p class="texto_detalle_tarea texto_detalle_tarea_destacado" id="detalle_creador_tarea"></p>
                 </div>
                 <div>
                     <label class="etiqueta_campo">Asignado a:</label>
-                    <p id="detalle_asignado_tarea" style="font-size: 13px; color: #334155;"></p>
+                    <p class="texto_detalle_tarea" id="detalle_asignado_tarea"></p>
                 </div>
                 <div>
                     <label class="etiqueta_campo">Fecha límite:</label>
-                    <p id="detalle_fecha_tarea" style="font-size: 13px; color: #334155;"></p>
+                    <p class="texto_detalle_tarea" id="detalle_fecha_tarea"></p>
                 </div>
                 <div>
                     <label class="etiqueta_campo">Estado:</label>
@@ -286,9 +271,7 @@
                 </div>
                 <div>
                     <label class="etiqueta_campo">Descripción Completa:</label>
-                    <div id="detalle_descripcion_tarea"
-                        style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px; color: #0f172a; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">
-                    </div>
+                    <div class="detalle_descripcion_tarea" id="detalle_descripcion_tarea"></div>
                 </div>
             </div>
             <div class="pie_modal">

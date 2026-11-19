@@ -331,6 +331,12 @@ textarea {
     border: 2px solid #1e293b;
 }
 
+/* Iniciales del usuario sin estilos inline */
+.avatar_usuario_iniciales {
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .detalles_usuario {
     display: flex;
     flex-direction: column;
@@ -761,6 +767,71 @@ textarea {
     color: #0f172a;
 }
 
+/* Menú de opciones de cada tarea, sin estilos inline */
+.contenedor_opciones_tarea {
+    position: relative;
+}
+
+.menu_opciones_tarea {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 28px;
+    z-index: 20;
+    min-width: 170px;
+    padding: 4px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.menu_opciones_tarea.menu_abierto {
+    display: flex;
+    flex-direction: column;
+}
+
+.boton_menu_tarea {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    background-color: transparent;
+    color: #0f172a;
+    font-size: 12.5px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.boton_menu_tarea:hover {
+    background-color: #f1f5f9;
+}
+
+.boton_menu_tarea_eliminar {
+    color: #dc2626;
+}
+
+/* Filas laterales clicables y estado vacío */
+.fila_conteo_clicable {
+    cursor: pointer;
+}
+
+.estado_vacio_tareas {
+    text-align: center;
+    padding: 48px 20px;
+    color: #64748b;
+    font-size: 13.5px;
+}
+
+.icono_estado_vacio {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 32px;
+    color: #94a3b8;
+}
+
 /* Pie de tabla / Paginación */
 .pie_tabla {
     display: flex;
@@ -769,6 +840,14 @@ textarea {
     padding: 14px 18px;
     border-top: 1px solid #e2e8f0;
     background-color: #ffffff;
+}
+
+/* Pie compacto de la lista de tareas */
+.pie_tabla_tareas {
+    margin-top: 20px;
+    border-top: none;
+    background-color: transparent;
+    padding: 0;
 }
 
 .texto_conteo_filas {
@@ -808,6 +887,26 @@ textarea {
     color: #ffffff !important;
     border-color: #2563eb !important;
     font-weight: 600;
+}
+
+/* Flechas y elipsis de la paginación compacta */
+.boton_pagina_flecha {
+    min-width: 30px;
+    font-size: 14px;
+}
+
+.boton_pagina:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.elipsis_paginacion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    color: #94a3b8;
+    font-size: 13px;
 }
 
 /* ==========================================================================
@@ -887,6 +986,56 @@ textarea {
     display: flex;
     flex-direction: column;
     gap: 6px;
+}
+
+/* Formulario de tarea y campos compartidos */
+.formulario_tarea {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.fila_campos_modal {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.grupo_campo_modal_expandido {
+    flex: 1;
+    min-width: 180px;
+}
+
+.texto_ayuda_campo {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.cuerpo_modal_detalle {
+    gap: 12px;
+}
+
+.texto_detalle_tarea {
+    font-size: 13px;
+    color: #334155;
+}
+
+.texto_detalle_tarea_destacado {
+    font-weight: 600;
+}
+
+.detalle_descripcion_tarea {
+    background-color: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #0f172a;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .etiqueta_campo {

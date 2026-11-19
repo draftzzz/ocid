@@ -42,7 +42,8 @@
       return;
     }
 
-    anuncios.slice(0, 5).forEach(anuncio => {
+    // Máximo cuatro anuncios en el inicio
+    anuncios.slice(0, 4).forEach(anuncio => {
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_item_anuncio';
 

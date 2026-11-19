@@ -585,6 +585,14 @@ textarea {
     color: #10b981;
 }
 
+/* Punto de color dentro de las píldoras de prioridad */
+.punto_etiqueta {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
 .boton_opciones_anuncio {
     background: transparent;
     border: none;

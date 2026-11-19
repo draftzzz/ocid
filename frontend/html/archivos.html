@@ -105,8 +105,7 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario"
-                            style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -150,6 +149,7 @@
                     <option value="pdf">PDF</option>
                     <option value="xlsx">XLSX</option>
                     <option value="docx">DOCX</option>
+                    <option value="otro">Otro tipo de archivo</option>
                 </select>
             </div>
 
@@ -174,7 +174,7 @@
 
             <!-- Paginación o indicador -->
             <div class="pie_paginador" data-purpose="paginador-archivos">
-                <span id="resumen_paginacion_archivos" style="font-size: 13px; color: #64748b;"></span>
+                <span class="resumen_paginacion_archivos" id="resumen_paginacion_archivos"></span>
             </div>
         </section>
         <!-- END: SeccionArchivos -->
@@ -196,10 +196,10 @@
                         <polyline points="17 8 12 3 7 8"></polyline>
                         <line x1="12" x2="12" y1="3" y2="15"></line>
                     </svg>
-                    <div style="font-size: 13px; font-weight: 600; color: #334155;">Arrastra tu archivo aquí o haz clic
-                        para explorar</div>
-                    <div style="font-size: 11px; color: #94a3b8;">Formatos aceptados: PDF, XLSX, DOCX (máx. 10MB)</div>
-                    <input id="input_archivo_oculto" style="display: none;" type="file" />
+                    <!-- Textos y campo oculto con estilos en archivos.css -->
+                    <div class="texto_arrastre_principal">Arrastra tu archivo aquí o haz clic para explorar</div>
+                    <div class="texto_arrastre_secundario">Formatos aceptados: PDF, XLSX, DOCX (máx. 10MB)</div>
+                    <input class="input_archivo_oculto" id="input_archivo_oculto" type="file" />
                 </div>
                 <div class="campo_formulario">
                     <label class="etiqueta_campo" for="nombre_documento">Nombre del documento</label>

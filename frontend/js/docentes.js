@@ -44,8 +44,8 @@
         .join('')
         .toUpperCase();
       avatar.textContent = iniciales;
-      avatar.style.fontSize = '14px';
-      avatar.style.fontWeight = '700';
+      // Iniciales con estilo definido en CSS
+      avatar.classList.add('avatar_usuario_iniciales');
     }
 
     barraLateral.querySelectorAll('a[href="#"]').forEach(enlace => {
@@ -72,6 +72,7 @@ function mostrarAvisoDocentes(mensaje, error = false) {
   window.OCID.mostrarToast(mensaje, error ? 'error' : 'exito');
 }
 
+// Carga los docentes del departamento elegido (o del usuario si no hay filtro)
 async function cargarDocentes(departamentoId) {
   const cuerpo = document.getElementById('cuerpo_tabla_docentes');
   cuerpo.innerHTML = '<tr><td class="celda_docente" colspan="4">Cargando integrantes...</td></tr>';
@@ -79,7 +80,8 @@ async function cargarDocentes(departamentoId) {
   if (grupoPaginacion) grupoPaginacion.replaceChildren();
 
   try {
-    const datos = await window.OCID.apiFetch(`/docentes?departamento_id=${Number(departamentoId)}`);
+    const ruta = departamentoId ? `/docentes?departamento_id=${Number(departamentoId)}` : '/docentes';
+    const datos = await window.OCID.apiFetch(ruta);
     if (!Array.isArray(datos)) throw new Error('La respuesta del servidor no es válida.');
 
     cuerpo.replaceChildren();
@@ -95,137 +97,50 @@ async function cargarDocentes(departamentoId) {
   }
 }
 
-async function cargarDepartamentosDocentes() {
+// Pobla el selector de departamentos sin tarjetas superiores
+async function cargarFiltroDepartamentos() {
   try {
     const departamentos = await window.OCID.apiFetch('/departamentos');
     if (!Array.isArray(departamentos)) throw new Error('No se pudieron cargar los departamentos.');
-    renderizarTarjetasDepartamentos(departamentos);
+    const selectDepto = document.getElementById('filtro_departamento');
+    if (!selectDepto) return;
+
+    // Genera las opciones del filtro inferior
+    selectDepto.replaceChildren(new Option('Seleccionar departamento', ''));
+    departamentos.forEach(dep => selectDepto.appendChild(new Option(dep.nombre, String(dep.id))));
+
+    // Selecciona por defecto el departamento del usuario en sesión
+    const usuario = window.OCID.obtenerUsuarioSesion();
+    const propio = departamentos.find(dep => Number(dep.id) === Number(usuario && usuario.departamento_id));
+    if (propio) {
+      selectDepto.value = String(propio.id);
+      window.departamentoDocentesSeleccionado = propio;
+    }
+
+    // Recarga la tabla al cambiar de departamento
+    selectDepto.addEventListener('change', () => {
+      const deptoId = selectDepto.value;
+      window.departamentoDocentesSeleccionado = departamentos.find(dep => Number(dep.id) === Number(deptoId)) || null;
+      cargarDocentes(deptoId);
+    });
+
+    cargarDocentes(selectDepto.value);
   } catch (error) {
-    const contenedor = document.getElementById('tarjetas_departamento_docentes');
-    if (contenedor) contenedor.textContent = 'No se pudieron cargar los departamentos.';
     mostrarAvisoDocentes(error.message || 'Error al cargar los departamentos.', true);
+    cargarDocentes();
   }
 }
 
-const PALETA_ROLES_PASTEL = [
-  { bg: '#ede9fe', text: '#6d28d9', border: '#ddd6fe' }, // Jefe de Departamento (Lila pastel / Morado)
-  { bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd' }, // Docente (Azul cielo pastel / Azul)
-  { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' }, // Verde menta pastel / Esmeralda
-  { bg: '#fef3c7', text: '#b45309', border: '#fde68a' }, // Ámbar pastel / Ocre
-  { bg: '#ffe4e6', text: '#be123c', border: '#fecdd3' }, // Rosa pastel / Carmesí
-  { bg: '#e0e7ff', text: '#4338ca', border: '#c7d2fe' }, // Índigo pastel / Azul marino
-  { bg: '#ccfbf1', text: '#0f766e', border: '#99f6e4' }, // Turquesa pastel / Teal
-  { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' }, // Naranja melocotón / Naranja
-  { bg: '#fae8ff', text: '#a21caf', border: '#f5d0fe' }, // Fucsia orquídea / Magenta
-  { bg: '#cffafe', text: '#0e7490', border: '#a5f3fc' }, // Cian pastel / Azul verdoso
-];
-
-function obtenerColoresRol(nombreRol) {
+// Devuelve una variante de color estable para cada rol
+function obtenerIndiceColorRol(nombreRol) {
   const norm = String(nombreRol || '').trim().toLowerCase();
-  if (norm.includes('jefe')) {
-    return PALETA_ROLES_PASTEL[0];
-  }
-  if (norm === 'docente') {
-    return PALETA_ROLES_PASTEL[1];
-  }
+  if (norm.includes('jefe')) return 0;
+  if (norm === 'docente') return 1;
   let hash = 0;
   for (let i = 0; i < norm.length; i++) {
     hash = norm.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const indice = 2 + (Math.abs(hash) % (PALETA_ROLES_PASTEL.length - 2));
-  return PALETA_ROLES_PASTEL[indice];
-}
-
-function renderizarTarjetasDepartamentos(departamentos) {
-  const contenedor = document.getElementById('tarjetas_departamento_docentes');
-  const selectDepto = document.getElementById('filtro_departamento');
-
-  if (selectDepto) {
-    selectDepto.replaceChildren();
-    const optDefault = document.createElement('option');
-    optDefault.value = '';
-    optDefault.textContent = 'Seleccionar departamento';
-    selectDepto.appendChild(optDefault);
-
-    departamentos.forEach(dep => {
-      const opt = document.createElement('option');
-      opt.value = String(dep.id);
-      opt.textContent = dep.nombre;
-      selectDepto.appendChild(opt);
-    });
-
-    selectDepto.addEventListener('change', () => {
-      const deptoId = selectDepto.value;
-      if (!deptoId) {
-        window.departamentoDocentesSeleccionado = null;
-        if (contenedor) {
-          contenedor.querySelectorAll('.tarjeta_departamento_docentes').forEach(tarjeta => {
-            tarjeta.setAttribute('aria-pressed', 'false');
-          });
-        }
-        const cuerpo = document.getElementById('cuerpo_tabla_docentes');
-        if (cuerpo) {
-          cuerpo.innerHTML = '<tr><td class="ayuda_seleccion_departamento" colspan="4">Selecciona un departamento para ver sus integrantes.</td></tr>';
-        }
-        return;
-      }
-      const depObj = departamentos.find(d => Number(d.id) === Number(deptoId));
-      window.departamentoDocentesSeleccionado = depObj || null;
-      if (contenedor) {
-        contenedor.querySelectorAll('.tarjeta_departamento_docentes').forEach(tarjeta => {
-          tarjeta.setAttribute('aria-pressed', String(tarjeta.dataset.departamentoId === String(deptoId)));
-        });
-      }
-      cargarDocentes(deptoId);
-    });
-  }
-
-  if (!contenedor) return;
-  contenedor.replaceChildren();
-  if (!departamentos.length) {
-    const estado = document.createElement('p');
-    estado.className = 'estado_departamentos_docentes';
-    estado.textContent = 'No hay departamentos activos.';
-    contenedor.appendChild(estado);
-    return;
-  }
-
-  departamentos.forEach(departamento => {
-    const boton = document.createElement('button');
-    boton.type = 'button';
-    boton.className = 'tarjeta_departamento_docentes';
-    boton.dataset.departamentoId = String(departamento.id);
-    boton.setAttribute('aria-pressed', 'false');
-    boton.append(
-      Object.assign(document.createElement('strong'), { textContent: departamento.nombre || 'Departamento' }),
-      Object.assign(document.createElement('span'), { textContent: 'Ver integrantes activos' })
-    );
-    boton.addEventListener('click', () => {
-      window.departamentoDocentesSeleccionado = departamento;
-      if (selectDepto) selectDepto.value = String(departamento.id);
-      contenedor.querySelectorAll('.tarjeta_departamento_docentes').forEach(tarjeta => {
-        tarjeta.setAttribute('aria-pressed', String(tarjeta === boton));
-      });
-      cargarDocentes(departamento.id);
-    });
-    contenedor.appendChild(boton);
-  });
-
-  const usuario = window.OCID.obtenerUsuarioSesion();
-  const propio = departamentos.find(departamento =>
-    Number(departamento.id) === Number(usuario && usuario.departamento_id)
-  );
-  if (propio) {
-    const botonPropio = Array.from(contenedor.querySelectorAll('.tarjeta_departamento_docentes'))
-      .find(boton => Number(boton.dataset.departamentoId) === Number(propio.id));
-    if (botonPropio) botonPropio.click();
-  }
-  else {
-    const cuerpo = document.getElementById('cuerpo_tabla_docentes');
-    if (cuerpo) {
-      cuerpo.innerHTML = '<tr><td class="ayuda_seleccion_departamento" colspan="4">Selecciona un departamento para ver sus integrantes.</td></tr>';
-    }
-  }
+  return 2 + (Math.abs(hash) % 8);
 }
 
 function obtenerRolAutomatico(docente) {
@@ -270,12 +185,11 @@ function agregarFilaDocente(docente) {
   const celdaRol = document.createElement('td');
   celdaRol.className = 'celda_docente';
   const etiquetaRol = document.createElement('span');
-  etiquetaRol.className = 'badge_rol';
-  etiquetaRol.textContent = rolCalculado;
-  const colores = obtenerColoresRol(rolCalculado);
-  etiquetaRol.style.backgroundColor = colores.bg;
-  etiquetaRol.style.color = colores.text;
-  etiquetaRol.style.borderColor = colores.border;
+  // Píldora suave con punto de color para el rol
+  etiquetaRol.className = `badge_rol badge_rol_variante_${obtenerIndiceColorRol(rolCalculado)}`;
+  const puntoRol = document.createElement('span');
+  puntoRol.className = 'punto_badge';
+  etiquetaRol.append(puntoRol, document.createTextNode(rolCalculado));
   celdaRol.appendChild(etiquetaRol);
   fila.appendChild(celdaRol);
 
@@ -293,14 +207,12 @@ const docentesPorPagina = 4;
 
 function filtrarTablaDocentes() {
   const textoFiltro = document.getElementById('filtro_nombre_input').value.toLowerCase().trim();
-  const estadoFiltro = document.getElementById('filtro_estado').value;
   const filas = document.querySelectorAll('#cuerpo_tabla_docentes .fila_docente');
   const coincidentes = [];
 
+  // Solo se filtra por nombre dentro del departamento elegido
   filas.forEach(fila => {
-    const coincide = fila.dataset.nombre.toLowerCase().includes(textoFiltro) &&
-      (estadoFiltro === 'todos' || fila.dataset.estado === estadoFiltro);
-    if (coincide) coincidentes.push(fila);
+    if (fila.dataset.nombre.toLowerCase().includes(textoFiltro)) coincidentes.push(fila);
   });
 
   const paginas = Math.max(1, Math.ceil(coincidentes.length / docentesPorPagina));
@@ -318,54 +230,70 @@ function filtrarTablaDocentes() {
   const totalDocentes = coincidentes.length;
   const resumenPaginacion = document.getElementById('resumen_paginacion');
   if (resumenPaginacion) {
-    resumenPaginacion.textContent = `Mostrando ${Math.max(0, cantidadMostrados)} de ${totalDocentes} docentes`;
+    // Contador compacto: mostrados de total
+    resumenPaginacion.textContent = `Mostrando ${Math.max(0, cantidadMostrados)} de ${totalDocentes}`;
   }
   renderizarPaginacionDocentes(paginas);
 }
 
+// Devuelve hasta cuatro números de página con elipsis si hay más de diez
+function obtenerPaginasVisibles(actual, total) {
+  if (total <= 4) return Array.from({ length: total }, (_, indice) => indice + 1);
+  if (total > 10) {
+    if (actual <= 4) return [1, 2, 3, '...', total];
+    if (actual >= total - 3) return [1, '...', total - 2, total - 1, total];
+    return [1, '...', actual - 1, actual, '...', total];
+  }
+  const inicio = Math.min(Math.max(actual - 1, 1), total - 3);
+  return [inicio, inicio + 1, inicio + 2, inicio + 3];
+}
+
+// Paginación con flechas y un máximo de cuatro números visibles
 function renderizarPaginacionDocentes(paginas) {
   const grupo = document.querySelector('.botones_paginacion_grupo');
   if (!grupo) return;
   grupo.replaceChildren();
 
-  const agregarBoton = (texto, pagina, etiqueta) => {
+  const agregarBoton = (texto, pagina, etiqueta, deshabilitado = false, clase = '') => {
     const boton = document.createElement('button');
     boton.type = 'button';
-    boton.className = 'btn_pagina' + (pagina === paginaDocentes ? ' btn_pagina_activa' : '');
+    boton.className = `btn_pagina ${clase} ${pagina === paginaDocentes && !deshabilitado ? 'btn_pagina_activa' : ''}`.trim();
     boton.textContent = texto;
     boton.setAttribute('aria-label', etiqueta);
-    if (pagina === paginaDocentes) {
-      boton.disabled = true;
+    boton.disabled = deshabilitado;
+    if (!deshabilitado) {
+      boton.addEventListener('click', () => {
+        paginaDocentes = pagina;
+        filtrarTablaDocentes();
+      });
     }
-    boton.addEventListener('click', () => {
-      paginaDocentes = pagina;
-      filtrarTablaDocentes();
-    });
     grupo.appendChild(boton);
   };
 
-  if (paginaDocentes > 1) {
-    agregarBoton('‹', paginaDocentes - 1, 'Página anterior');
-  }
-  
-  for (let pagina = 1; pagina <= paginas; pagina++) {
-    agregarBoton(String(pagina), pagina, `Página ${pagina}`);
-  }
+  // Flecha izquierda siempre disponible
+  agregarBoton('<', Math.max(1, paginaDocentes - 1), 'Página anterior', paginaDocentes === 1, 'btn_pagina_flecha');
 
-  if (paginaDocentes < paginas) {
-    agregarBoton('›', paginaDocentes + 1, 'Página siguiente');
-  }
+  // Números de página y puntos suspensivos
+  obtenerPaginasVisibles(paginaDocentes, paginas).forEach(valor => {
+    if (valor === '...') {
+      const puntos = document.createElement('span');
+      puntos.className = 'elipsis_paginacion';
+      puntos.textContent = '…';
+      grupo.appendChild(puntos);
+    } else {
+      agregarBoton(String(valor), valor, `Página ${valor}`);
+    }
+  });
+
+  // Flecha derecha siempre disponible
+  agregarBoton('>', Math.min(paginas, paginaDocentes + 1), 'Página siguiente', paginaDocentes === paginas, 'btn_pagina_flecha');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  cargarDepartamentosDocentes();
+  cargarFiltroDepartamentos();
 });
 
 document.getElementById('filtro_nombre_input').addEventListener('input', () => {
-  paginaDocentes = 1;
-  filtrarTablaDocentes();
-});
-document.getElementById('filtro_estado').addEventListener('change', () => {
   paginaDocentes = 1;
   filtrarTablaDocentes();
 });

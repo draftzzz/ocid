@@ -2059,11 +2059,30 @@ async function resolverDestinosTarea(db, departamentos, departamento) {
   };
 }
 
+// Valida la fecha límite: desde hoy hasta seis meses después (YYYY-MM-DD)
+function validarFechaLimiteTarea(fecha) {
+  if (typeof fecha !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return false;
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  const limite = new Date(Date.UTC(anio, mes - 1, dia));
+  if (limite.getUTCFullYear() !== anio || limite.getUTCMonth() !== mes - 1 || limite.getUTCDate() !== dia) return false;
+
+  const ahora = new Date();
+  const hoy = new Date(Date.UTC(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()));
+  const fin = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() + 6, hoy.getUTCDate()));
+  return limite >= hoy && limite <= fin;
+}
+
 app.post('/tareas', async (req, res) => {
   const { titulo, descripcion, asignado, fecha, horario, departamentos, departamento, estado } = req.body;
   const autorId = Number(req.usuario && req.usuario.id);
   if (typeof titulo !== 'string' || !titulo.trim() || !fecha) {
     return res.status(400).json({ success: false, error: 'El título y la fecha son obligatorios' });
+  }
+  if (!validarFechaLimiteTarea(fecha)) {
+    return res.status(400).json({
+      success: false,
+      error: 'La fecha límite debe estar entre hoy y los próximos 6 meses'
+    });
   }
   try {
     const usuario = await pool.query('SELECT departamento_id FROM usuarios WHERE id = $1', [autorId]);
@@ -2093,10 +2112,18 @@ app.post('/tareas', async (req, res) => {
 app.put('/tareas/:id', async (req, res) => {
   const id = Number(req.params.id);
   const usuarioId = Number(req.usuario && req.usuario.id);
-  const { titulo, descripcion, asignado, fecha, horario, departamentos, departamento, estado } = req.body || {};
-  if (!Number.isSafeInteger(id) || id <= 0 ||
-      typeof titulo !== 'string' || !titulo.trim() || !fecha) {
-    return res.status(400).json({ success: false, error: 'Los datos de la tarea no son válidos' });
+  const cuerpo = req.body || {};
+  const { titulo, descripcion, asignado, fecha, horario, departamentos, departamento, estado } = cuerpo;
+  const camposEnviados = ['titulo', 'descripcion', 'asignado', 'fecha', 'horario', 'departamentos', 'departamento', 'estado']
+    .filter(campo => Object.prototype.hasOwnProperty.call(cuerpo, campo));
+
+  if (!Number.isSafeInteger(id) || id <= 0 || camposEnviados.length === 0 ||
+      (camposEnviados.includes('titulo') && (typeof titulo !== 'string' || !titulo.trim())) ||
+      (camposEnviados.includes('fecha') && !validarFechaLimiteTarea(fecha))) {
+    return res.status(400).json({
+      success: false,
+      error: 'Los datos de la tarea no son válidos o la fecha está fuera del rango permitido'
+    });
   }
 
   try {
@@ -2105,16 +2132,33 @@ app.put('/tareas/:id', async (req, res) => {
     if (!acceso.permitido || acceso.eliminado) {
       return res.status(403).json({ success: false, error: 'No tienes permiso para editar esta tarea' });
     }
-    const destinos = await resolverDestinosTarea(pool, departamentos, departamento);
+
+    // Actualización parcial: solo se escriben los campos enviados
+    const asignaciones = [];
+    const valores = [];
+    const agregar = (columna, valor) => {
+      valores.push(valor);
+      asignaciones.push(`${columna} = $${valores.length}`);
+    };
+
+    if (camposEnviados.includes('titulo')) agregar('titulo', titulo.trim());
+    if (camposEnviados.includes('descripcion')) agregar('descripcion', descripcion ? descripcion.trim() : null);
+    if (camposEnviados.includes('asignado')) agregar('asignado', asignado ? asignado.trim() : 'General / Sin asignar');
+    if (camposEnviados.includes('fecha')) agregar('fecha', fecha);
+    if (camposEnviados.includes('horario')) agregar('horario', horario || 'Horario a confirmar');
+    if (camposEnviados.includes('departamentos') || camposEnviados.includes('departamento')) {
+      const destinos = await resolverDestinosTarea(pool, departamentos, departamento);
+      agregar('departamento', destinos.nombres.join(', '));
+      agregar('departamentos_destino_ids', destinos.ids);
+    }
+    if (camposEnviados.includes('estado')) agregar('estado', estado || 'Pendiente');
+
+    valores.push(id);
     const resultado = await pool.query(
-      `UPDATE tareas
-       SET titulo = $1, descripcion = $2, asignado = $3, fecha = $4, horario = $5,
-           departamento = $6, departamentos_destino_ids = $7, estado = $8
-       WHERE id = $9 AND COALESCE(eliminado, FALSE) = FALSE
+      `UPDATE tareas SET ${asignaciones.join(', ')}
+       WHERE id = $${valores.length} AND COALESCE(eliminado, FALSE) = FALSE
        RETURNING *`,
-      [titulo.trim(), descripcion ? descripcion.trim() : null,
-        asignado ? asignado.trim() : 'General / Sin asignar', fecha, horario || 'Horario a confirmar',
-        destinos.nombres.join(', '), destinos.ids, estado || 'Pendiente', id]
+      valores
     );
     if (resultado.rowCount === 0) return res.status(404).json({ success: false, error: 'La tarea no existe' });
     res.json({ success: true, tarea: resultado.rows[0] });

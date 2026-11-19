@@ -319,6 +319,12 @@ textarea {
     border: 2px solid #1e293b;
 }
 
+/* Iniciales del usuario sin estilos inline */
+.avatar_usuario_iniciales {
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .detalles_usuario {
     display: flex;
     flex-direction: column;
@@ -581,6 +587,61 @@ textarea {
     font-weight: 700;
 }
 
+/* Etiquetas para formatos adicionales y tipos desconocidos */
+.icono_tipo_docx {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background-color: #dbeafe;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.icono_tipo_otro {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    background-color: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 10px;
+    flex-shrink: 0;
+}
+
+.badge_docx {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background-color: #dbeafe;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.badge_otro {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    background-color: #f1f5f9;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.celda_estado_vacio_archivos {
+    text-align: center;
+    padding: 20px;
+    color: #64748b;
+}
+
 .acciones_celda {
     display: flex;
     align-items: center;
@@ -736,6 +797,27 @@ textarea {
 .zona_arrastre_archivo:hover {
     border-color: #2563eb;
     background-color: #eff6ff;
+}
+
+/* Textos de la zona de arrastre */
+.texto_arrastre_principal {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.texto_arrastre_secundario {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.resumen_paginacion_archivos {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.input_archivo_oculto {
+    display: none;
 }
 
 .campo_formulario {
