@@ -359,7 +359,7 @@ Estas son las dependencias externas que `backend/server.js` importa y utiliza:
 | `express-rate-limit` | Limita intentos de acceso/registro y operaciones de crear o unirse a departamentos. |
 | `pg` | Proporciona `Pool` y conexiones para ejecutar consultas PostgreSQL. |
 
-`crypto` también se utiliza para generar valores aleatorios, pero forma parte de Node.js y no se instala desde npm. Se quitaron `cookie-parser`, `dotenv` y `helmet` de `package.json` porque `server.js` no los importa ni los usa. En particular, el servidor no carga automáticamente un archivo `.env`; las variables deben definirse en el entorno de ejecución.
+`crypto` también se utiliza para generar valores aleatorios, pero forma parte de Node.js y no se instala desde npm. El servidor no carga automáticamente un archivo `.env`; las variables deben definirse en el entorno de ejecución.
 
 ### Funciones y configuración del servidor
 
