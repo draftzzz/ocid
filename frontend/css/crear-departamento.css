@@ -279,10 +279,7 @@ button, input, select, textarea {
     display: flex;
     flex-direction: column;
     gap: 24px;
-    overflow-y: auto;
-    
-    scrollbar-width: thin;
-    scrollbar-color: #ccd2d8 #232E33;
+    overflow-y: auto; /* Scroll nativo del navegador */
 }
 
 .tarjeta_seccion {

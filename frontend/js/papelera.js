@@ -241,7 +241,8 @@
   };
 
   window.eliminarDefinitivoArchivo = async function (id) {
-    if (!window.confirm('¿Eliminar este archivo de forma permanente?')) return;
+    // Confirmación personalizada antes de borrar el archivo de forma definitiva
+    if (!await window.OCID.confirmarAccion('¿Eliminar este archivo de forma permanente?')) return;
     try {
       const data = await window.OCID.apiFetch(`/archivos/${id}/permanente`, { method: 'DELETE' });
       if (!data.success) throw new Error('No se pudo eliminar el archivo.');
@@ -268,7 +269,8 @@
   };
 
   window.eliminarDefinitivoAnuncio = async function (id) {
-    if (!window.confirm('¿Eliminar este anuncio de forma permanente?')) return;
+    // Confirmación personalizada antes de borrar el anuncio de forma definitiva
+    if (!await window.OCID.confirmarAccion('¿Eliminar este anuncio de forma permanente?')) return;
     try {
       const data = await window.OCID.apiFetch(`/anuncios/${id}/permanente`, { method: 'DELETE' });
       if (!data.success) throw new Error('No se pudo eliminar el anuncio.');
@@ -295,7 +297,8 @@
   };
 
   window.eliminarDefinitivoTarea = async function (id) {
-    if (!window.confirm('¿Eliminar esta tarea de forma permanente?')) return;
+    // Confirmación personalizada antes de borrar la tarea de forma definitiva
+    if (!await window.OCID.confirmarAccion('¿Eliminar esta tarea de forma permanente?')) return;
     try {
       const data = await window.OCID.apiFetch(`/tareas/${id}/permanente`, { method: 'DELETE' });
       if (!data.success) throw new Error(data.error || 'No se pudo eliminar permanentemente la tarea.');

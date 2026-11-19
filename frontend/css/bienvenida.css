@@ -266,10 +266,7 @@ button, input, select, textarea {
     align-items: center;
     text-align: center;
     gap: 24px;
-    overflow-y: auto;
-    
-    scrollbar-width: thin;
-    scrollbar-color: #ccd2d8 #232E33;
+    overflow-y: auto; /* Scroll nativo del navegador */
 }
 
 .hero_bienvenida {

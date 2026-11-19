@@ -315,7 +315,8 @@ async function eliminarAnuncio(id) {
     return;
   }
 
-  if (!confirm('¿Estás seguro de que deseas eliminar este anuncio?')) return;
+  // Confirmación personalizada antes de eliminar el anuncio
+  if (!await window.OCID.confirmarAccion('¿Estás seguro de que deseas eliminar este anuncio?')) return;
 
   try {
     const datos = await window.OCID.apiFetch(`/anuncios/${id}`, {

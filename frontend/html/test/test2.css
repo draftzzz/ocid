@@ -188,7 +188,7 @@ textarea {
 }
 
 /* ==========================================================================
-   3. Área Principal y Barra Superior (Scroll personalizado debajo del nav azul)
+   3. Área Principal y Barra Superior con scroll nativo del navegador
    ========================================================================== */
 .area_principal {
     flex: 1;
@@ -198,30 +198,6 @@ textarea {
     height: 100vh;
     overflow-y: auto; /* Scroll exclusivo del contenido a partir de la barra superior */
     background-color: #f1f5f9;
-
-    scrollbar-width: thin;
-    scrollbar-color: #cccccc #2f2f2f;
-}
-
-.area_principal::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-
-.area_principal::-webkit-scrollbar-track {
-    background: #2f2f2f;
-    border-radius: 1px;
-}
-
-.area_principal::-webkit-scrollbar-thumb {
-    background: #cccccc;
-    border-radius: 1px;
-}
-
-@supports not selector(::-webkit-scrollbar) {
-    .area_principal {
-        scrollbar-color: #93c5fd #2f2f2f;
-    }
 }
 
 .barra_superior {

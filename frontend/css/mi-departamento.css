@@ -383,7 +383,7 @@ textarea {
 }
 
 /* ==========================================================================
-   4. Estilos Específicos de Mi Departamento (con Scroll personalizado)
+   4. Estilos Específicos de Mi Departamento con scroll nativo
    ========================================================================== */
 .contenido_principal {
     flex: 1;
@@ -397,24 +397,6 @@ textarea {
     overflow-y: auto;
     scroll-behavior: smooth;
     scroll-padding-bottom: 48px;
-
-    scrollbar-width: thin;
-    scrollbar-color: #ccd2d8 #232E33;
-}
-
-.contenido_principal::-webkit-scrollbar {
-    width: 9px;
-    height: 9px;
-}
-
-.contenido_principal::-webkit-scrollbar-track {
-    background: #232E33;
-    border-radius: 1px;
-}
-
-.contenido_principal::-webkit-scrollbar-thumb {
-    background: #ccd2d8;
-    border-radius: 1px;
 }
 
 .cabecera_modulo {
@@ -1120,15 +1102,17 @@ textarea {
     font-weight: 600;
 }
 
+/* Buscador de integrantes con la misma altura que los filtros globales */
 .campo_busqueda_integrantes {
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 44px;
-    padding: 0 13px;
-    border: 1px solid #dbe3ee;
-    border-radius: 10px;
-    background: #ffffff;
+    height: 42px;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
     color: #94a3b8;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     transition: border-color 0.18s ease, box-shadow 0.18s ease;
@@ -1143,15 +1127,18 @@ textarea {
     flex: 0 0 auto;
 }
 
+/* Input interno alineado con el contenedor del buscador */
 .campo_busqueda_integrantes input {
     width: 100%;
     min-width: 0;
-    height: 42px;
+    height: 100%;
+    min-height: 0;
     padding: 0;
     border: 0;
     background: transparent;
     color: #0f172a;
-    font-size: 13px;
+    font-size: 13.5px;
+    line-height: 1.2;
     font-weight: 400;
 }
 

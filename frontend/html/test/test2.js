@@ -127,7 +127,8 @@ async function publicarAnuncio(evento) {
 async function eliminarAnuncio(id, evento) {
     evento?.stopPropagation();
     if (!usuario?.id) { mostrarMensaje("Inicia sesión para eliminar anuncios.", true); return; }
-    if (!id || !confirm("¿Deseas eliminar este anuncio?")) return;
+    // Confirmación personalizada antes de eliminar el anuncio
+    if (!id || !await window.OCID.confirmarAccion("¿Deseas eliminar este anuncio?")) return;
     try {
         const datos = await window.OCID.apiFetch(`/anuncios/${Number(id)}`, { method: "DELETE" });
         if (datos.success !== true) throw new Error(datos.error || "No se confirmó la eliminación.");

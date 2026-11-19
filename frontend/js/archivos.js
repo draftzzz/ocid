@@ -341,7 +341,8 @@ async function eliminarArchivo(id, autorId) {
     return;
   }
 
-  if (!window.confirm('¿Estás seguro de eliminar este archivo?')) return;
+  // Confirmación personalizada antes de eliminar el archivo
+  if (!await window.OCID.confirmarAccion('¿Estás seguro de eliminar este archivo?')) return;
   
   try {
     await window.OCID.apiFetch('/archivos/' + encodeURIComponent(id), { method: 'DELETE' });

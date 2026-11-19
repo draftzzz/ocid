@@ -213,7 +213,8 @@
       window.OCID.mostrarToast('Solo el jefe del departamento puede eliminar roles.', 'error');
       return;
     }
-    if (!window.confirm(`¿Deseas eliminar el rol "${rol.nombre}"? Los roles con integrantes asignados no se pueden eliminar.`)) {
+    // Confirmación personalizada antes de eliminar el rol del departamento
+    if (!await window.OCID.confirmarAccion(`¿Deseas eliminar el rol "${rol.nombre}"? Los roles con integrantes asignados no se pueden eliminar.`)) {
       return;
     }
 

@@ -483,7 +483,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) return;
+    // Confirmación personalizada antes de eliminar la tarea
+    if (!await window.OCID.confirmarAccion('¿Estás seguro de que deseas eliminar esta tarea?')) return;
 
     try {
       const datos = await window.OCID.apiFetch(`/tareas/${id}`, {

@@ -203,7 +203,8 @@
   };
 
   window.borrarNotificacion = async function (id) {
-    if (!window.confirm('¿Eliminar esta notificación?')) return;
+    // Confirmación personalizada antes de eliminar la notificación
+    if (!await window.OCID.confirmarAccion('¿Eliminar esta notificación?')) return;
     try {
       const resultado = await window.OCID.apiFetch(`/notificaciones/${Number(id)}`, { method: 'DELETE' });
       if (!resultado.success) throw new Error(resultado.error || 'No se pudo eliminar la notificación.');

@@ -202,6 +202,66 @@
     }, duracion);
   }
 
+  // Modal pequeño de confirmación sin bloquear el navegador
+  function mostrarModalConfirmacion(mensaje, titulo = 'Confirmar acción') {
+    return new Promise((resolver) => {
+      const finalizar = (respuesta) => {
+        document.removeEventListener('keydown', alTeclear);
+        capa.remove();
+        resolver(respuesta);
+      };
+      const alTeclear = (evento) => {
+        if (evento.key === 'Escape') finalizar(false);
+      };
+      const capa = crearElemento('div', { className: 'modal_confirmacion_overlay' });
+      const caja = crearElemento('div', {
+        className: 'modal_confirmacion_caja',
+        attributes: { role: 'dialog', 'aria-modal': 'true', 'aria-label': titulo }
+      });
+      const cabecera = crearElemento('div', { className: 'modal_confirmacion_cabecera' });
+      const tituloEl = crearElemento('h3', {
+        className: 'modal_confirmacion_titulo',
+        textContent: titulo
+      });
+      const cerrar = crearElemento('button', {
+        className: 'modal_confirmacion_cerrar',
+        type: 'button',
+        textContent: '×',
+        attributes: { 'aria-label': 'Cerrar' }
+      });
+      cabecera.append(tituloEl, cerrar);
+      const cuerpo = crearElemento('div', { className: 'modal_confirmacion_cuerpo' });
+      cuerpo.appendChild(crearElemento('p', {
+        className: 'modal_confirmacion_texto',
+        textContent: mensaje
+      }));
+      const pie = crearElemento('div', { className: 'modal_confirmacion_pie' });
+      const cancelar = crearElemento('button', {
+        className: 'modal_confirmacion_boton modal_confirmacion_boton_cancelar',
+        type: 'button',
+        textContent: 'Cancelar'
+      });
+      const aceptar = crearElemento('button', {
+        className: 'modal_confirmacion_boton modal_confirmacion_boton_aceptar',
+        type: 'button',
+        textContent: 'Aceptar'
+      });
+      pie.append(cancelar, aceptar);
+      caja.append(cabecera, cuerpo, pie);
+      capa.appendChild(caja);
+      cerrar.addEventListener('click', () => finalizar(false));
+      cancelar.addEventListener('click', () => finalizar(false));
+      aceptar.addEventListener('click', () => finalizar(true));
+      capa.addEventListener('click', (evento) => {
+        if (evento.target === capa) finalizar(false);
+      });
+      document.addEventListener('keydown', alTeclear);
+      document.body.appendChild(capa);
+      capa.classList.add('modal_activo');
+      aceptar.focus();
+    });
+  }
+
   function configurarBloqueoScrollModal() {
     if (!document.body || document.body.dataset.ocidModalLockConfigured === 'true') return;
     document.body.dataset.ocidModalLockConfigured = 'true';
@@ -591,6 +651,7 @@
     configurarCampanaGlobal,
     actualizarContadorNotificaciones,
     marcarElementoVisto,
+    confirmarAccion: mostrarModalConfirmacion,
   };
 
   window.mostrarMensaje = (mensaje, esError = false) => mostrarToast(mensaje, esError);
