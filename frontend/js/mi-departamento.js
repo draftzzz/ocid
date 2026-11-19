@@ -19,45 +19,25 @@
     return esMiembroJefe(miembro) ? 'Jefe de Departamento' : (miembro.rol || 'Docente');
   }
 
-  const PALETA_ROLES_PASTEL = [
-    { bg: '#ede9fe', text: '#6d28d9', border: '#ddd6fe' }, // Jefe de Departamento (Lila pastel / Morado)
-    { bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd' }, // Docente (Azul cielo pastel / Azul)
-    { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' }, // Verde menta pastel / Esmeralda
-    { bg: '#fef3c7', text: '#b45309', border: '#fde68a' }, // Ámbar pastel / Ocre
-    { bg: '#ffe4e6', text: '#be123c', border: '#fecdd3' }, // Rosa pastel / Carmesí
-    { bg: '#e0e7ff', text: '#4338ca', border: '#c7d2fe' }, // Índigo pastel / Azul marino
-    { bg: '#ccfbf1', text: '#0f766e', border: '#99f6e4' }, // Turquesa pastel / Teal
-    { bg: '#ffedd5', text: '#c2410c', border: '#fed7aa' }, // Naranja melocotón / Naranja
-    { bg: '#fae8ff', text: '#a21caf', border: '#f5d0fe' }, // Fucsia orquídea / Magenta
-    { bg: '#cffafe', text: '#0e7490', border: '#a5f3fc' }, // Cian pastel / Azul verdoso
-  ];
-
-  function obtenerColoresRol(nombreRol) {
+  // Devuelve una variante de color estable para cada rol
+  function obtenerIndiceColorRol(nombreRol) {
     const norm = normalizar(nombreRol);
-    if (norm.includes('jefe')) {
-      return PALETA_ROLES_PASTEL[0];
-    }
-    if (norm === 'docente') {
-      return PALETA_ROLES_PASTEL[1];
-    }
+    if (norm.includes('jefe')) return 0;
+    if (norm === 'docente') return 1;
     let hash = 0;
     for (let i = 0; i < norm.length; i++) {
       hash = norm.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const indice = 2 + (Math.abs(hash) % (PALETA_ROLES_PASTEL.length - 2));
-    return PALETA_ROLES_PASTEL[indice];
+    return 2 + (Math.abs(hash) % 8);
   }
 
   function crearEtiquetaRol(nombre) {
     const etiqueta = document.createElement('span');
-    etiqueta.className = 'badge_rol_departamento';
-    etiqueta.textContent = nombre;
-
-    const colores = obtenerColoresRol(nombre);
-    etiqueta.style.backgroundColor = colores.bg;
-    etiqueta.style.color = colores.text;
-    etiqueta.style.borderColor = colores.border;
-
+    // Píldora estándar con punto de color para el rol
+    etiqueta.className = `etiqueta_tipo badge_rol_departamento badge_rol_variante_${obtenerIndiceColorRol(nombre)}`;
+    const punto = document.createElement('span');
+    punto.className = 'punto_etiqueta';
+    etiqueta.append(punto, document.createTextNode(nombre));
     return etiqueta;
   }
 
@@ -300,9 +280,12 @@
       const celdaEstado = document.createElement('td');
       const estado = miembro.estado === 'Inactivo' ? 'Inactivo' : 'Activo';
       const indicadorEstado = document.createElement('span');
-      indicadorEstado.className = estado === 'Inactivo' ? 'badge_estado_inactivo' : 'badge_estado_activo';
+      // Estado con la misma píldora estándar
+      indicadorEstado.className = `etiqueta_tipo ${estado === 'Inactivo' ? 'badge_estado_inactivo' : 'badge_estado_activo'}`;
       indicadorEstado.id = `estado_usuario_${miembro.id}`;
-      indicadorEstado.textContent = estado;
+      const puntoEstado = document.createElement('span');
+      puntoEstado.className = 'punto_etiqueta';
+      indicadorEstado.append(puntoEstado, document.createTextNode(estado));
       celdaEstado.appendChild(indicadorEstado);
 
       const celdaAcciones = document.createElement('td');

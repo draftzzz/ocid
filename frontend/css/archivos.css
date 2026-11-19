@@ -567,24 +567,42 @@ textarea {
     color: #94a3b8;
 }
 
-.badge_pdf {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 16px;
-    background-color: #fee2e2;
-    color: #ef4444;
+/* Tipos de archivo con la misma píldora base que .etiqueta_tipo */
+.etiqueta_tipo,
+.badge_pdf,
+.badge_xlsx,
+.badge_docx,
+.badge_otro {
     font-size: 11px;
     font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+/* Punto de color común a todas las píldoras */
+.punto_etiqueta {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.badge_pdf {
+    background-color: #fee2e2;
+    color: #ef4444;
+    border-color: #fecaca;
 }
 
 .badge_xlsx {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 16px;
     background-color: #dcfce7;
     color: #10b981;
-    font-size: 11px;
-    font-weight: 700;
+    border-color: #a7f3d0;
 }
 
 /* Etiquetas para formatos adicionales y tipos desconocidos */
@@ -616,24 +634,17 @@ textarea {
     flex-shrink: 0;
 }
 
+/* Colores de los formatos adicionales */
 .badge_docx {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 16px;
     background-color: #dbeafe;
     color: #2563eb;
-    font-size: 11px;
-    font-weight: 700;
+    border-color: #bfdbfe;
 }
 
 .badge_otro {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 16px;
     background-color: #f1f5f9;
     color: #64748b;
-    font-size: 11px;
-    font-weight: 700;
+    border-color: #e2e8f0;
 }
 
 .celda_estado_vacio_archivos {

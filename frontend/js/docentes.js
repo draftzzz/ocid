@@ -185,10 +185,10 @@ function agregarFilaDocente(docente) {
   const celdaRol = document.createElement('td');
   celdaRol.className = 'celda_docente';
   const etiquetaRol = document.createElement('span');
-  // Píldora suave con punto de color para el rol
-  etiquetaRol.className = `badge_rol badge_rol_variante_${obtenerIndiceColorRol(rolCalculado)}`;
+  // Píldora estándar con punto de color para el rol
+  etiquetaRol.className = `etiqueta_tipo badge_rol badge_rol_variante_${obtenerIndiceColorRol(rolCalculado)}`;
   const puntoRol = document.createElement('span');
-  puntoRol.className = 'punto_badge';
+  puntoRol.className = 'punto_etiqueta';
   etiquetaRol.append(puntoRol, document.createTextNode(rolCalculado));
   celdaRol.appendChild(etiquetaRol);
   fila.appendChild(celdaRol);
@@ -196,7 +196,8 @@ function agregarFilaDocente(docente) {
   // Celda Estado
   const celdaEstado = document.createElement('td');
   celdaEstado.className = 'celda_docente';
-  celdaEstado.innerHTML = '<span class="badge_estado badge_estado_activo"><span class="punto_estado punto_activo"></span>Activo</span>';
+  // Estado con la misma píldora estándar
+  celdaEstado.innerHTML = '<span class="etiqueta_tipo badge_estado badge_estado_activo"><span class="punto_etiqueta"></span>Activo</span>';
   fila.appendChild(celdaEstado);
 
   document.getElementById('cuerpo_tabla_docentes').appendChild(fila);

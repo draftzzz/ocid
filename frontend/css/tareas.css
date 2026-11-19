@@ -560,6 +560,7 @@ textarea {
     justify-content: space-between;
 }
 
+/* Base de píldora compartida por prioridades, roles y estados */
 .etiqueta_tipo {
     font-size: 11px;
     font-weight: 700;
@@ -568,6 +569,8 @@ textarea {
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .etiqueta_urgente {
@@ -588,7 +591,9 @@ textarea {
     border: 1px solid #a7f3d0;
 }
 
+/* Punto de color común a todas las píldoras */
 .punto_etiqueta {
+    flex-shrink: 0;
     width: 6px;
     height: 6px;
     border-radius: 50%;

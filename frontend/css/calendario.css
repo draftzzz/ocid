@@ -478,6 +478,11 @@ textarea {
     gap: 8px;
 }
 
+/* Vista de día: una sola columna */
+.grilla_dias.vista_dia {
+    grid-template-columns: 1fr;
+}
+
 .celda_dia {
     min-height: 84px;
     border: 1px solid #f1f5f9;
@@ -560,11 +565,73 @@ textarea {
 }
 
 .item_evento {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 14px;
     padding-bottom: 14px;
     border-bottom: 1px solid #f1f5f9;
+}
+
+/* Contenedor y menú de opciones sin estilos inline */
+.contenedor_opciones_evento {
+    position: relative;
+}
+
+.menu_opciones_evento {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 25px;
+    z-index: 50;
+    width: 140px;
+    padding: 4px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.menu_opciones_evento.menu_abierto {
+    display: block;
+}
+
+.boton_menu_evento {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    background-color: transparent;
+    color: #0f172a;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.boton_menu_evento_eliminar {
+    color: #ef4444;
+}
+
+/* Estado vacío y utilidades compartidas */
+.estado_vacio_calendario {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.oculto {
+    display: none !important;
+}
+
+.avatar_usuario_iniciales {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* Chevron pequeño del enlace "Ver todos" */
+.icono_chevron_enlace {
+    font-size: 10px;
 }
 
 .item_evento:last-child {
@@ -620,7 +687,61 @@ textarea {
     color: #475569;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
+}
+
+/* Píldoras estándar para departamento y estado del evento */
+.etiqueta_tipo,
+.etiqueta_departamento_calendario {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+/* Punto de color común a todas las píldoras */
+.punto_etiqueta {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.etiqueta_departamento_calendario {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.etiqueta_urgente {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border-color: #fed7aa;
+}
+
+.etiqueta_moderado {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.etiqueta_general {
+    background-color: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+/* Texto secundario del creador del evento */
+.texto_creador_evento {
+    color: #64748b;
+    font-size: 11px;
 }
 
 .punto_departamento {

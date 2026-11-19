@@ -560,6 +560,7 @@ textarea {
     justify-content: space-between;
 }
 
+/* Misma base de píldora que tareas.css; cada color se mantiene */
 .etiqueta_tipo {
     font-size: 11px;
     font-weight: 700;
@@ -568,25 +569,31 @@ textarea {
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    border: 1px solid transparent;
+    white-space: nowrap;
 }
 
 .etiqueta_urgente {
     background-color: #fee2e2;
     color: #ef4444;
+    border-color: #fecaca;
 }
 
 .etiqueta_moderado {
     background-color: #fff9dc;
     color: #ebac25;
+    border-color: #fde68a;
 }
 
 .etiqueta_general {
     background-color: #dcfce7;
     color: #10b981;
+    border-color: #a7f3d0;
 }
 
-/* Punto de color dentro de las píldoras de prioridad */
+/* Punto de color común a todas las píldoras */
 .punto_etiqueta {
+    flex-shrink: 0;
     width: 6px;
     height: 6px;
     border-radius: 50%;

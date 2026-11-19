@@ -52,14 +52,17 @@
 
       const prioridad = String(anuncio.prioridad || 'General');
       const etiqueta = document.createElement('span');
-      etiqueta.className = 'etiqueta_prioridad';
+      // Píldora estándar con punto de color para la prioridad
+      etiqueta.className = 'etiqueta_tipo etiqueta_prioridad';
       const prioridadClave = prioridad.toLowerCase();
       etiqueta.classList.add(prioridadClave.includes('import') || prioridadClave.includes('urgent')
         ? 'etiqueta_importante'
         : prioridadClave.includes('aviso') || prioridadClave.includes('media')
           ? 'etiqueta_aviso'
           : 'etiqueta_general');
-      etiqueta.textContent = prioridad;
+      const puntoPrioridad = document.createElement('span');
+      puntoPrioridad.className = 'punto_etiqueta';
+      etiqueta.append(puntoPrioridad, document.createTextNode(` ${prioridad}`));
 
       const detalles = document.createElement('div');
       detalles.className = 'detalles_texto_anuncio';

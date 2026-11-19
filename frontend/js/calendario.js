@@ -34,8 +34,8 @@
         .join('')
         .toUpperCase();
       avatar.textContent = iniciales;
-      avatar.style.fontSize = '14px';
-      avatar.style.fontWeight = '700';
+      // Iniciales con estilo definido en CSS
+      avatar.classList.add('avatar_usuario_iniciales');
     }
 
   }
@@ -117,25 +117,25 @@ async function cargarTareasDesdeDB() {
       }
     });
 
-    badgePrevio.style.display = tienePrevio ? 'block' : 'none';
-    badgeSiguiente.style.display = tieneSiguiente ? 'block' : 'none';
+    // Indicadores de meses con clases en lugar de estilos inline
+    badgePrevio.classList.toggle('oculto', !tienePrevio);
+    badgeSiguiente.classList.toggle('oculto', !tieneSiguiente);
   }
 
   window.toggleMenuOpcionesTarea = function(evento, idTarea) {
     evento.stopPropagation();
     document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
-      if (menu.id !== `menu_opciones_tarea_${idTarea}`) menu.style.display = 'none';
+      if (menu.id !== `menu_opciones_tarea_${idTarea}`) menu.classList.remove('menu_abierto');
     });
 
     const menu = document.getElementById(`menu_opciones_tarea_${idTarea}`);
-    if (menu) {
-      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-    }
+    // Alterna la clase que controla la visibilidad del menú
+    if (menu) menu.classList.toggle('menu_abierto');
   };
 
   window.addEventListener('click', () => {
     document.querySelectorAll('[id^="menu_opciones_tarea_"]').forEach(menu => {
-      menu.style.display = 'none';
+      menu.classList.remove('menu_abierto');
     });
   });
 
@@ -165,7 +165,8 @@ async function cargarTareasDesdeDB() {
     const tituloModal = modal.querySelector('.modal_titulo');
     if (tituloModal) tituloModal.textContent = 'Editar evento';
 
-    modal.style.display = 'flex';
+    // Abre el modal con clase CSS
+    modal.classList.add('modal_activo');
   };
 
   window.eliminarTareaBD = async function(id, puedeGestionar) {
@@ -224,9 +225,14 @@ async function cargarTareasDesdeDB() {
 
       const nombreDueño = tarea.autor_nombre || 'Coordinación';
 
+      // Estado del evento con la misma píldora que la vista de tareas
+      const estadoValor = tarea.estado || 'Pendiente';
+      let claseEstado = 'etiqueta_urgente';
+      if (estadoValor.toLowerCase().includes('proceso')) claseEstado = 'etiqueta_moderado';
+      else if (estadoValor.toLowerCase().includes('complet')) claseEstado = 'etiqueta_general';
+
       const item = document.createElement('div');
       item.className = 'item_evento';
-      item.style.position = 'relative';
 
       item.innerHTML = `
         <div class="caja_fecha">
@@ -237,19 +243,20 @@ async function cargarTareasDesdeDB() {
           <div class="titulo_item_evento">${escaparHTML(tarea.titulo)}</div>
           <div class="horario_item_evento">${escaparHTML(tarea.horario || 'Horario a confirmar')}</div>
           <div class="departamento_item_evento">
-            <span class="punto_departamento"></span>
-            ${escaparHTML(tarea.departamento || 'General')} &bull; <small style="color: #64748b;">Creado por: <strong>${escaparHTML(nombreDueño)}</strong> ${horaCreacionTexto ? 'a las ' + horaCreacionTexto : ''}</small>
+            <span class="etiqueta_tipo etiqueta_departamento_calendario"><span class="punto_etiqueta"></span>${escaparHTML(tarea.departamento || 'General')}</span>
+            <span class="etiqueta_tipo ${claseEstado}"><span class="punto_etiqueta"></span>${escaparHTML(estadoValor)}</span>
+            <small class="texto_creador_evento">Creado por: <strong>${escaparHTML(nombreDueño)}</strong>${horaCreacionTexto ? ' a las ' + horaCreacionTexto : ''}</small>
           </div>
         </div>
-        <div style="position: relative;">
+        <div class="contenedor_opciones_evento">
           ${puedeGestionar ? `<button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>` : ''}
           ${puedeGestionar ? `
-          <div id="menu_opciones_tarea_${tarea.id}" style="display: none; position: absolute; right: 0; top: 25px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0px 4px 12px rgba(0,0,0,0.15); z-index: 50; width: 140px; padding: 4px 0;">
-            <button onclick="prepararEdicionTarea(${tarea.id}, ${puedeGestionar})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #0f172a; flex-direction: row; gap: 8px; display: flex; align-items: center;">
+          <div id="menu_opciones_tarea_${tarea.id}" class="menu_opciones_evento">
+            <button class="boton_menu_evento" onclick="prepararEdicionTarea(${tarea.id}, ${puedeGestionar})">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               Editar
             </button>
-            <button onclick="eliminarTareaBD(${tarea.id}, ${puedeGestionar})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 13px; cursor: pointer; color: #ef4444; flex-direction: row; gap: 8px; display: flex; align-items: center;">
+            <button class="boton_menu_evento boton_menu_evento_eliminar" onclick="eliminarTareaBD(${tarea.id}, ${puedeGestionar})">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Eliminar
             </button>
@@ -285,8 +292,8 @@ async function cargarTareasDesdeDB() {
     // Estado vacío del calendario con acento correcto
     if (!ordenados.length) {
       const vacio = document.createElement('p');
-      vacio.style.fontSize = '13px';
-      vacio.style.color = '#64748b';
+      // Estado vacío con estilo en CSS
+      vacio.className = 'estado_vacio_calendario';
       vacio.textContent = 'Aún no has recibido eventos.';
       listaEventos.appendChild(vacio);
     }
@@ -299,7 +306,8 @@ async function cargarTareasDesdeDB() {
     document.getElementById('texto_mes_actual').textContent =
       meses[fechaSeleccionada.getMonth()] + ' ' + fechaSeleccionada.getFullYear();
 
-    grilla.style.gridTemplateColumns = vistaActual === 'dia' ? '1fr' : 'repeat(7, minmax(0, 1fr))';
+    // La vista de día usa una sola columna
+    grilla.classList.toggle('vista_dia', vistaActual === 'dia');
 
     let fechas = [];
     if (vistaActual === 'mes') {
@@ -430,7 +438,8 @@ async function cargarTareasDesdeDB() {
 
       if (!datos.success) throw new Error('No se pudo guardar el evento');
 
-      modal.style.display = 'none';
+      // Cierra el modal con clase CSS
+      modal.classList.remove('modal_activo');
       document.getElementById('input_titulo_evento').value = '';
       document.getElementById('input_horario_evento').value = '';
       document.getElementById('input_depto_evento').value = '';
@@ -471,12 +480,12 @@ async function cargarTareasDesdeDB() {
     const tituloModal = modal.querySelector('.modal_titulo');
     if (tituloModal) tituloModal.textContent = 'Registrar nuevo evento';
     campoFecha.value = fechaClave(fechaSeleccionada);
-    modal.style.display = 'flex';
+    modal.classList.add('modal_activo');
   });
 
   [document.getElementById('boton_cerrar_modal'), document.getElementById('boton_cancelar_modal')].forEach(b => {
-    if (b) b.addEventListener('click', () => { 
-      modal.style.display = 'none'; 
+    if (b) b.addEventListener('click', () => {
+      modal.classList.remove('modal_activo');
       tareaEnEdicionId = null;
     });
   });

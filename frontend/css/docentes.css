@@ -605,22 +605,25 @@ body.menu_movil_abierto .fondo_menu_movil {
     color: #0f172a;
 }
 
-/* Píldoras suaves con punto de color para roles */
-.badge_rol {
+/* Roles y estados con la misma píldora base que .etiqueta_tipo */
+.etiqueta_tipo,
+.badge_rol,
+.badge_estado {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 16px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 11.5px;
-    font-weight: 600;
-    line-height: 1.3;
+    gap: 5px;
     border: 1px solid transparent;
     white-space: nowrap;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
-.punto_badge {
+/* Punto de color común a todas las píldoras */
+.punto_etiqueta,
+.punto_badge,
+.punto_estado {
     flex-shrink: 0;
     width: 6px;
     height: 6px;
@@ -639,27 +642,9 @@ body.menu_movil_abierto .fondo_menu_movil {
 .badge_rol_variante_8 { background-color: #fae8ff; color: #a21caf; border-color: #f5d0fe; }
 .badge_rol_variante_9 { background-color: #cffafe; color: #0e7490; border-color: #a5f3fc; }
 
-.badge_estado {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.badge_estado_activo { background-color: #dcfce7; color: #166534; }
-.badge_estado_inactivo { background-color: #fee2e2; color: #991b1b; }
-
-.punto_estado {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-}
-
-.punto_activo { background-color: #16a34a; }
-.punto_inactivo { background-color: #dc2626; }
+/* Colores de estado sobre la píldora compartida */
+.badge_estado_activo { background-color: #dcfce7; color: #166534; border-color: #a7f3d0; }
+.badge_estado_inactivo { background-color: #fee2e2; color: #991b1b; border-color: #fecaca; }
 
 .boton_accion_fila {
     background: transparent;

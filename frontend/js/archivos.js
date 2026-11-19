@@ -206,8 +206,11 @@ function dibujarArchivos() {
 
     const celdaTipo = document.createElement('td');
     const badge = document.createElement('span');
-    badge.className = tipoArchivo ? tipoArchivo.badge : 'badge_otro';
-    badge.textContent = etiquetaTipo;
+    // Píldora estándar con punto de color para el tipo
+    badge.className = `etiqueta_tipo ${tipoArchivo ? tipoArchivo.badge : 'badge_otro'}`;
+    const puntoTipo = document.createElement('span');
+    puntoTipo.className = 'punto_etiqueta';
+    badge.append(puntoTipo, document.createTextNode(etiquetaTipo));
     celdaTipo.appendChild(badge);
 
     const celdaDepartamento = document.createElement('td');
