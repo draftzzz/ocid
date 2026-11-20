@@ -354,6 +354,12 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     window.OCID.configurarCierreSesion();
+    // El rol administrativo no tiene acceso rápido para crear anuncios
+    if (window.OCID.esRolAdministrativo(window.OCID.obtenerUsuarioSesion())) {
+      document.querySelectorAll('.boton_accion_rapida').forEach(enlace => {
+        if (enlace.textContent.includes('Crear anuncio')) enlace.hidden = true;
+      });
+    }
     cargarInicio();
   });
 })();

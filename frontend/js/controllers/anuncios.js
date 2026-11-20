@@ -44,22 +44,53 @@ function usuarioEsJefeDepartamento(usuario) {
   return Boolean(usuario && (usuario.es_jefe === true || usuario.es_jefe === 't'));
 }
 
-function puedeGestionarAnuncio(anuncio, usuario = window.OCID.obtenerUsuarioSesion()) {
-  if (!usuario) return false;
-  const esAdministrador = ['administrador', 'administrador general']
-    .includes(String(usuario.rol || '').trim().toLowerCase());
-  const departamentoUsuarioId = Number(usuario.departamento_id);
-  const perteneceAlDepartamento = [anuncio.departamento_emisor_id, anuncio.departamento_id]
+function perteneceAlDepartamentoAnuncio(anuncio, usuario) {
+  const departamentoUsuarioId = Number(usuario && usuario.departamento_id);
+  return [anuncio.departamento_emisor_id, anuncio.departamento_id]
     .some(id => Number(id) === departamentoUsuarioId);
+}
+
+// Los roles administrativos solo pueden eliminar dentro de su departamento
+function puedeGestionarAnuncio(anuncio, usuario = window.OCID.obtenerUsuarioSesion()) {
+  if (!usuario || !anuncio) return false;
+  const pertenece = perteneceAlDepartamentoAnuncio(anuncio, usuario);
   return Number(usuario.id) === Number(anuncio.autor_id) ||
-    esAdministrador ||
-    (usuarioEsJefeDepartamento(usuario) && perteneceAlDepartamento);
+    (usuarioEsJefeDepartamento(usuario) && pertenece) ||
+    (window.OCID.esRolAdministrativo(usuario) && pertenece);
+}
+
+function puedeEditarAnuncio(anuncio, usuario = window.OCID.obtenerUsuarioSesion()) {
+  if (!usuario || window.OCID.esRolAdministrativo(usuario)) return false;
+  return Number(usuario.id) === Number(anuncio.autor_id) ||
+    (usuarioEsJefeDepartamento(usuario) && perteneceAlDepartamentoAnuncio(anuncio, usuario));
 }
 
 // Detecta anuncios creados por el usuario en sesión
 function esAnuncioPropio(anuncio, usuario) {
   return Boolean(anuncio && usuario &&
     (anuncio.es_autor === true || Number(usuario.id) === Number(anuncio.autor_id)));
+}
+
+// Solo anuncios propios, del departamento emisor o del destino; los generales se conservan
+function esAnuncioParaMiDepartamento(anuncio, usuario) {
+  const miDepartamentoId = Number(usuario && usuario.departamento_id);
+  if (!Number.isSafeInteger(miDepartamentoId) || miDepartamentoId <= 0) return true;
+  if (esAnuncioPropio(anuncio, usuario)) return true;
+  if (Number(anuncio && anuncio.departamento_emisor_id) === miDepartamentoId) return true;
+  const destinoId = Number(anuncio && anuncio.departamento_id);
+  if (!Number.isSafeInteger(destinoId) || destinoId <= 0) return true;
+  return destinoId === miDepartamentoId;
+}
+
+// Solo el departamento de la sesión; sin departamento se conservan todos
+function esDepartamentoDelUsuario(departamento, usuario) {
+  const miId = Number(usuario && usuario.departamento_id);
+  if (!Number.isSafeInteger(miId) || miId <= 0) return true;
+  if (Number(departamento && departamento.id) === miId) return true;
+  const miNombre = String((usuario && (usuario.departamento || usuario.departamento_nombre)) || '')
+    .trim().toLowerCase();
+  return Boolean(miNombre &&
+    String((departamento && departamento.nombre) || '').trim().toLowerCase() === miNombre);
 }
 
 async function cargar_anuncios_desde_servidor() {
@@ -77,6 +108,7 @@ async function cargar_anuncios_desde_servidor() {
       throw new Error('El servidor devolvió datos incompletos para los anuncios.');
     }
 
+    const usuarioSesion = window.OCID ? window.OCID.obtenerUsuarioSesion() : null;
     lista_de_anuncios = datosAnuncios.map(anuncio => ({
       ...anuncio,
       tipo: anuncio.prioridad || 'Urgente',
@@ -85,8 +117,13 @@ async function cargar_anuncios_desde_servidor() {
       autor: anuncio.autor_nombre || 'Coordinación',
       fecha: anuncio.fecha ? new Date(anuncio.fecha).toLocaleDateString('es-MX') : ''
     }));
+    // Solo se muestran los anuncios propios, del departamento emisor o del destino
+    lista_de_anuncios = lista_de_anuncios.filter(anuncio =>
+      esAnuncioParaMiDepartamento(anuncio, usuarioSesion));
     departamentos_anuncios = datosDepartamentos;
-    conteos_departamento = datosConteos.departamentos;
+    // Los paneles laterales también se limitan al departamento del usuario
+    conteos_departamento = datosConteos.departamentos.filter(departamento =>
+      esDepartamentoDelUsuario(departamento, usuarioSesion));
     archivos_anuncios = datosArchivos;
 
     const selectorDepartamento = document.getElementById('campo_departamento');
@@ -159,6 +196,7 @@ function renderizar_interfaz() {
       if (anuncio.tipo === 'Moderado') clase_etiqueta = 'etiqueta_moderado';
 
       const puedeGestionar = puedeGestionarAnuncio(anuncio, usuarioActual);
+      const puedeEditar = puedeEditarAnuncio(anuncio, usuarioActual);
 
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_anuncio';
@@ -193,11 +231,14 @@ function renderizar_interfaz() {
         menuDesplegable.id = `menu_opciones_${anuncio.id}`;
         menuDesplegable.className = 'menu_opciones_anuncio';
 
-        const btnEditar = document.createElement('button');
-        btnEditar.type = 'button';
-        btnEditar.className = 'boton_menu_opcion';
-        btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
-        btnEditar.addEventListener('click', () => prepararEdicionAnuncio(anuncio.id, puedeGestionar));
+        if (puedeEditar) {
+          const btnEditar = document.createElement('button');
+          btnEditar.type = 'button';
+          btnEditar.className = 'boton_menu_opcion';
+          btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
+          btnEditar.addEventListener('click', () => prepararEdicionAnuncio(anuncio.id, puedeEditar));
+          menuDesplegable.appendChild(btnEditar);
+        }
 
         const btnEliminar = document.createElement('button');
         btnEliminar.type = 'button';
@@ -205,7 +246,7 @@ function renderizar_interfaz() {
         btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
         btnEliminar.addEventListener('click', () => eliminarAnuncio(anuncio.id, puedeGestionar));
 
-        menuDesplegable.append(btnEditar, btnEliminar);
+        menuDesplegable.appendChild(btnEliminar);
         contenedorOpciones.appendChild(menuDesplegable);
         filaEtiqueta.appendChild(contenedorOpciones);
       }
@@ -292,7 +333,7 @@ window.addEventListener('click', () => {
 function prepararEdicionAnuncio(id) {
   const anuncio = lista_de_anuncios.find(a => a.id === id);
   if (!anuncio) return;
-  if (!puedeGestionarAnuncio(anuncio)) {
+  if (!puedeEditarAnuncio(anuncio)) {
     mostrarErrorAnuncios('No tienes permiso para editar este anuncio.', 'error');
     return;
   }
@@ -372,7 +413,20 @@ function actualizar_panel_lateral() {
   const contenedor_ultimos = document.getElementById('contenedor_ultimos_anuncios');
   if (!contenedor_ultimos) return;
   contenedor_ultimos.replaceChildren();
-  
+
+  // El panel lateral también avisa cuando no hay anuncios recibidos
+  if (!lista_de_anuncios.length) {
+    const divVacio = document.createElement('div');
+    divVacio.className = 'estado_vacio';
+    const iconoVacio = document.createElement('i');
+    iconoVacio.className = 'fa-solid fa-bullhorn icono_estado_vacio';
+    const textoVacio = document.createElement('span');
+    textoVacio.textContent = 'Aún no has recibido anuncios.';
+    divVacio.append(iconoVacio, textoVacio);
+    contenedor_ultimos.appendChild(divVacio);
+    return;
+  }
+
   const ultimos_tres = lista_de_anuncios.slice(0, 3);
   ultimos_tres.forEach(u => {
     const item_div = document.createElement('div');
@@ -458,6 +512,10 @@ function cerrar_modal() {
   anuncioEnEdicionId = null;
 }
 
+// El rol administrativo no puede crear anuncios
+if (boton_abrir_modal && window.OCID.esRolAdministrativo(window.OCID.obtenerUsuarioSesion())) {
+  boton_abrir_modal.hidden = true;
+}
 if (boton_abrir_modal) {
   boton_abrir_modal.addEventListener('click', () => {
     anuncioEnEdicionId = null;

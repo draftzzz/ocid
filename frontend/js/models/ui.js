@@ -10,6 +10,10 @@
   const botonesCampanaConfigurados = new WeakSet();
   const panelesNotificacionesCargando = new WeakSet();
   const atajosModalesConfigurados = new WeakSet();
+  const cierresModalesPendientes = new WeakMap();
+  const DURACION_CIERRE_MODAL = 300;
+  const CLASES_MODAL_ABIERTO = ['modal_activo', 'visible', 'modal_unirse_visible'];
+  const SELECTOR_CAJAS_MODAL = ':is(.caja_modal, .modal_caja, .modal_contenedor, .modal_unirse_caja, .modal_salida_departamento_caja, .modal_confirmacion_caja)';
   const selectorModales = [
     '.modal_overlay', '.modal_fondo', '.fondo_modal', '.fondo_modal_oscuro',
     '.fondo_oscuro_modal', '.modal_contacto', '.modal_unirse_fondo'
@@ -89,10 +93,28 @@
   // Modal pequeño de confirmación sin bloquear el navegador
   function mostrarModalConfirmacion(mensaje, titulo = 'Confirmar acción') {
     return new Promise((resolver) => {
+      let cerrando = false;
       const finalizar = (respuesta) => {
+        if (cerrando) return;
+        cerrando = true;
         document.removeEventListener('keydown', alTeclear);
-        capa.remove();
-        resolver(respuesta);
+        const completar = () => {
+          capa.remove();
+          resolver(respuesta);
+        };
+        const puedeAnimar = typeof caja.animate === 'function' &&
+          !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!puedeAnimar) {
+          completar();
+          return;
+        }
+        capa.classList.add('modal_cerrando');
+        capa.classList.remove('modal_activo');
+        caja.animate([
+          { opacity: 1, transform: 'scale(1) translateY(0)' },
+          { opacity: 0, transform: 'scale(0.97) translateY(8px)' }
+        ], { duration: DURACION_CIERRE_MODAL, easing: 'ease-in', fill: 'forwards' });
+        window.setTimeout(completar, DURACION_CIERRE_MODAL);
       };
       const alTeclear = (evento) => {
         if (evento.key === 'Escape') finalizar(false);
@@ -140,7 +162,7 @@
       });
       document.addEventListener('keydown', alTeclear);
       document.body.appendChild(capa);
-      capa.classList.add('modal_activo');
+      prepararAperturaModal(capa);
       aceptar.focus();
     });
   }
@@ -166,24 +188,89 @@
     sincronizarBloqueo();
   }
 
+  function modalAbierto(modal) {
+    return Boolean(modal) && !modal.hidden &&
+      CLASES_MODAL_ABIERTO.some(clase => modal.classList.contains(clase));
+  }
+
   // Detecta un modal abierto sea cual sea la convención usada en la página
   function estaModalAbierto(modal) {
     if (!modal || modal.hidden) return false;
     const estilo = window.getComputedStyle(modal);
     if (estilo.display === 'none' || estilo.visibility === 'hidden') return false;
-    if (modal.classList.contains('modal_activo') ||
-        modal.classList.contains('visible') ||
-        modal.classList.contains('modal_unirse_visible')) return true;
-    return estilo.opacity !== '0' && estilo.pointerEvents !== 'none';
+    return modalAbierto(modal) || (estilo.opacity !== '0' && estilo.pointerEvents !== 'none');
+  }
+
+  // Fuerza un frame para que la transición de entrada se ejecute al abrir
+  function prepararAperturaModal(modal) {
+    if (!modal) return;
+    cancelarCierreModal(modal);
+    if (!modal.hidden) void modal.offsetWidth;
+  }
+
+  function cancelarCierreModal(modal) {
+    const cierre = cierresModalesPendientes.get(modal);
+    if (cierre) {
+      clearTimeout(cierre.temporizador);
+      if (cierre.animacion) cierre.animacion.cancel();
+      cierresModalesPendientes.delete(modal);
+    }
+    modal.classList.remove('modal_cerrando');
   }
 
   // Cierra el modal quitando clases y atributos que lo mantienen visible
   function cerrarModalAbierto(modal) {
-    modal.classList.remove('modal_activo', 'visible', 'modal_unirse_visible');
-    if (modal.hasAttribute('hidden')) modal.hidden = true;
-    if (modal.style.display) modal.style.display = 'none';
-    modal.querySelectorAll('form').forEach(formulario => {
-      if (typeof formulario.reset === 'function') formulario.reset();
+    if (!modal) return;
+    cancelarCierreModal(modal);
+    const caja = modal.querySelector(SELECTOR_CAJAS_MODAL);
+    const finalizar = () => {
+      cierresModalesPendientes.delete(modal);
+      modal.classList.remove('modal_cerrando');
+      if (modal.hasAttribute('hidden')) modal.hidden = true;
+      if (modal.style.display) modal.style.display = 'none';
+      modal.querySelectorAll('form').forEach(formulario => {
+        if (typeof formulario.reset === 'function') formulario.reset();
+      });
+    };
+    modal.classList.add('modal_cerrando');
+    CLASES_MODAL_ABIERTO.forEach(clase => modal.classList.remove(clase));
+    const puedeAnimar = caja && typeof caja.animate === 'function' &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!puedeAnimar) {
+      finalizar();
+      return;
+    }
+    const animacion = caja.animate([
+      { opacity: 1, transform: 'scale(1) translateY(0)' },
+      { opacity: 0, transform: 'scale(0.97) translateY(8px)' }
+    ], { duration: DURACION_CIERRE_MODAL, easing: 'ease-in', fill: 'forwards' });
+    const temporizador = setTimeout(finalizar, DURACION_CIERRE_MODAL);
+    cierresModalesPendientes.set(modal, { temporizador, animacion });
+  }
+
+  // Cierra con salida respetando el cierre propio de cada modal
+  function cerrarModalConAnimacion(modal) {
+    if (!modal) return;
+    if (typeof modal.__ocidCerrar === 'function') modal.__ocidCerrar();
+    else cerrarModalAbierto(modal);
+  }
+
+  // Reabrir durante la salida cancela la animación pendiente
+  function configurarReaperturaModales() {
+    const observer = new MutationObserver((cambios) => {
+      cambios.forEach(cambio => {
+        const modal = cambio.target;
+        if (!modal.matches || !modal.matches(selectorModales)) return;
+        if (!modal.classList.contains('modal_cerrando')) return;
+        if (!modalAbierto(modal)) return;
+        cancelarCierreModal(modal);
+        void modal.offsetWidth;
+      });
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+      subtree: true
     });
   }
 
@@ -191,18 +278,22 @@
   function configurarAtajosModales() {
     if (atajosModalesConfigurados.has(document)) return;
     atajosModalesConfigurados.add(document);
+    configurarReaperturaModales();
     document.addEventListener('keydown', (evento) => {
-      const confirmacion = document.querySelector('.modal_confirmacion_overlay.modal_activo');
+      const confirmacion = document.querySelector('.modal_confirmacion_overlay.modal_activo, .modal_confirmacion_overlay.modal_cerrando');
       if (confirmacion) return;
 
       if (evento.key === 'Escape') {
         const abiertos = Array.from(document.querySelectorAll(selectorModales)).filter(estaModalAbierto);
         if (!abiertos.length) return;
-        cerrarModalAbierto(abiertos[abiertos.length - 1]);
+        cerrarModalConAnimacion(abiertos[abiertos.length - 1]);
         return;
       }
 
       if (evento.key !== 'Enter' || evento.isComposing) return;
+      const cerrando = Array.from(document.querySelectorAll(selectorModales))
+        .find(modal => modal.classList.contains('modal_cerrando'));
+      if (cerrando) return;
       const objetivo = evento.target;
       if (!objetivo || !objetivo.closest || !objetivo.closest(selectorModales)) return;
       if (objetivo.tagName === 'BUTTON' || objetivo.tagName === 'SELECT') return;
@@ -567,6 +658,9 @@
     configurarCampanaGlobal,
     actualizarContadorNotificaciones,
     marcarElementoVisto,
+    prepararAperturaModal,
+    cerrarModalConAnimacion,
+    estaModalAbierto,
     confirmarAccion: mostrarModalConfirmacion,
   });
 

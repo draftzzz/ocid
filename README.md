@@ -73,7 +73,7 @@ Los documentos HTML componen las vistas; cada uno enlaza su hoja CSS y su script
 - `index.css` y `bienvenida.css`: portada y bienvenida.
 - `login.css` y `registro.css`: formularios de acceso y alta.
 - `inicio.css`, `anuncios.css`, `archivos.css`, `tareas.css` y `calendario.css`: tablero y módulos principales.
-- `docentes.css`, `mi-departamento.css`, `crear-departamento.css`, `notificaciones.css` y `perfil.css`: administración y cuenta.
+- `docentes.css`, `mi-departamento.css`, `crear-departamento.css`, `notificaciones.css` y `mi-perfil.css`: administración y cuenta.
 
 Las hojas de estilo controlan distribución, colores, componentes y adaptación a pantallas pequeñas. La portada, por ejemplo, reorganiza sus rejillas y botones mediante una regla `@media` para móvil.
 
@@ -278,7 +278,7 @@ El contacto con la jefatura valida correo, asunto y mensaje, y prepara un enlace
 La página se compone en tres capas que colaboran mediante identificadores del DOM:
 
 1. **Estructura HTML:** `frontend/html/mi-departamento.html` define el menú lateral, la cabecera, el resumen del departamento, la tarjeta de jefatura, la descripción, la tabla de integrantes, el panel de gestión y los diálogos. Las filas iniciales se dejan vacías para que JavaScript las complete con los datos del servidor.
-2. **Presentación CSS:** `frontend/css/mi-departamento.css` da estilo al menú, tarjetas, métricas, tabla, etiquetas, formularios y diálogos. Usa Flexbox y CSS Grid para distribuir los elementos y reglas `@media` para adaptar la cuadrícula, la tabla y los controles a pantallas más estrechas. `frontend/css/navigation.css` aporta los estilos de navegación compartidos.
+2. **Presentación CSS:** `frontend/css/mi-departamento.css` da estilo al menú, tarjetas, métricas, tabla, etiquetas, formularios y diálogos. Usa Flexbox y CSS Grid para distribuir los elementos y reglas `@media` para adaptar la cuadrícula, la tabla y los controles a pantallas más estrechas. Cada hoja incluye los estilos de navegación compartidos.
 3. **Comportamiento JavaScript:** `frontend/js/mi-departamento.js` espera `DOMContentLoaded`, obtiene los elementos por `id`, conecta eventos y usa `frontend/js/ocid-core.js` para sesión, peticiones autenticadas y mensajes temporales. Las respuestas se transforman en texto, insignias, filas, listas y opciones de formulario.
 
 El recorrido de carga es: validar que haya usuario y token; solicitar los datos necesarios en paralelo; localizar el departamento y sus roles; calcular las métricas; y renderizar el contenido. Si no existe sesión, la pantalla redirige a `login.html`; si una petición falla, muestra un aviso y registra el error en la consola.

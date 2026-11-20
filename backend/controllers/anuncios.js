@@ -85,7 +85,6 @@ async function getAnuncios(req, res) {
              WHERE lector.id = $1
                AND (
                  lector.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
-                 OR LOWER(BTRIM(COALESCE(lector.rol, ''))) IN ('administrador', 'administrador general')
                )
            )
          )
@@ -282,9 +281,10 @@ async function putAnunciosidrestaurar(req, res) {
     const acceso = await obtenerAccesoContenido(pool, 'anuncio', id, usuarioId);
     if (!acceso.existe || !acceso.eliminado) return res.status(404).json({ success: false, error: 'Anuncio no encontrado' });
     if (!acceso.permitido) return res.status(403).json({ success: false, error: 'No tienes permiso para restaurar este anuncio' });
+    // Al restaurar se fecha de nuevo para que reaparezca entre los anuncios recientes
     const resultado = await consultar(
       `UPDATE anuncios
-       SET eliminado = FALSE, fecha_eliminacion = NULL, eliminado_por = NULL
+       SET eliminado = FALSE, fecha_eliminacion = NULL, eliminado_por = NULL, fecha = NOW()
        WHERE id = $1 AND eliminado = TRUE
        RETURNING id`,
       [id]

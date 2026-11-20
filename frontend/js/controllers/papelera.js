@@ -7,6 +7,8 @@
   let archivosEliminados = [];
   let anunciosEliminados = [];
   let tareasEliminadas = [];
+  // Los roles administrativos no restauran ni eliminan de forma permanente
+  const esAdministrativo = window.OCID.esRolAdministrativo(window.OCID.obtenerUsuarioSesion());
 
   function mostrarToast(mensaje, esError = false) {
     window.OCID.mostrarToast(mensaje, esError);
@@ -108,6 +110,7 @@
         <td class="celda_fecha_papelera">${archivo.fecha_eliminacion ? new Date(archivo.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
         <td class="columna_centrada celda_acciones_papelera">
           <div class="grupo_acciones_papelera">
+            ${!esAdministrativo ? `
             <button type="button" class="boton_restaurar" onclick="restaurarArchivo(${archivo.id})">
               <i class="fa-solid fa-arrow-rotate-left"></i>
               <span>Restaurar</span>
@@ -116,6 +119,7 @@
               <i class="fa-regular fa-trash-can"></i>
               <span>Eliminar</span>
             </button>
+            ` : ''}
           </div>
         </td>
       </tr>
@@ -160,6 +164,7 @@
           <td class="celda_fecha_papelera">${anuncio.fecha_eliminacion ? new Date(anuncio.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
           <td class="columna_centrada celda_acciones_papelera">
             <div class="grupo_acciones_papelera">
+              ${!esAdministrativo ? `
               <button type="button" class="boton_restaurar" onclick="restaurarAnuncio(${anuncio.id})">
                 <i class="fa-solid fa-arrow-rotate-left"></i>
                 <span>Restaurar</span>
@@ -168,6 +173,7 @@
                 <i class="fa-regular fa-trash-can"></i>
                 <span>Eliminar</span>
               </button>
+              ` : ''}
             </div>
           </td>
         </tr>
@@ -199,8 +205,10 @@
         <td class="celda_fecha_papelera">${tarea.fecha_eliminacion ? new Date(tarea.fecha_eliminacion).toLocaleDateString('es-MX') : 'Reciente'}</td>
         <td class="columna_centrada celda_acciones_papelera">
           <div class="grupo_acciones_papelera">
+            ${!esAdministrativo ? `
             <button type="button" class="boton_restaurar" onclick="restaurarTarea(${tarea.id})"><i class="fa-solid fa-arrow-rotate-left"></i><span>Restaurar</span></button>
             <button type="button" class="boton_eliminar_definitivo" onclick="eliminarDefinitivoTarea(${tarea.id})"><i class="fa-regular fa-trash-can"></i><span>Eliminar</span></button>
+            ` : ''}
           </div>
         </td>
       </tr>

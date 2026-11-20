@@ -81,7 +81,7 @@ async function obtenerPermisosDepartamento(db, usuarioId, departamentoId, bloque
     departamento: datos,
     esJefe,
     esAdministrador,
-    puedeGestionar: esJefe || esAdministrador
+    puedeGestionar: esJefe
   };
 }
 
@@ -124,7 +124,10 @@ async function obtenerAccesoContenido(db, tipo, elementoId, usuarioId) {
     Number(elemento.departamento_emisor_id) || null,
     ...(elemento.departamentos_destino_ids || []).map(Number)
   ].filter(Boolean);
-  const esAdministrador = esRolAdministrador(elemento.rol);
+  // El administrador solo tiene alcance dentro de los departamentos relacionados
+  const esAdministrador = esRolAdministrador(elemento.rol) &&
+    departamentoUsuarioId !== null &&
+    departamentosRelacionados.includes(departamentoUsuarioId);
   const esJefeDelAlcance = esFlagActivo(elemento.es_jefe) &&
     departamentoUsuarioId !== null &&
     departamentosRelacionados.includes(departamentoUsuarioId);
@@ -145,6 +148,48 @@ async function obtenerAccesoContenido(db, tipo, elementoId, usuarioId) {
 }
 
 
+// Marca como vistos los elementos previos al ingreso del usuario al departamento
+async function marcarContenidoPreexistenteComoVisto(db, usuarioId, departamentoId) {
+  const idUsuario = Number(usuarioId);
+  const idDepartamento = Number(departamentoId);
+  if (!Number.isSafeInteger(idUsuario) || idUsuario <= 0 ||
+      !Number.isSafeInteger(idDepartamento) || idDepartamento <= 0) return;
+
+  await db.query(
+    `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id, visto_en)
+     SELECT 'anuncio', a.id, $1, LOCALTIMESTAMP
+     FROM anuncios a
+     WHERE COALESCE(a.eliminado, FALSE) = FALSE
+       AND (a.autor_id = $1 OR a.departamento_id = $2 OR a.departamento_emisor_id = $2)
+       AND COALESCE(a.fecha, TIMESTAMP 'epoch') < LOCALTIMESTAMP
+     ON CONFLICT (tipo, elemento_id, usuario_id) DO NOTHING`,
+    [idUsuario, idDepartamento]
+  );
+
+  await db.query(
+    `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id, visto_en)
+     SELECT 'archivo', f.id, $1, LOCALTIMESTAMP
+     FROM archivos f
+     WHERE COALESCE(f.eliminado, FALSE) = FALSE
+       AND (f.autor_id = $1 OR f.departamento_id = $2 OR f.departamento_emisor_id = $2)
+       AND COALESCE(f.fecha, TIMESTAMP 'epoch') < LOCALTIMESTAMP
+     ON CONFLICT (tipo, elemento_id, usuario_id) DO NOTHING`,
+    [idUsuario, idDepartamento]
+  );
+
+  await db.query(
+    `INSERT INTO elementos_vistos (tipo, elemento_id, usuario_id, visto_en)
+     SELECT 'tarea', t.id, $1, NOW()
+     FROM tareas t
+     WHERE COALESCE(t.eliminado, FALSE) = FALSE
+       AND (t.autor_id = $1 OR t.departamento_emisor_id = $2 OR
+            $2 = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[])))
+       AND COALESCE(t.fecha_creacion, NOW() - INTERVAL '1 second') < NOW()
+     ON CONFLICT (tipo, elemento_id, usuario_id) DO NOTHING`,
+    [idUsuario, idDepartamento]
+  );
+}
+
 // ==========================================
 // RUTAS PROTEGIDAS CON JWT
 // ==========================================
@@ -157,4 +202,5 @@ module.exports = {
   obtenerPermisosDepartamento,
   DEFINICIONES_CONTENIDO,
   obtenerAccesoContenido,
+  marcarContenidoPreexistenteComoVisto,
 };

@@ -86,7 +86,6 @@ async function getArchivos(req, res) {
              WHERE lector.id = $1
                AND (
                  lector.departamento_id IN (a.departamento_id, a.departamento_emisor_id)
-                 OR LOWER(BTRIM(COALESCE(lector.rol, ''))) IN ('administrador', 'administrador general')
                )
            )
          )

@@ -10,7 +10,8 @@ const {
 } = require('../models/utils');
 const {
   obtenerContextoPapelera, obtenerPerfilUsuario, obtenerPermisosDepartamento,
-  obtenerAccesoContenido, DEFINICIONES_CONTENIDO
+  obtenerAccesoContenido, DEFINICIONES_CONTENIDO,
+  marcarContenidoPreexistenteComoVisto
 } = require('../models/access');
 
 async function getDepartamentosidroles(req, res) {
@@ -23,7 +24,7 @@ async function getDepartamentosidroles(req, res) {
     const acceso = await obtenerPermisosDepartamento(pool, req.usuario.id, departamentoId, false);
     if (!acceso) return res.status(404).json({ success: false, error: 'El departamento no existe' });
     const esIntegrante = Number(acceso.departamento.usuario_departamento_id) === departamentoId;
-    if (!esIntegrante && !acceso.esAdministrador) {
+    if (!esIntegrante) {
       return res.status(403).json({ success: false, error: 'No tienes acceso a los roles de este departamento' });
     }
 
@@ -279,6 +280,8 @@ async function postDepartamentosunirse(req, res) {
        WHERE id = $2`,
       [departamento.rows[0].id, usuarioId]
     );
+    // El historial anterior al ingreso queda leído; lo nuevo sí se marca como no leído
+    await marcarContenidoPreexistenteComoVisto(client, usuarioId, departamento.rows[0].id);
     const usuario = await obtenerPerfilUsuario(client, usuarioId);
     if (!usuario || !usuario.departamento_id) {
       throw new Error('No se pudo cargar el perfil actualizado del usuario');
@@ -386,6 +389,8 @@ async function postDepartamentos(req, res) {
        WHERE id = $2`,
       [departamento.id, jefeId]
     );
+    // El departamento es nuevo, pero se mantiene la misma regla de historial leído
+    await marcarContenidoPreexistenteComoVisto(client, jefeId, departamento.id);
     const perfil = await client.query(
       `SELECT u.id, u.nombre, u.correo, u.rol, u.departamento_id, u.es_jefe,
               d.nombre AS departamento, d.nombre AS departamento_nombre,

@@ -53,6 +53,12 @@
       : 'Sin departamento';
   }
 
+  // Los roles administrativos quedan limitados a eliminar contenido de su departamento
+  function esRolAdministrativo(usuario) {
+    const rol = String((usuario && usuario.rol) || '').trim().toLocaleLowerCase('es-MX');
+    return rol === 'administrador' || rol === 'administrador general';
+  }
+
   function guardarSesion(usuario, tokenJwt = null) {
     localStorage.setItem(USER_KEY, JSON.stringify(usuario));
     const tokenFinal = tokenJwt || usuario.token;
@@ -89,6 +95,7 @@
     obtenerToken,
     tieneDepartamentoAsignado,
     obtenerEtiquetaRolUsuario,
+    esRolAdministrativo,
     guardarSesion,
     sincronizarPerfil,
     limpiarSesion,

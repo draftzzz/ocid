@@ -111,9 +111,9 @@ function puedeGestionarArchivo(archivo) {
   const departamentoId = Number(usuario.departamento_id);
   const perteneceAlDepartamento = [archivo.departamento_emisor_id, archivo.departamento_id]
     .some(id => Number(id) === departamentoId);
-  const esAdmin = ['administrador', 'administrador general']
-    .includes(String(usuario.rol || '').trim().toLowerCase());
-  return Number(usuario.id) === Number(archivo.autor_id) || esAdmin || (esJefe && perteneceAlDepartamento);
+  const esAdmin = window.OCID.esRolAdministrativo(usuario);
+  return Number(usuario.id) === Number(archivo.autor_id) ||
+    (esJefe && perteneceAlDepartamento) || (esAdmin && perteneceAlDepartamento);
 }
 
 // Detecta archivos subidos por el usuario en sesión
@@ -361,6 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelarModalBtn = document.getElementById('cancelar_modal');
   const zonaArchivo = document.getElementById('zona_archivo');
 
+  // El rol administrativo no puede subir archivos
+  if (abrirModalBtn && window.OCID.esRolAdministrativo(window.OCID.obtenerUsuarioSesion())) {
+    abrirModalBtn.hidden = true;
+  }
   if (abrirModalBtn) abrirModalBtn.addEventListener('click', () => {
     prepararNuevaCarga();
     if (modalArchivo) modalArchivo.classList.add('modal_activo');

@@ -86,13 +86,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function puedeGestionarTarea(tarea, usuario) {
     if (!tarea || !usuario) return false;
     const esJefe = usuario.es_jefe === true || usuario.es_jefe === 't';
-    const esAdmin = ['administrador', 'administrador general']
-      .includes(String(usuario.rol || '').trim().toLowerCase());
+    const esAdmin = window.OCID.esRolAdministrativo(usuario);
     const departamentoUsuarioId = Number(usuario.departamento_id);
     const enAlcance = Number(tarea.departamento_emisor_id) === departamentoUsuarioId ||
       (Array.isArray(tarea.departamentos_destino_ids) &&
         tarea.departamentos_destino_ids.some(id => Number(id) === departamentoUsuarioId));
-    return Number(usuario.id) === Number(tarea.autor_id) || esAdmin || (esJefe && enAlcance);
+    return Number(usuario.id) === Number(tarea.autor_id) ||
+      (esJefe && enAlcance) || (esAdmin && enAlcance);
   }
 
 async function cargarTareasDesdeDB() {
@@ -229,6 +229,7 @@ async function cargarTareasDesdeDB() {
     ordenados.forEach(tarea => {
       const f = new Date((tarea.fecha.includes('T') ? tarea.fecha : tarea.fecha + 'T00:00:00'));
       const puedeGestionar = puedeGestionarTarea(tarea, usuarioActual);
+      const puedeEditar = puedeGestionar && !window.OCID.esRolAdministrativo(usuarioActual);
 
       let horaCreacionTexto = '';
       if (tarea.fecha_creacion) {
@@ -268,10 +269,12 @@ async function cargarTareasDesdeDB() {
           ${puedeGestionar ? `<button class="boton_opciones_anuncio" title="Más opciones" onclick="toggleMenuOpcionesTarea(event, ${tarea.id})">&#8942;</button>` : ''}
           ${puedeGestionar ? `
           <div id="menu_opciones_tarea_${tarea.id}" class="menu_opciones_evento">
-            <button class="boton_menu_evento" onclick="prepararEdicionTarea(${tarea.id}, ${puedeGestionar})">
+            ${puedeEditar ? `
+            <button class="boton_menu_evento" onclick="prepararEdicionTarea(${tarea.id}, ${puedeEditar})">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
               Editar
             </button>
+            ` : ''}
             <button class="boton_menu_evento boton_menu_evento_eliminar" onclick="eliminarTareaBD(${tarea.id}, ${puedeGestionar})">
               <svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Eliminar
@@ -593,6 +596,10 @@ async function cargarTareasDesdeDB() {
   });
 
   const botonAbrirModal = document.getElementById('boton_abrir_modal');
+  // El rol administrativo no puede crear eventos
+  if (botonAbrirModal && window.OCID.esRolAdministrativo(window.OCID.obtenerUsuarioSesion())) {
+    botonAbrirModal.hidden = true;
+  }
   if (botonAbrirModal) botonAbrirModal.addEventListener('click', () => {
     tareaEnEdicionId = null;
     const tituloModal = modal.querySelector('.modal_titulo');
@@ -620,10 +627,6 @@ async function cargarTareasDesdeDB() {
       if (evento.target === modalDetalle) cerrarDetalleTarea();
     });
   }
-
-  document.addEventListener('keydown', (evento) => {
-    if (evento.key === 'Escape') cerrarDetalleTarea();
-  });
 
   cargarTareasDesdeDB();
 });

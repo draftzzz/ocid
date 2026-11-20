@@ -50,10 +50,9 @@
       Number(usuario.departamento_id) === Number(departamentoActual.id));
   }
 
+  // Solo el jefe administra el departamento; el rol administrativo únicamente elimina contenido
   function puedeGestionarDepartamento(usuario) {
-    const rol = normalizar(usuario && usuario.rol);
-    return esJefeDepartamento(usuario) ||
-      rol === 'administrador' || rol === 'administrador general';
+    return esJefeDepartamento(usuario);
   }
 
   function puedeEditarDepartamento() {
@@ -379,6 +378,23 @@
           menu.appendChild(etiquetaRol);
         }
 
+        // Coloca el menú junto al botón y lo mantiene dentro de la pantalla
+        const colocarMenu = () => {
+          if (menu.hidden) return;
+          const boton = botonMenu.getBoundingClientRect();
+          const ancho = menu.offsetWidth;
+          const alto = menu.offsetHeight;
+          const separacion = 6;
+          const margen = 8;
+          let arriba = boton.bottom + separacion;
+          if (arriba + alto > window.innerHeight - margen) arriba = boton.top - alto - separacion;
+          arriba = Math.max(margen, Math.min(arriba, window.innerHeight - alto - margen));
+          const izquierda = Math.max(margen,
+            Math.min(boton.right - ancho, window.innerWidth - ancho - margen));
+          menu.style.top = `${arriba}px`;
+          menu.style.left = `${izquierda}px`;
+        };
+
         botonMenu.addEventListener('click', evento => {
           evento.stopPropagation();
           document.querySelectorAll('.menu_integrante').forEach(otroMenu => {
@@ -389,7 +405,10 @@
           });
           menu.hidden = !menu.hidden;
           botonMenu.setAttribute('aria-expanded', String(!menu.hidden));
+          colocarMenu();
         });
+        window.addEventListener('scroll', colocarMenu, true);
+        window.addEventListener('resize', colocarMenu);
         celdaAcciones.append(botonMenu, menu);
       }
       fila.append(celdaNombre, celdaPuesto, celdaEstado, celdaAcciones);
@@ -530,27 +549,28 @@
     };
 
     const cerrarModalIntegrantes = () => {
-      if (!modalIntegrantes || modalIntegrantes.hidden) return;
+      if (!modalIntegrantes || modalIntegrantes.hidden || modalIntegrantes.classList.contains('modal_cerrando')) return;
+      modalIntegrantes.classList.add('modal_cerrando');
       modalIntegrantes.classList.remove('visible');
       window.setTimeout(() => {
         modalIntegrantes.hidden = true;
+        modalIntegrantes.classList.remove('modal_cerrando');
         if (enlaceVerTodos) enlaceVerTodos.focus();
       }, 300);
     };
+    if (modalIntegrantes) modalIntegrantes.__ocidCerrar = cerrarModalIntegrantes;
 
     if (enlaceVerTodos && modalIntegrantes) {
       enlaceVerTodos.addEventListener('click', evento => {
         evento.preventDefault();
         renderizarTodosIntegrantes();
         modalIntegrantes.hidden = false;
+        window.OCID.prepararAperturaModal(modalIntegrantes);
         window.requestAnimationFrame(() => modalIntegrantes.classList.add('visible'));
         if (botonCerrarIntegrantes) botonCerrarIntegrantes.focus();
       });
       modalIntegrantes.addEventListener('click', evento => {
         if (evento.target === modalIntegrantes) cerrarModalIntegrantes();
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape' && !modalIntegrantes.hidden) cerrarModalIntegrantes();
       });
     }
     if (botonCerrarIntegrantes) botonCerrarIntegrantes.addEventListener('click', cerrarModalIntegrantes);
@@ -563,9 +583,6 @@
       });
       modalRoles.addEventListener('click', evento => {
         if (evento.target === modalRoles) cerrarModalRoles();
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape' && modalRoles.classList.contains('modal_activo')) cerrarModalRoles();
       });
     }
     if (botonCerrarRoles) botonCerrarRoles.addEventListener('click', cerrarModalRoles);
@@ -616,9 +633,6 @@
     if (modalEdicion) {
       modalEdicion.addEventListener('click', evento => {
         if (evento.target === modalEdicion) cerrarModalEdicion();
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape' && modalEdicion.classList.contains('modal_activo')) cerrarModalEdicion();
       });
     }
 
@@ -769,11 +783,6 @@
       modalTransferencia.addEventListener('click', evento => {
         if (evento.target === modalTransferencia) cerrarModalTransferencia();
       });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape' && modalTransferencia.classList.contains('modal_activo')) {
-          cerrarModalTransferencia();
-        }
-      });
     }
     ['cerrar_modal_transferencia', 'cancelar_transferencia'].forEach(id => {
       const boton = obtenerElemento(id);
@@ -880,9 +889,6 @@
       modalBaja.addEventListener('click', evento => {
         if (evento.target === modalBaja) cerrarModalBaja();
       });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape' && modalBaja.classList.contains('modal_activo')) cerrarModalBaja();
-      });
     }
     ['cerrar_modal_baja', 'cancelar_baja_departamento'].forEach(id => {
       const boton = obtenerElemento(id);
@@ -947,9 +953,6 @@
     if (modal) {
       modal.addEventListener('click', evento => {
         if (evento.target === modal) ocultar();
-      });
-      document.addEventListener('keydown', evento => {
-        if (evento.key === 'Escape' && modal.classList.contains('modal_activo')) ocultar();
       });
     }
     if (enviar) {

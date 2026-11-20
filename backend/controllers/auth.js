@@ -10,7 +10,8 @@ const {
 } = require('../models/utils');
 const {
   obtenerContextoPapelera, obtenerPerfilUsuario, obtenerPermisosDepartamento,
-  obtenerAccesoContenido, DEFINICIONES_CONTENIDO
+  obtenerAccesoContenido, DEFINICIONES_CONTENIDO,
+  marcarContenidoPreexistenteComoVisto
 } = require('../models/access');
 
 async function postLogin(req, res) {
@@ -152,6 +153,11 @@ async function postRegistro(req, res) {
        RETURNING id, nombre, correo, rol, departamento_id, es_jefe`,
       [nombre.trim(), correo.trim(), hashedPassword, rolFinal, departamentoId]
     );
+
+    // El contenido previo al alta con departamento queda marcado como leído
+    if (departamentoId) {
+      await marcarContenidoPreexistenteComoVisto(client, resultado.rows[0].id, departamentoId);
+    }
 
     await client.query('COMMIT');
     transaccionAbierta = false;

@@ -221,13 +221,13 @@ CORS autoriza que el **frontend desplegado en Vercel** (y el entorno local) pued
 | Archivo | Función |
 |---|---|
 | `css/base.css` | Estilos compartidos y sistema visual base. |
-| `css/navigation.css` | Barra superior, menú lateral y menú móvil. |
+| Estilos de navegación | Integrados en la hoja única de cada página. |
 | `css/login.css` / `css/registro.css` | Paridad visual de autenticación. |
 | `css/index.css` | Portada. |
 | `css/inicio.css`, `css/bienvenida.css`, `css/calendario.css` | Panel y páginas informativas. |
 | `css/docentes.css`, `css/crear-departamento.css`, `css/mi-departamento.css` | Departamentos y docentes. |
 | `css/anuncios.css`, `css/archivos.css`, `css/tareas.css`, `css/papelera.css` | Contenido y papelera. |
-| `css/notificaciones.css`, `css/perfil.css` | Notificaciones y perfil. |
+| `css/notificaciones.css`, `css/mi-perfil.css` | Notificaciones y perfil. |
 
 ### Modelos frontend
 

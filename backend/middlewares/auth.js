@@ -2,6 +2,7 @@
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { JWT_SECRET } = require('../config/environment');
+const { esRolAdministrador } = require('../models/utils');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -47,4 +48,21 @@ function autenticarJWT(req, res, next) {
   });
 }
 
-module.exports = { authLimiter, departmentCreationLimiter, departmentJoinLimiter, autenticarJWT };
+// Los roles administrativos solo pueden eliminar contenido de su departamento
+function soloBorradoParaAdministradores(req, res, next) {
+  if (esRolAdministrador(req.usuario && req.usuario.rol)) {
+    return res.status(403).json({
+      success: false,
+      error: 'Los roles administrativos solo pueden eliminar anuncios, archivos y tareas de su departamento'
+    });
+  }
+  return next();
+}
+
+module.exports = {
+  authLimiter,
+  departmentCreationLimiter,
+  departmentJoinLimiter,
+  autenticarJWT,
+  soloBorradoParaAdministradores
+};

@@ -14,7 +14,7 @@
 
     <!-- Hojas de Estilos Globales y del Módulo -->
     <link rel="stylesheet" href="../css/mi-departamento.css" />
-    <link rel="stylesheet" href="../css/navigation.css" />
+    <!-- Navegación integrada en la hoja de estilos de la página. -->
 </head>
 
 <body>
@@ -269,10 +269,11 @@
                 </div>
             </div>
 
+            <!-- La gestión del departamento queda reservada al jefe -->
             <section class="tarjeta_gestion_departamento" id="panel_gestion_departamento" hidden>
                 <div>
                     <h2 class="titulo_seccion_bloque">Gestionar Departamento</h2>
-                    <p class="subtitulo_gestion_departamento">Administra la jefatura y los permisos del equipo.</p>
+                    <p class="subtitulo_gestion_departamento">Administra tu departamento y los permisos del equipo.</p>
                 </div>
                 <form class="formulario_transferencia" id="form_transferir_jefatura">
                     <div class="fila_transferencia">
@@ -295,7 +296,6 @@
                     </form>
                 </section>
                 <div class="acciones_gestion_departamento">
-                    <p>La baja lógica conserva el registro y desvincula a los integrantes.</p>
                     <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento" type="button"
                         hidden>Borrar departamento</button>
                 </div>

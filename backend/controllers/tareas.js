@@ -38,7 +38,6 @@ async function getTareas(req, res) {
                AND (
                  lector.departamento_id = t.departamento_emisor_id
                  OR lector.departamento_id = ANY(COALESCE(t.departamentos_destino_ids, ARRAY[]::INTEGER[]))
-                 OR LOWER(BTRIM(COALESCE(lector.rol, ''))) IN ('administrador', 'administrador general')
                )
            )
          )

@@ -90,18 +90,22 @@ function configurarSalirDepartamento() {
   if (!botonAbrir || !modal || !botonConfirmar) return;
 
   const cerrar = () => {
-    if (modal.hidden) return;
+    if (modal.hidden || modal.classList.contains('modal_cerrando')) return;
+    modal.classList.add('modal_cerrando');
     modal.classList.remove('visible');
     window.setTimeout(() => {
       modal.hidden = true;
+      modal.classList.remove('modal_cerrando');
       botonAbrir.focus();
     }, 300);
   };
+  modal.__ocidCerrar = cerrar;
 
   botonAbrir.addEventListener('click', () => {
     const usuario = obtenerUsuarioSesion();
     if (!usuario || !perfilTieneDepartamento(usuario) || perfilEsJefe(usuario)) return;
     modal.hidden = false;
+    window.OCID.prepararAperturaModal(modal);
     window.requestAnimationFrame(() => modal.classList.add('visible'));
     botonCancelar?.focus();
   });
@@ -109,9 +113,6 @@ function configurarSalirDepartamento() {
   if (botonCancelar) botonCancelar.addEventListener('click', cerrar);
   modal.addEventListener('click', evento => {
     if (evento.target === modal) cerrar();
-  });
-  document.addEventListener('keydown', evento => {
-    if (evento.key === 'Escape' && !modal.hidden) cerrar();
   });
 
   botonConfirmar.addEventListener('click', async () => {

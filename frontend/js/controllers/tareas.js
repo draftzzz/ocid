@@ -76,7 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectEstado = document.getElementById('filtro_estado');
   const campoFechaModal = document.getElementById('campo_modal_fecha');
   const buscadorPersonasModal = document.getElementById('buscador_personas_modal');
-  const listaPersonasDatalist = document.getElementById('lista_personas_tarea');
+  const listaPersonasDesplegable = document.getElementById('lista_personas_tarea');
+  const textoPersonaSeleccionada = document.getElementById('texto_persona_seleccionada');
   const textoDeptoPersona = document.getElementById('depto_persona_seleccionada');
 
   const modalVerTarea = document.getElementById('modal_ver_tarea');
@@ -92,8 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let tareaEnEdicionId = null;
   let alcanceActualTareas = 'todas'; // 'todas' | 'mias' | 'departamento'
 
-  // Una sola persona por tarea
+  // Una sola persona por tarea y su opción resaltada en el desplegable
   let personaSeleccionada = null;
+  let opcionPersonaSeleccionada = null;
 
   // Convierte una fecha local a texto YYYY-MM-DD
   function formatearISO(fecha) {
@@ -135,15 +137,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function puedeGestionarTarea(tarea, usuario = window.OCID.obtenerUsuarioSesion()) {
     if (!usuario || !tarea) return false;
     const esJefe = usuario.es_jefe === true || usuario.es_jefe === 't';
-    const esAdministrador = ['administrador', 'administrador general']
-      .includes(String(usuario.rol || '').trim().toLowerCase());
     const departamentoUsuarioId = Number(usuario.departamento_id);
     const perteneceAlDepartamento = Number(tarea.departamento_emisor_id) === departamentoUsuarioId ||
       (Array.isArray(tarea.departamentos_destino_ids) &&
         tarea.departamentos_destino_ids.some(id => Number(id) === departamentoUsuarioId));
     return Number(usuario.id) === Number(tarea.autor_id) ||
-      esAdministrador ||
-      (esJefe && perteneceAlDepartamento);
+      (esJefe && perteneceAlDepartamento) ||
+      (window.OCID.esRolAdministrativo(usuario) && perteneceAlDepartamento);
+  }
+
+  // Los roles administrativos no editan tareas, solo pueden eliminarlas
+  function puedeEditarTarea(tarea, usuario = window.OCID.obtenerUsuarioSesion()) {
+    if (!usuario || window.OCID.esRolAdministrativo(usuario)) return false;
+    return puedeGestionarTarea(tarea, usuario);
   }
 
   // Detecta tareas creadas por el usuario en sesión
@@ -152,21 +158,35 @@ document.addEventListener('DOMContentLoaded', () => {
       (tarea.es_autor === true || Number(usuario.id) === Number(tarea.autor_id)));
   }
 
+  // Solo tareas propias, del departamento emisor o del destino; las generales se conservan
+  function esTareaParaMiDepartamento(tarea, usuario) {
+    const miDepartamentoId = Number(usuario && usuario.departamento_id);
+    if (!Number.isSafeInteger(miDepartamentoId) || miDepartamentoId <= 0) return true;
+    if (esTareaPropio(tarea, usuario)) return true;
+    if (Number(tarea && tarea.departamento_emisor_id) === miDepartamentoId) return true;
+    const destinos = tarea && tarea.departamentos_destino_ids;
+    if (!Array.isArray(destinos) || destinos.length === 0) return true;
+    return destinos.some(id => Number(id) === miDepartamentoId);
+  }
+
   async function cargarCatalogosServidor() {
     try {
-      const [departamentos, docentes, datosTareas] = await Promise.all([
+      const [departamentos, usuarios, datosTareas] = await Promise.all([
         window.OCID.apiFetch('/departamentos'),
-        window.OCID.apiFetch('/docentes'),
+        window.OCID.apiFetch('/usuarios'),
         window.OCID.apiFetch('/tareas')
       ]);
 
       listaDepartamentos = Array.isArray(departamentos) ? departamentos : [];
       poblarFiltrosYModalDepartamentos(listaDepartamentos);
-      listaDocentesUsuarios = Array.isArray(docentes) ? docentes : [];
-      // Las tareas más nuevas aparecen primero
+      // Todas las personas, no solo las del departamento de la sesión
+      listaDocentesUsuarios = Array.isArray(usuarios) ? usuarios : [];
+      const usuarioSesion = window.OCID ? window.OCID.obtenerUsuarioSesion() : null;
+      // Solo se muestran las tareas propias, del departamento emisor o del destino
       tareas = Array.isArray(datosTareas)
-        ? datosTareas.slice().sort((a, b) =>
-            new Date(b.fecha || b.fecha_creacion || 0) - new Date(a.fecha || a.fecha_creacion || 0))
+        ? datosTareas.filter(tarea => esTareaParaMiDepartamento(tarea, usuarioSesion))
+            .sort((a, b) =>
+              new Date(b.fecha || b.fecha_creacion || 0) - new Date(a.fecha || a.fecha_creacion || 0))
         : [];
     } catch (error) {
       console.error('Error cargando catálogos:', error);
@@ -183,32 +203,53 @@ document.addEventListener('DOMContentLoaded', () => {
     deptos.forEach(d => selectDepartamento.appendChild(new Option(d.nombre, d.nombre)));
   }
 
-  // Llena el datalist con las personas disponibles
+  // Llena el desplegable con todas las personas registradas y su departamento
   function poblarListaPersonasModal() {
-    if (!listaPersonasDatalist) return;
-    listaPersonasDatalist.replaceChildren();
+    if (!listaPersonasDesplegable) return;
+    listaPersonasDesplegable.replaceChildren();
+    opcionPersonaSeleccionada = null;
     listaDocentesUsuarios.forEach(persona => {
       const nombre = persona.nombre || persona.correo || persona.usuario;
       if (!nombre) return;
-      const opcion = document.createElement('option');
-      opcion.value = nombre;
-      opcion.label = persona.departamento || persona.departamento_nombre || 'General';
-      listaPersonasDatalist.appendChild(opcion);
+      const departamento = persona.departamento || persona.departamento_nombre || 'General';
+      const opcion = document.createElement('button');
+      opcion.type = 'button';
+      opcion.className = 'opcion_persona_tarea';
+      const nombreElemento = document.createElement('span');
+      nombreElemento.className = 'nombre_persona_tarea';
+      nombreElemento.textContent = nombre;
+      const deptoElemento = document.createElement('span');
+      deptoElemento.className = 'departamento_persona_tarea';
+      deptoElemento.textContent = departamento;
+      opcion.append(nombreElemento, deptoElemento);
+      if (personaSeleccionada === persona) {
+        opcion.classList.add('seleccionada');
+        opcionPersonaSeleccionada = opcion;
+      }
+      opcion.addEventListener('click', () => {
+        personaSeleccionada = persona;
+        opcionPersonaSeleccionada = opcion;
+        if (textoPersonaSeleccionada) textoPersonaSeleccionada.textContent = nombre;
+        if (textoDeptoPersona) textoDeptoPersona.textContent = `Departamento destino: ${departamento}`;
+        resolverPersonaSeleccionada();
+        listaPersonasDesplegable.hidden = true;
+      });
+      listaPersonasDesplegable.appendChild(opcion);
     });
+    if (!listaPersonasDesplegable.children.length) {
+      const mensaje = document.createElement('p');
+      mensaje.className = 'texto_ayuda_campo';
+      mensaje.textContent = 'No hay personas disponibles.';
+      listaPersonasDesplegable.appendChild(mensaje);
+    }
   }
 
-  // Resuelve la persona elegida y muestra su departamento
+  // Resalta la persona elegida dentro del desplegable
   function resolverPersonaSeleccionada() {
-    const valor = buscadorPersonasModal ? buscadorPersonasModal.value.trim().toLowerCase() : '';
-    personaSeleccionada = valor
-      ? listaDocentesUsuarios.find(persona =>
-          String(persona.nombre || persona.correo || persona.usuario || '').toLowerCase() === valor) || null
-      : null;
-    if (textoDeptoPersona) {
-      textoDeptoPersona.textContent = personaSeleccionada
-        ? `Departamento destino: ${personaSeleccionada.departamento || personaSeleccionada.departamento_nombre || 'General'}`
-        : 'Se asignará una sola persona.';
-    }
+    if (!listaPersonasDesplegable) return;
+    listaPersonasDesplegable.querySelectorAll('.opcion_persona_tarea').forEach(opcion => {
+      opcion.classList.toggle('seleccionada', opcion === opcionPersonaSeleccionada);
+    });
   }
 
   // Bloquea la entrada manual inválida en el selector de fecha
@@ -237,14 +278,18 @@ document.addEventListener('DOMContentLoaded', () => {
       campoFechaModal.max = limites.max;
     }
     poblarListaPersonasModal();
+    // El desplegable siempre empieza cerrado al abrir el modal
+    if (listaPersonasDesplegable) listaPersonasDesplegable.hidden = true;
     modal.classList.add('modal_activo');
   }
 
   function cerrar_modal() {
     if (modal) modal.classList.remove('modal_activo');
     if (formularioTarea) formularioTarea.reset();
-    if (buscadorPersonasModal) buscadorPersonasModal.value = '';
+    if (listaPersonasDesplegable) listaPersonasDesplegable.hidden = true;
+    if (textoPersonaSeleccionada) textoPersonaSeleccionada.textContent = 'Selecciona una persona';
     personaSeleccionada = null;
+    opcionPersonaSeleccionada = null;
     if (textoDeptoPersona) textoDeptoPersona.textContent = 'Se asignará una sola persona.';
     tareaEnEdicionId = null;
   }
@@ -253,11 +298,47 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalVerTarea) modalVerTarea.classList.remove('modal_activo');
   }
 
-  // Sincroniza la persona al escribir o elegir del datalist
-  if (buscadorPersonasModal) {
-    buscadorPersonasModal.addEventListener('input', resolverPersonaSeleccionada);
-    buscadorPersonasModal.addEventListener('change', resolverPersonaSeleccionada);
+  // Muestra el detalle de la tarea al hacer doble clic o pulsar "Ver tarea completa"
+  function abrirDetalleTarea(tarea) {
+    const tituloTexto = tarea.titulo || '-';
+    const descripcionTexto = tarea.descripcion || tarea.detalles || '-';
+    const asignadoTexto = tarea.asignado || tarea.asignado_a || tarea.personas || 'General / Sin asignar';
+    const nombreCreador = tarea.autor_nombre || 'Sistema';
+    const estadoValor = tarea.estado || 'Pendiente';
+    let claseBadge = 'etiqueta_urgente';
+    if (estadoValor.toLowerCase().includes('proceso')) claseBadge = 'etiqueta_moderado';
+    else if (estadoValor.toLowerCase().includes('complet')) claseBadge = 'etiqueta_general';
+
+    const elTitulo = document.getElementById('detalle_titulo_tarea');
+    const elCreador = document.getElementById('detalle_creador_tarea');
+    const elAsignado = document.getElementById('detalle_asignado_tarea');
+    const elFecha = document.getElementById('detalle_fecha_tarea');
+    const elEstado = document.getElementById('detalle_estado_tarea');
+    const elDesc = document.getElementById('detalle_descripcion_tarea');
+
+    if (elTitulo) elTitulo.textContent = tituloTexto;
+    if (elCreador) elCreador.textContent = `Creado por: ${nombreCreador}`;
+    if (elAsignado) elAsignado.textContent = asignadoTexto;
+    if (elFecha) elFecha.textContent = formatearFecha(tarea.fecha);
+    if (elEstado) elEstado.innerHTML = `<span class="etiqueta_tipo ${claseBadge}"><span class="punto_etiqueta"></span> ${escaparHTML(estadoValor)}</span>`;
+    if (elDesc) elDesc.textContent = descripcionTexto;
+    if (modalVerTarea) modalVerTarea.classList.add('modal_activo');
   }
+
+  // El botón abre y cierra la lista de personas disponibles
+  if (buscadorPersonasModal) {
+    buscadorPersonasModal.addEventListener('click', () => {
+      if (listaPersonasDesplegable) listaPersonasDesplegable.hidden = !listaPersonasDesplegable.hidden;
+    });
+  }
+
+  // Cierra el desplegable al hacer clic fuera de él
+  document.addEventListener('click', evento => {
+    if (!listaPersonasDesplegable || !buscadorPersonasModal) return;
+    if (!evento.target.closest('.contenedor_desplegable_personas')) {
+      listaPersonasDesplegable.hidden = true;
+    }
+  });
 
   if (btnCerrarDetalleCruz) btnCerrarDetalleCruz.addEventListener('click', cerrarModalDetalle);
   if (btnCerrarDetallePie) btnCerrarDetallePie.addEventListener('click', cerrarModalDetalle);
@@ -267,6 +348,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // El rol administrativo no puede crear tareas
+  if (botonAbrir && window.OCID.esRolAdministrativo(window.OCID.obtenerUsuarioSesion())) {
+    botonAbrir.hidden = true;
+  }
   if (botonAbrir) {
     botonAbrir.addEventListener('click', () => {
       tareaEnEdicionId = null;
@@ -435,10 +520,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Edición con una sola persona asignada
     asignadoTexto = decodeURIComponent(asignadoTexto || '');
     const primerNombre = (asignadoTexto || '').split(',')[0].trim();
-    if (buscadorPersonasModal) {
-      buscadorPersonasModal.value = primerNombre === 'General / Sin asignar' ? '' : primerNombre;
-    }
-    resolverPersonaSeleccionada();
+    const nombreBuscado = primerNombre === 'General / Sin asignar' ? '' : primerNombre.toLowerCase();
+    personaSeleccionada = nombreBuscado
+      ? listaDocentesUsuarios.find(persona =>
+          String(persona.nombre || persona.correo || persona.usuario || '').trim().toLowerCase() === nombreBuscado) || null
+      : null;
+    opcionPersonaSeleccionada = null;
+    if (textoPersonaSeleccionada) textoPersonaSeleccionada.textContent = personaSeleccionada
+      ? (personaSeleccionada.nombre || personaSeleccionada.correo || personaSeleccionada.usuario)
+      : 'Selecciona una persona';
+    if (textoDeptoPersona) textoDeptoPersona.textContent = personaSeleccionada
+      ? `Departamento destino: ${personaSeleccionada.departamento || personaSeleccionada.departamento_nombre || 'General'}`
+      : 'Se asignará una sola persona.';
 
     let fechaLimpia = fechaISO || '';
     if (fechaLimpia.includes('T')) fechaLimpia = fechaLimpia.split('T')[0];
@@ -450,6 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('campo_modal_estado').value = estadoValor;
 
     abrir_modal();
+    resolverPersonaSeleccionada();
   };
 
   window.cambiarEstadoTareaDirecto = async function(id, puedeGestionar, nuevoEstado) {
@@ -511,32 +605,40 @@ document.addEventListener('DOMContentLoaded', () => {
         { nombre: 'Completado', color: 'punto_departamento_2' }
       ];
 
-      estadosDef.forEach(est => {
-        const cantidad = tareas.filter(t => (t.estado || 'Pendiente').toLowerCase() === est.nombre.toLowerCase()).length;
-        const fila = document.createElement('div');
-        fila.className = 'fila_conteo_departamento';
-        fila.classList.add('fila_conteo_clicable');
+      // El panel de estados avisa cuando no hay tareas recibidas
+      if (!tareas.length) {
+        const vacio = document.createElement('p');
+        vacio.className = 'estado_conteo_vacio';
+        vacio.textContent = 'Aún no has recibido tareas.';
+        contenedorEstados.appendChild(vacio);
+      } else {
+        estadosDef.forEach(est => {
+          const cantidad = tareas.filter(t => (t.estado || 'Pendiente').toLowerCase() === est.nombre.toLowerCase()).length;
+          const fila = document.createElement('div');
+          fila.className = 'fila_conteo_departamento';
+          fila.classList.add('fila_conteo_clicable');
 
-        const etiqueta = document.createElement('span');
-        etiqueta.className = 'indicador_con_nombre';
-        const punto = document.createElement('span');
-        punto.className = `punto_departamento ${est.color}`;
-        const nombre = document.createElement('span');
-        nombre.textContent = est.nombre;
-        etiqueta.append(punto, nombre);
+          const etiqueta = document.createElement('span');
+          etiqueta.className = 'indicador_con_nombre';
+          const punto = document.createElement('span');
+          punto.className = `punto_departamento ${est.color}`;
+          const nombre = document.createElement('span');
+          nombre.textContent = est.nombre;
+          etiqueta.append(punto, nombre);
 
-        const cifra = document.createElement('span');
-        cifra.className = 'cifra_departamento';
-        cifra.textContent = String(cantidad);
+          const cifra = document.createElement('span');
+          cifra.className = 'cifra_departamento';
+          cifra.textContent = String(cantidad);
 
-        fila.append(etiqueta, cifra);
-        fila.addEventListener('click', () => {
-          if (selectEstado) selectEstado.value = est.nombre;
-          paginaActual = 1;
-          renderizarTabla();
+          fila.append(etiqueta, cifra);
+          fila.addEventListener('click', () => {
+            if (selectEstado) selectEstado.value = est.nombre;
+            paginaActual = 1;
+            renderizarTabla();
+          });
+          contenedorEstados.appendChild(fila);
         });
-        contenedorEstados.appendChild(fila);
-      });
+      }
 
       const btnVerTodoEstados = document.getElementById('boton_ver_todo_estados');
       if (btnVerTodoEstados) {
@@ -658,6 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const deptoDestino = tarea.departamento || 'General';
 
       const puedeGestionar = puedeGestionarTarea(tarea, usuarioActual);
+      const puedeEditar = puedeEditarTarea(tarea, usuarioActual);
       const esLarga = descripcionTexto.length > 120;
 
       // 1. Fila de Estado y Menú de Opciones
@@ -688,29 +791,33 @@ document.addEventListener('DOMContentLoaded', () => {
         menuDesplegable.id = `menu_opciones_tarea_${tarea.id}`;
         menuDesplegable.className = 'menu_opciones_tarea';
 
-        const btnEditar = document.createElement('button');
-        btnEditar.type = 'button';
-        btnEditar.className = 'boton_menu_tarea';
-        btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
-        btnEditar.addEventListener('click', () => prepararEdicionTarea(tarea.id, puedeGestionar, encodeURIComponent(tituloTexto), encodeURIComponent(descripcionTexto), encodeURIComponent(deptoDestino), encodeURIComponent(asignadoTexto), tarea.fecha, estadoValor));
+        if (puedeEditar) {
+          const btnEditar = document.createElement('button');
+          btnEditar.type = 'button';
+          btnEditar.className = 'boton_menu_tarea';
+          btnEditar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Editar';
+          btnEditar.addEventListener('click', () => prepararEdicionTarea(tarea.id, puedeEditar, encodeURIComponent(tituloTexto), encodeURIComponent(descripcionTexto), encodeURIComponent(deptoDestino), encodeURIComponent(asignadoTexto), tarea.fecha, estadoValor));
 
-        const btnPendiente = document.createElement('button');
-        btnPendiente.type = 'button';
-        btnPendiente.className = 'boton_menu_tarea boton_menu_tarea_pendiente';
-        btnPendiente.textContent = 'Marcar Pendiente';
-        btnPendiente.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'Pendiente'));
+          const btnPendiente = document.createElement('button');
+          btnPendiente.type = 'button';
+          btnPendiente.className = 'boton_menu_tarea boton_menu_tarea_pendiente';
+          btnPendiente.textContent = 'Marcar Pendiente';
+          btnPendiente.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeEditar, 'Pendiente'));
 
-        const btnProceso = document.createElement('button');
-        btnProceso.type = 'button';
-        btnProceso.className = 'boton_menu_tarea boton_menu_tarea_proceso';
-        btnProceso.textContent = 'Marcar En proceso';
-        btnProceso.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'En proceso'));
+          const btnProceso = document.createElement('button');
+          btnProceso.type = 'button';
+          btnProceso.className = 'boton_menu_tarea boton_menu_tarea_proceso';
+          btnProceso.textContent = 'Marcar En proceso';
+          btnProceso.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeEditar, 'En proceso'));
 
-        const btnCompletado = document.createElement('button');
-        btnCompletado.type = 'button';
-        btnCompletado.className = 'boton_menu_tarea boton_menu_tarea_completado';
-        btnCompletado.textContent = 'Marcar Completado';
-        btnCompletado.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeGestionar, 'Completado'));
+          const btnCompletado = document.createElement('button');
+          btnCompletado.type = 'button';
+          btnCompletado.className = 'boton_menu_tarea boton_menu_tarea_completado';
+          btnCompletado.textContent = 'Marcar Completado';
+          btnCompletado.addEventListener('click', () => cambiarEstadoTareaDirecto(tarea.id, puedeEditar, 'Completado'));
+
+          menuDesplegable.append(btnEditar, btnPendiente, btnProceso, btnCompletado);
+        }
 
         const btnEliminar = document.createElement('button');
         btnEliminar.type = 'button';
@@ -718,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEliminar.innerHTML = '<svg fill="none" height="15" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="15"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Eliminar';
         btnEliminar.addEventListener('click', () => eliminarTareaDirecto(tarea.id, puedeGestionar));
 
-        menuDesplegable.append(btnEditar, btnPendiente, btnProceso, btnCompletado, btnEliminar);
+        menuDesplegable.appendChild(btnEliminar);
         contenedorOpciones.appendChild(menuDesplegable);
         filaEtiqueta.appendChild(contenedorOpciones);
       }
@@ -747,22 +854,9 @@ document.addEventListener('DOMContentLoaded', () => {
         btnVerMas.type = 'button';
         btnVerMas.className = 'class_btn_ver_mas';
         btnVerMas.textContent = 'Ver tarea completa';
-        btnVerMas.addEventListener('click', () => {
-          const elTitulo = document.getElementById('detalle_titulo_tarea');
-          const elCreador = document.getElementById('detalle_creador_tarea');
-          const elAsignado = document.getElementById('detalle_asignado_tarea');
-          const elFecha = document.getElementById('detalle_fecha_tarea');
-          const elEstado = document.getElementById('detalle_estado_tarea');
-          const elDesc = document.getElementById('detalle_descripcion_tarea');
-
-          if (elTitulo) elTitulo.textContent = tituloTexto;
-          if (elCreador) elCreador.textContent = `Creado por: ${nombreCreador}`;
-          if (elAsignado) elAsignado.textContent = asignadoTexto;
-          if (elFecha) elFecha.textContent = formatearFecha(tarea.fecha);
-          if (elEstado) elEstado.innerHTML = `<span class="etiqueta_tipo ${claseBadge}"><span class="punto_etiqueta"></span> ${escaparHTML(estadoValor)}</span>`;
-          if (elDesc) elDesc.textContent = descripcionTexto;
-
-          if (modalVerTarea) modalVerTarea.classList.add('modal_activo');
+        btnVerMas.addEventListener('click', (evento) => {
+          evento.stopPropagation();
+          abrirDetalleTarea(tarea);
         });
         tarjeta.appendChild(btnVerMas);
       }
@@ -794,6 +888,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
         : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(tarea.visto);
+      // Doble clic en la tarjeta abre el detalle, salvo sobre sus botones
+      tarjeta.addEventListener('dblclick', (evento) => {
+        if (evento.target.closest('button')) return;
+        abrirDetalleTarea(tarea);
+      });
       if (!esPropio) {
         botonVisto.addEventListener('click', async (e) => {
           e.stopPropagation();

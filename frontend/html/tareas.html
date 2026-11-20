@@ -15,7 +15,7 @@
 
     <!-- Hoja de Estilos -->
     <link rel="stylesheet" href="../css/tareas.css" />
-    <link rel="stylesheet" href="../css/navigation.css" />
+    <!-- Navegación integrada en la hoja de estilos de la página. -->
 </head>
 
 <body>
@@ -211,12 +211,16 @@
                             placeholder="Detalles de la tarea..." required=""></textarea>
                     </div>
 
-                    <!-- Asignación única: búsqueda con lista desplegable -->
+                    <!-- Asignación única: botón desplegable con todas las personas y su departamento -->
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo" for="buscador_personas_modal">Asignar a</label>
-                        <input class="input_campo_modal" id="buscador_personas_modal" list="lista_personas_tarea"
-                            placeholder="Buscar docente por nombre..." autocomplete="off" required="" type="text" />
-                        <datalist id="lista_personas_tarea"></datalist>
+                        <div class="contenedor_desplegable_personas">
+                            <button class="boton_personas_tarea" id="buscador_personas_modal" type="button">
+                                <span id="texto_persona_seleccionada">Selecciona una persona</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="lista_personas_tarea" id="lista_personas_tarea" hidden=""></div>
+                        </div>
                         <p class="texto_ayuda_campo" id="depto_persona_seleccionada">Se asignará una sola persona.</p>
                     </div>
 
