@@ -163,6 +163,8 @@
       document.addEventListener('keydown', alTeclear);
       document.body.appendChild(capa);
       prepararAperturaModal(capa);
+      // La capa creada necesita la clase de apertura para hacerse visible.
+      capa.classList.add('modal_activo');
       aceptar.focus();
     });
   }
