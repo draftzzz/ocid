@@ -17,6 +17,8 @@ ocid/
 │   ├── server.js              # Servidor Express, seguridad y rutas REST
 │   ├── package.json           # Dependencias y comando de inicio
 │   └── package-lock.json      # Versiones resueltas de dependencias
+├── EXPOSICION_MVC.md          # Exposición general y mapa de archivos MVC
+├── GUIA_JS.js                 # Guía ejecutable de funciones y conceptos de JS
 └── README.md
 ```
 
@@ -462,3 +464,36 @@ Además, varias pantallas hacen llamadas directas con `fetch` a rutas protegidas
 ## 10. Presentación breve del proyecto
 
 > “OCID está dividido en una interfaz y una API. La interfaz usa páginas HTML con estilos por módulo y scripts JavaScript que consultan el backend con `fetch`. El backend está construido con Express, valida JWT en las rutas privadas y usa PostgreSQL para guardar la información. `ocid-core.js` concentra las funciones comunes de sesión, peticiones, mensajes y navegación; los demás scripts implementan las operaciones de cada pantalla, como consultar anuncios, filtrar tareas o restaurar elementos de la papelera. Así se mantiene separada la presentación, la lógica del navegador y el acceso a los datos.”
+
+
+## 11. Funciones de JavaScript usadas en OCID (explicación sencilla)
+
+Esta sección es una guía aparte. No describe rutas ni pantallas: explica **qué hacen las piezas de JavaScript** que aparecen en el código. Si quieres ver ejemplos que se pueden ejecutar, abre `GUIA_JS.js` con `node GUIA_JS.js`.
+
+| Concepto | En palabras sencillas | Dónde aparece en OCID |
+|---|---|---|
+| `Promise` | Una promesa de que algo llegará después. No es el dato todavía, es el “recibo” del dato. | `fetch`, `apiFetch`, consultas a PostgreSQL. |
+| `async` / `await` | `async` dice “esta función va a esperar”. `await` dice “espera aquí a que llegue la respuesta”. | Controladores backend y `api.js`. |
+| `fetch` | El mensajero: lleva una petición a la API y trae la respuesta. | `frontend/js/models/api.js`. |
+| `try` / `catch` / `finally` | La red de seguridad: intenta algo, si falla lo avisa y siempre cierra. | Casi todos los controladores. |
+| `Pool` | No es JavaScript puro: es una clase de la librería `pg`. Mantiene varias conexiones listas para hablar con PostgreSQL sin abrir una nueva cada vez. | `backend/config/database.js`. |
+| `pool.query(sql, valores)` | Envía una consulta con marcadores `$1`, `$2`… para que los datos no se mezclen con el SQL. | Modelos y controladores backend. |
+| `localStorage` | La mochila del navegador: guarda el token y el perfil aunque recargues la página. | `session.js`. |
+| `JSON.stringify` / `JSON.parse` | Empaquetar un objeto en texto y volver a abrirlo. | Guardar usuario, enviar respuestas. |
+| `jwt.sign` / `jwt.verify` | Firma una credencial de 8 horas y luego revisa que siga siendo válida. | `auth.js` (backend y middleware). |
+| `bcrypt.hash` / `bcrypt.compare` | Guarda la contraseña como un candado y compara sin desencriptarla. | `controllers/auth.js`. |
+| `express.Router()` | Un letrero que agrupa rutas: “por aquí pasan las públicas”, “por aquí las privadas”. | `routes/public.js` y `routes/private.js`. |
+| Middleware | Una fila de revisión por la que pasa la petición antes de llegar al controlador. | `app.use(cors(...))`, `autenticarJWT`. |
+| Funciones flecha `() => {}` | Forma corta de escribir una función. | En casi todo el proyecto. |
+| Template literals `` `Hola ${nombre}` `` | Texto con huecos para meter variables. | Mensajes y rutas construidas. |
+| Destructuring `const { id, rol } = usuario` | Sacar pedazos de un objeto directamente. | Controladores y modelos. |
+| Spread `{ ...opciones }` | Copiar un objeto y agregarle cosas sin modificar el original. | `apiFetch` para añadir headers. |
+| `?.` y `??` | Preguntar si algo existe sin que explote, y dar un valor por defecto. | Renderizado de nombres y roles. |
+| `map`, `filter`, `find`, `some`, `forEach` | Herramientas para recorrer listas: transformar, filtrar, buscar, preguntar si existe, recorrer. | Listas de anuncios, tareas, notificaciones. |
+| `Promise.all` | Pedir varias cosas al mismo tiempo y esperar a que todas lleguen. | Carga de papelera y resumen. |
+| `createElement`, `appendChild`, `replaceChildren` | Crear y colocar elementos en la página sin estilos en línea. | `ui.js` y controladores frontend. |
+| `addEventListener` / `DOMContentLoaded` | Escuchar clics y esperar a que la página esté lista. | Controladores y `ui.js`. |
+| `WeakSet` / `Set` | Listas especiales para recordar qué botón ya fue configurado sin repetir trabajo. | `ui.js`. |
+| `new URL()` | Construir rutas correctas sin pegar textos a mano. | `route-guard.js`. |
+
+Idea clave: **JavaScript no solo “hace clics”**. También espera respuestas (`await`), guarda la sesión (`localStorage`), empaqueta datos (`JSON`), habla con la base de datos (`Pool`) y pinta la pantalla (`DOM`). Cada pieza hace una parte pequeña y por eso el proyecto es más fácil de arreglar.
