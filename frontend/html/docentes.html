@@ -2,11 +2,12 @@
 <html lang="es-MX">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <!-- Codificación UTF-8 para textos en español -->
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Docentes</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../css/docentes.css" />
     <link rel="stylesheet" href="../css/navigation.css" />
@@ -175,8 +176,10 @@
     </main>
     <!-- END: MainContentArea -->
 
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/docentes.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/docentes.js"></script>
 </body>
 
 </html>

@@ -1,3 +1,4 @@
+/* Controlador de la vista registro. */
 /* Lógica de registro.html — usa OCID Core compartido */
 /* Limpieza aplicada: alertas y visibilidad gestionadas únicamente por clases. */
 document.addEventListener('DOMContentLoaded', () => {

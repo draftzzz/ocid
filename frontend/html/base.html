@@ -3,12 +3,13 @@
 <html lang="es">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CBTIS 258 - Plataforma de CoordinaciÃ³n Escolar</title>
-    <script src="../js/route-guard.js"></script>
+    <title>CBTIS 258 - Plataforma de Coordinación Escolar</title>
+    <script src="../js/controllers/route-guard.js"></script>
 
-    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
 
@@ -27,11 +28,11 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de CoordinaciÃ³n Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de Coordinación Escolar</div>
             </div>
         </div>
 
-        <!-- MenÃº de Enlaces -->
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -81,7 +82,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesiÃ³n</span>
+                <span>Cerrar sesión</span>
             </a>
         </nav>
     </aside>
@@ -90,7 +91,7 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral">
+                <button class="boton_menu_hamburguesa" title="Alternar menú lateral">
                 </button>
             </div>
             <div class="seccion_superior_derecha">
@@ -113,7 +114,9 @@
         </header>
         </div>
         </div>
-    <script src="../js/ocid-core.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
 </body>
 
 </html>

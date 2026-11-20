@@ -1,3 +1,4 @@
+/* Controlador de la vista bienvenida. */
 // Sesión local del usuario sin departamento asignado
 let usuario = null;
 try {

@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-
 <html lang="es-MX">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Registro - OCID</title>
+    <title>OCID - Registro</title>
+    <!-- Registro: referencia de diseño compartida con login.html -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-
-
-
-<link rel="stylesheet" href="../css/registro.css"/>
-<link rel="stylesheet" href="../css/navigation.css" />
-<script src="../js/route-guard.js"></script>
+    <link rel="stylesheet" href="../css/registro.css" />
+    <link rel="stylesheet" href="../css/navigation.css" />
+    <script src="../js/controllers/route-guard.js"></script>
 </head>
 
 <body>
@@ -101,8 +99,10 @@
         OCID • Organización y Comunicación Interna para Docentes
     </footer>
 
-<script src="../js/ocid-core.js"></script>
-<script src="../js/registro.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/registro.js"></script>
 </body>
 
 </html>

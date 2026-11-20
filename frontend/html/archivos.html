@@ -3,12 +3,13 @@
 <html lang="es">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Archivos</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 
-    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
     <!-- Hoja de Estilos -->
@@ -26,11 +27,11 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de ComunicaciÃ³n Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
             </div>
         </div>
 
-        <!-- MenÃº de Enlaces -->
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -80,7 +81,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesiÃ³n</span>
+                <span>Cerrar sesión</span>
             </a>
         </nav>
     </aside>
@@ -91,7 +92,7 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral">
+                <button class="boton_menu_hamburguesa" title="Alternar menú lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -116,7 +117,7 @@
 
         <!-- BEGIN: SeccionArchivos -->
         <section class="cuerpo_contenido">
-            <!-- TÃ­tulo y botÃ³n de acciÃ³n principal -->
+            <!-- Título y botón de acción principal -->
             <div class="encabezado_archivos">
                 <div>
                     <h1 class="titulo_seccion">Archivos</h1>
@@ -168,12 +169,12 @@
                         </tr>
                     </thead>
                     <tbody id="cuerpo_tabla_archivos">
-                        <!-- Se llena dinÃ¡micamente desde JS -->
+                        <!-- Se llena dinámicamente desde JS -->
                     </tbody>
                 </table>
             </div>
 
-            <!-- PaginaciÃ³n o indicador -->
+            <!-- Paginación o indicador -->
             <div class="pie_paginador">
                 <span class="resumen_paginacion_archivos" id="resumen_paginacion_archivos"></span>
             </div>
@@ -187,10 +188,10 @@
         <div class="modal_caja">
             <div class="modal_encabezado">
                 <h3 class="modal_titulo" id="titulo_modal_archivo">Subir nuevo documento</h3>
-                <button class="boton_cerrar_modal" id="cerrar_modal_subir">Ã—</button>
+                <button class="boton_cerrar_modal" id="cerrar_modal_subir">×</button>
             </div>
             <div class="modal_cuerpo">
-                <!-- Arrastre o selecciÃ³n -->
+                <!-- Arrastre o selección -->
                 <div class="zona_arrastre_archivo" id="zona_archivo">
                     <svg fill="none" height="32" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24" width="32">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -198,8 +199,8 @@
                         <line x1="12" x2="12" y1="3" y2="15"></line>
                     </svg>
                     <!-- Textos y campo oculto con estilos en archivos.css -->
-                    <div class="texto_arrastre_principal">Arrastra tu archivo aquÃ­ o haz clic para explorar</div>
-                    <div class="texto_arrastre_secundario">Formatos aceptados: PDF, XLSX, DOCX (mÃ¡x. 10MB)</div>
+                    <div class="texto_arrastre_principal">Arrastra tu archivo aquí o haz clic para explorar</div>
+                    <div class="texto_arrastre_secundario">Formatos aceptados: PDF, XLSX, DOCX (máx. 10MB)</div>
                     <input class="input_archivo_oculto" id="input_archivo_oculto" type="file" />
                 </div>
                 <div class="campo_formulario">
@@ -222,9 +223,11 @@
     </div>
     <!-- END: VentanaModalSubirArchivo -->
 
-    <!-- Script de LÃ³gica de Archivos -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/archivos.js"></script>
+    <!-- Script de Lógica de Archivos -->
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/archivos.js"></script>
 </body>
 
 </html>

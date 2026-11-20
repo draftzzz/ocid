@@ -1,3 +1,4 @@
+/* Controlador de la vista index. */
 /* ==========================================================================
    Lógica para index.html (Página Pública / Bienvenida)
    Cero innerHTML y cero CSS inline.

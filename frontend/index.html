@@ -1,20 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Organización y Comunicación Interna para Docentes</title>
-    <script>
-        try {
-            const usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');
-            const departamentoId = Number(usuario && usuario.departamento_id);
-            if (usuario && usuario.id && Number.isSafeInteger(departamentoId) && departamentoId > 0) {
-                window.location.replace('html/inicio.html');
-            }
-        } catch (error) {
-            localStorage.removeItem('usuario_ocid');
-        }
-    </script>
+    <!-- Controlador de sesion externo en la misma posicion de carga -->
+    <script src="js/controllers/cover-session.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com" rel="preconnect" />
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
@@ -23,7 +15,7 @@
         rel="stylesheet" />
     <link rel="stylesheet" href="css/index.css" />
     <link rel="stylesheet" href="css/navigation.css" />
-    <script src="js/route-guard.js"></script>
+    <script src="js/controllers/route-guard.js"></script>
 </head>
 
 <body>
@@ -261,7 +253,9 @@
     <!-- 7. Pie de Página Institucional -->
 
     <!-- Script exclusivo al final del body -->
-    <script src="js/ocid-core.js"></script>
-    <script src="js/index.js"></script>
+    <script src="js/models/session.js"></script>
+    <script src="js/models/api.js"></script>
+    <script src="js/models/ui.js"></script>
+    <script src="js/controllers/index.js"></script>
 </body>
 </html>

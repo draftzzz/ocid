@@ -1,3 +1,4 @@
+/* Controlador de la vista docentes. */
 /* Lógica propia de docentes.html */
 (function () {
   window.rolesDepartamentoOCID = [];
@@ -257,20 +258,19 @@ function renderizarPaginacionDocentes(paginas) {
   if (!grupo) return;
   grupo.replaceChildren();
 
-  const agregarBoton = (texto, pagina, deshabilitado = false, clase = '') => {
+  // Paginación siempre presionable; sin efecto cuando no hay página destino
+  const agregarBoton = (texto, pagina, sinCambio = false, clase = '') => {
     const boton = document.createElement('button');
     boton.type = 'button';
-    boton.className = `btn_pagina ${clase} ${pagina === paginaDocentes && !deshabilitado ? 'btn_pagina_activa' : ''}`.trim();
+    boton.className = `btn_pagina ${clase} ${!sinCambio && clase !== 'btn_pagina_flecha' && pagina === paginaDocentes ? 'btn_pagina_activa' : ''}`.trim();
     boton.textContent = texto;
     // Título visible al pasar el cursor en lugar de atributos de accesibilidad
     boton.title = texto === '<' ? 'Página anterior' : texto === '>' ? 'Página siguiente' : `Página ${texto}`;
-    boton.disabled = deshabilitado;
-    if (!deshabilitado) {
-      boton.addEventListener('click', () => {
-        paginaDocentes = pagina;
-        filtrarTablaDocentes();
-      });
-    }
+    boton.addEventListener('click', () => {
+      if (sinCambio || pagina === paginaDocentes) return;
+      paginaDocentes = pagina;
+      filtrarTablaDocentes();
+    });
     grupo.appendChild(boton);
   };
 

@@ -1,3 +1,4 @@
+/* Controlador de la vista anuncios. */
 /* Lógica propia de anuncios.html (Refactorizado con OCID Core) */
 /* Limpieza aplicada: las acciones usan texto visible y título, sin atributos extra. */
 (function () {

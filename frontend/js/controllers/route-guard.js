@@ -1,3 +1,4 @@
+/* Controlador de la vista route-guard. */
 (function () {
   'use strict';
 
@@ -8,7 +9,10 @@
   function calcularRutaBase(script) {
     if (!script || !script.src) return '';
     const rutaScript = new URL(script.src);
-    const raizFrontend = new URL('..', rutaScript);
+    /* El controlador vive en js/controllers, por eso se sube dos niveles hasta la raiz frontal. */
+    const raizFrontend = rutaScript.pathname.includes('/js/controllers/')
+      ? new URL('../..', rutaScript)
+      : new URL('..', rutaScript);
     const carpetaHtml = new URL('html/', raizFrontend);
     const partesPagina = window.location.pathname.split('/').filter(Boolean).slice(0, -1);
     const partesHtml = carpetaHtml.pathname.split('/').filter(Boolean);

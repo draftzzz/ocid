@@ -3,21 +3,22 @@
 <html lang="es">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Mi Departamento</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 
-    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
-    <!-- Hojas de Estilos Globales y del MÃ³dulo -->
+    <!-- Hojas de Estilos Globales y del Módulo -->
     <link rel="stylesheet" href="../css/mi-departamento.css" />
     <link rel="stylesheet" href="../css/navigation.css" />
 </head>
 
 <body>
-    <!-- Fondo translÃºcido para menÃº mÃ³vil -->
+    <!-- Fondo translúcido para menú móvil -->
     <button type="button" class="fondo_menu_movil"></button>
 
     <!-- BEGIN: Sidebar -->
@@ -29,11 +30,11 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de ComunicaciÃ³n Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
             </div>
         </div>
 
-        <!-- MenÃº de Enlaces -->
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -83,7 +84,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesiÃ³n</span>
+                <span>Cerrar sesión</span>
             </a>
         </nav>
     </aside>
@@ -118,17 +119,17 @@
         </header>
 
         <!-- BEGIN: ContenidoPrincipal / DepartmentDashboard -->
-        <!-- Contenedor a ancho completo sin desbordamiento horizontal en mÃ³vil -->
+        <!-- Contenedor a ancho completo sin desbordamiento horizontal en móvil -->
         <div class="contenido_principal">
-            <!-- TÃ­tulo de secciÃ³n -->
+            <!-- Título de sección -->
             <div class="cabecera_modulo">
                 <h1 class="titulo_pagina">Mi Departamento</h1>
-                <p class="subtitulo_pagina">InformaciÃ³n y miembros de tu departamento.</p>
+                <p class="subtitulo_pagina">Información y miembros de tu departamento.</p>
             </div>
 
             <!-- Fila superior: Resumen de departamento y Tarjeta del Jefe -->
             <div class="cuadricula_superior">
-                <!-- Tarjeta de informaciÃ³n principal del departamento -->
+                <!-- Tarjeta de información principal del departamento -->
                 <div class="tarjeta_general">
                     <div class="encabezado_departamento">
                         <div class="icono_dep_destacado">
@@ -163,7 +164,7 @@
                         </button>
                     </div>
 
-                    <!-- MÃ©tricas estadÃ­sticas del departamento -->
+                    <!-- Métricas estadísticas del departamento -->
                     <div class="fila_metricas">
                         <div class="caja_metrica">
                             <div class="icono_metrica icono_docentes">
@@ -219,13 +220,13 @@
                 </div>
             </div>
 
-            <!-- SecciÃ³n de DescripciÃ³n Institucional -->
+            <!-- Sección de Descripción Institucional -->
             <div class="tarjeta_descripcion">
-                <div class="titulo_seccion_bloque">DescripciÃ³n</div>
+                <div class="titulo_seccion_bloque">Descripción</div>
                 <p class="texto_parrafo_desc" id="parrafo_descripcion"></p>
             </div>
 
-            <!-- SecciÃ³n de Tabla de Integrantes del Departamento -->
+            <!-- Sección de Tabla de Integrantes del Departamento -->
             <div class="tarjeta_integrantes">
                 <div class="cabecera_integrantes">
                     <div class="titulo_seccion_bloque titulo_integrantes_margen">Integrantes del departamento</div>
@@ -262,7 +263,7 @@
                             </tr>
                         </thead>
                         <tbody id="cuerpo_tabla_integrantes">
-                            <!-- El contenido de la tabla se carga dinÃ¡micamente mediante el script -->
+                            <!-- El contenido de la tabla se carga dinámicamente mediante el script -->
                         </tbody>
                     </table>
                 </div>
@@ -281,10 +282,10 @@
                 <section class="gestion_roles_departamento" id="gestion_roles_departamento" hidden>
                     <h3>Roles del departamento</h3>
                     <form id="form_crear_rol_departamento">
-                        <label class="modal_label_custom" for="nombre_rol_departamento">Crear un rol especÃ­fico</label>
+                        <label class="modal_label_custom" for="nombre_rol_departamento">Crear un rol específico</label>
                         <div class="fila_transferencia">
                             <input class="modal_input_custom" id="nombre_rol_departamento" maxlength="60"
-                                placeholder="Ej. CoordinaciÃ³n acadÃ©mica" required type="text" />
+                                placeholder="Ej. Coordinación académica" required type="text" />
                             <div class="acciones_roles_departamento">
                                 <button class="boton_guardar_custom" type="submit">Crear rol</button>
                                 <button class="boton_ver_roles_departamento" id="boton_ver_roles_departamento"
@@ -294,7 +295,7 @@
                     </form>
                 </section>
                 <div class="acciones_gestion_departamento">
-                    <p>La baja lÃ³gica conserva el registro y desvincula a los integrantes.</p>
+                    <p>La baja lógica conserva el registro y desvincula a los integrantes.</p>
                     <button class="boton_peligro_departamento" id="boton_abrir_baja_departamento" type="button"
                         hidden>Borrar departamento</button>
                 </div>
@@ -308,7 +309,7 @@
         <section class="caja_modal modal_caja_integrantes">
             <header class="modal_cabecera_custom">
                 <h2 class="modal_titulo_custom" id="titulo_modal_todos_integrantes">Integrantes del departamento</h2>
-                <button class="boton_cerrar_custom" id="cerrar_modal_todos_integrantes" type="button">Ã—</button>
+                <button class="boton_cerrar_custom" id="cerrar_modal_todos_integrantes" type="button">×</button>
             </header>
             <div class="modal_formulario_custom">
                 <ul class="lista_todos_integrantes" id="lista_todos_integrantes"></ul>
@@ -320,7 +321,7 @@
         <section class="caja_modal modal_caja_roles_departamento">
             <header class="modal_cabecera_custom">
                 <h2 class="modal_titulo_custom" id="titulo_modal_roles_departamento">Roles y asignaciones</h2>
-                <button class="boton_cerrar_custom" id="cerrar_modal_roles_departamento" type="button">Ã—</button>
+                <button class="boton_cerrar_custom" id="cerrar_modal_roles_departamento" type="button">×</button>
             </header>
             <div class="modal_formulario_custom">
                 <p class="subtitulo_roles_departamento">Roles del departamento y sus integrantes asignados.</p>
@@ -334,7 +335,7 @@
         <div class="caja_modal">
             <div class="modal_cabecera_custom">
                 <h3 class="modal_titulo_custom">Enviar mensaje al Jefe de Departamento</h3>
-                <button id="boton_cerrar_modal" class="boton_cerrar_custom" type="button">âœ•</button>
+                <button id="boton_cerrar_modal" class="boton_cerrar_custom" type="button">✕</button>
             </div>
             <p class="modal_subtitulo_custom">
                 Destinatario: <strong id="modal_destinatario"></strong>
@@ -345,7 +346,7 @@
 
                 <label for="cuerpo_mensaje" class="modal_label_custom">Mensaje</label>
                 <textarea id="cuerpo_mensaje" class="modal_textarea_custom"
-                    placeholder="Escribe tu mensaje institucional aquÃ­..." rows="4"></textarea>
+                    placeholder="Escribe tu mensaje institucional aquí..." rows="4"></textarea>
 
                 <div class="modal_botones_custom">
                     <button id="boton_cancelar_modal" class="boton_cancelar_custom" type="button">Cancelar</button>
@@ -360,14 +361,14 @@
     <div class="modal_contacto" id="modal_editar_departamento">
         <div class="caja_modal">
             <div class="modal_cabecera_custom">
-                <h3 class="modal_titulo_custom">Editar informaciÃ³n del departamento</h3>
-                <button id="boton_cerrar_modal_depto" class="boton_cerrar_custom" type="button">âœ•</button>
+                <h3 class="modal_titulo_custom">Editar información del departamento</h3>
+                <button id="boton_cerrar_modal_depto" class="boton_cerrar_custom" type="button">✕</button>
             </div>
             <div class="modal_formulario_custom">
                 <label for="input_editar_nombre_depto" class="modal_label_custom">Nombre del departamento</label>
                 <input id="input_editar_nombre_depto" class="modal_input_custom" type="text" />
 
-                <label for="input_editar_desc_depto" class="modal_label_custom">DescripciÃ³n</label>
+                <label for="input_editar_desc_depto" class="modal_label_custom">Descripción</label>
                 <textarea id="input_editar_desc_depto" class="modal_textarea_custom" rows="3"></textarea>
 
                 <div class="modal_botones_custom">
@@ -385,12 +386,12 @@
         <div class="caja_modal">
             <div class="modal_cabecera_custom">
                 <h3 class="modal_titulo_custom" id="titulo_baja_departamento">Confirmar baja del departamento</h3>
-                <button class="boton_cerrar_custom" id="cerrar_modal_baja" type="button">âœ•</button>
+                <button class="boton_cerrar_custom" id="cerrar_modal_baja" type="button">✕</button>
             </div>
             <div class="modal_formulario_custom">
                 <p class="texto_confirmacion_baja">Escribe exactamente <strong>Confirmar eliminacion</strong> y el
                     nombre exacto del departamento.</p>
-                <label class="modal_label_custom" for="confirmacion_baja_texto">ConfirmaciÃ³n</label>
+                <label class="modal_label_custom" for="confirmacion_baja_texto">Confirmación</label>
                 <input class="modal_input_custom" id="confirmacion_baja_texto" type="text"
                     placeholder="Confirmar eliminacion" autocomplete="off" />
                 <label class="modal_label_custom" for="nombre_baja_texto">Nombre del departamento</label>
@@ -399,7 +400,7 @@
                     <button class="boton_cancelar_custom" id="cancelar_baja_departamento"
                         type="button">Cancelar</button>
                     <button class="boton_peligro_departamento" id="confirmar_baja_departamento" type="button" disabled>
-                        Confirmar baja lÃ³gica
+                        Confirmar baja lógica
                     </button>
                 </div>
             </div>
@@ -411,24 +412,24 @@
             <header class="modal_cabecera_custom">
                 <h2 class="modal_titulo_custom" id="titulo_confirmar_transferencia">Confirmar transferencia de jefatura
                 </h2>
-                <button class="boton_cerrar_custom" id="cerrar_modal_transferencia" type="button">âœ•</button>
+                <button class="boton_cerrar_custom" id="cerrar_modal_transferencia" type="button">✕</button>
             </header>
             <form class="modal_formulario_custom" id="form_confirmar_transferencia">
-                <label class="modal_label_custom" for="select_nuevo_jefe">Integrante que recibirÃ¡ la jefatura</label>
+                <label class="modal_label_custom" for="select_nuevo_jefe">Integrante que recibirá la jefatura</label>
                 <select class="modal_input_custom" id="select_nuevo_jefe">
                     <option value="">Selecciona un integrante</option>
                 </select>
                 <p class="texto_confirmacion_transferencia">
-                    Se transferirÃ¡ la jefatura al integrante seleccionado:
+                    Se transferirá la jefatura al integrante seleccionado:
                     <strong id="integrante_transferencia_seleccionado">Sin integrante seleccionado</strong>.
                     Para continuar, escribe exactamente <strong>Transferir propiedad</strong>.
                 </p>
-                <label class="modal_label_custom" for="confirmacion_transferencia_texto">ConfirmaciÃ³n</label>
+                <label class="modal_label_custom" for="confirmacion_transferencia_texto">Confirmación</label>
                 <input class="modal_input_custom" id="confirmacion_transferencia_texto" type="text"
                     placeholder="Transferir propiedad" maxlength="20" autocomplete="off" autocapitalize="off"
                     spellcheck="false" aria-describedby="ayuda_confirmacion_transferencia" />
                 <p class="ayuda_confirmacion_transferencia" id="ayuda_confirmacion_transferencia">
-                    La frase distingue entre mayÃºsculas, minÃºsculas y espacios.
+                    La frase distingue entre mayúsculas, minúsculas y espacios.
                 </p>
                 <div class="modal_botones_custom">
                     <button class="boton_cancelar_custom" id="cancelar_transferencia" type="button">Cancelar</button>
@@ -440,7 +441,7 @@
         </section>
     </div>
 
-    <!-- MenÃº desplegable para los tres puntitos del departamento -->
+    <!-- Menú desplegable para los tres puntitos del departamento -->
     <div id="menu_opciones_departamento" class="menu_desplegable_opciones" role="menu" hidden>
         <button id="opcion_editar_departamento" class="boton_opcion_dropdown" hidden type="button" role="menuitem">
             <i class="fa-solid fa-pen"></i> Editar departamento
@@ -450,9 +451,11 @@
     <!-- Contenedor global de Toasts -->
     <div class="contenedor_toast_flotante" id="contenedor_toast"></div>
 
-    <!-- Script del mÃ³dulo -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/mi-departamento.js"></script>
+    <!-- Script del módulo -->
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/mi-departamento.js"></script>
 </body>
 
 </html>

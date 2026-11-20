@@ -1,3 +1,4 @@
+/* Controlador de la vista login. */
 /* ==========================================================================
    Lógica de login.html — Guarda correctamente el Token JWT y la Sesión
    Limpieza aplicada: visibilidad de alertas controlada solo por clases.

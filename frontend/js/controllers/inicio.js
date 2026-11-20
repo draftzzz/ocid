@@ -1,3 +1,4 @@
+/* Controlador de la vista inicio. */
 (function () {
   'use strict';
 

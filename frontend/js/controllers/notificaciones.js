@@ -1,3 +1,4 @@
+/* Controlador de la vista notificaciones. */
 (function () {
   'use strict';
 

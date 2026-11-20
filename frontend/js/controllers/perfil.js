@@ -1,3 +1,4 @@
+/* Controlador de la vista perfil. */
 /* ==========================================================================
    Lógica de Configuración y Perfil - OCID
    Limpieza aplicada: estilos de iniciales definidos por clase, no en línea.

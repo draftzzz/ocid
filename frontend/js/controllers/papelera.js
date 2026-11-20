@@ -1,3 +1,4 @@
+/* Controlador de la vista papelera. */
 /* ==========================================================================
    Lógica de Papelera de Reciclaje (Archivos y Anuncios Propios) - OCID
    ========================================================================== */

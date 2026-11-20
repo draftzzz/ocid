@@ -2,16 +2,13 @@
 <html lang="es-MX">
 
 <head>
-    <!-- Codificación UTF-8 para textos en español -->
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Inicio</title>
-    <script src="../js/route-guard.js"></script>
-
-    <!-- Iconografía FontAwesome -->
+    <!-- Estructura de inicio con estilos solo en archivos externos -->
+    <script src="../js/controllers/route-guard.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-
-    <!-- Hoja de Estilos -->
     <link rel="stylesheet" href="../css/inicio.css" />
     <link rel="stylesheet" href="../css/navigation.css" />
 </head>
@@ -358,8 +355,10 @@
     </div>
 
     <!-- Toast Notificador -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/inicio.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/inicio.js"></script>
 </body>
 
 </html>

@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="es-MX">
+
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Iniciar Sesión - OCID</title>
+    <title>OCID - Login</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="../css/base.css" />
     <link rel="stylesheet" href="../css/login.css" />
     <link rel="stylesheet" href="../css/navigation.css" />
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 </head>
+
 <body>
+    <!-- Acceso con la misma estructura y medidas que registro.html -->
     <main class="contenedor_login">
         <header class="cabecera_login">
             <div class="icono_emblema">
@@ -24,6 +27,7 @@
             <p class="subtitulo_login">Ingresa tus credenciales para continuar</p>
         </header>
         <section class="cuerpo_formulario">
+            <!-- Contenedor integrado para avisos sin alert() -->
             <div class="mensaje_alerta" id="mensaje_estado" role="alert"></div>
             <form id="formulario_login">
                 <div class="grupo_campo">
@@ -36,7 +40,8 @@
                                 <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"></path>
                             </svg>
                         </span>
-                        <input class="campo_texto" id="correo" placeholder="correo@instituto.edu.mx" required type="email" />
+                        <input class="campo_texto" id="correo" placeholder="correo@instituto.edu.mx" required=""
+                            type="email" />
                     </div>
                 </div>
                 <div class="grupo_campo">
@@ -49,7 +54,8 @@
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                             </svg>
                         </span>
-                        <input class="campo_texto" id="password" placeholder="••••••••" required type="password" />
+                        <input class="campo_texto" id="password" placeholder="••••••••" required=""
+                            type="password" />
                         <button class="boton_ver_clave" id="boton_clave" title="Mostrar contraseña" type="button">
                             <svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"
                                 width="18">
@@ -76,7 +82,10 @@
     <footer class="pie_global">
         OCID • Organización y Comunicación Interna para Docentes
     </footer>
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/login.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/login.js"></script>
 </body>
+
 </html>

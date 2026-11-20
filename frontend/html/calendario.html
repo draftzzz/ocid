@@ -2,10 +2,11 @@
 <html lang="es">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Calendario Institucional</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 
     <!-- Iconografía FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
@@ -245,8 +246,10 @@
     <!-- END: ModalDetalleTarea -->
 
     <!-- Scripts de la plataforma -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/calendario.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/calendario.js"></script>
 </body>
 
 </html>

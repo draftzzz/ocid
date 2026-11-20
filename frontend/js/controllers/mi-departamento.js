@@ -1,3 +1,4 @@
+/* Controlador de la vista mi-departamento. */
 (function () {
   'use strict';
 

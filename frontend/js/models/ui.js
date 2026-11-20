@@ -1,18 +1,9 @@
-/* ==========================================================================
-   OCID — Core Module Compartido (Auth, API, UI helpers, Toast)
-   Se carga en TODAS las páginas del sistema. Sin innerHTML.
-   Limpieza aplicada: etiquetas visibles y clases en lugar de estilos en línea.
-   ========================================================================== */
-
+/* Modelo de interfaz compartida: navegacion, toasts y notificaciones. */
 (function () {
   'use strict';
 
-  const API_BASE = 'https://ocid.onrender.com';
-  const TOKEN_KEY = 'token_ocid';
-  const USER_KEY = 'usuario_ocid';
   let solicitudNotificaciones = null;
   let intervaloNotificaciones = null;
-  // Estado interno de guardas por elemento (sin atributos data-*).
   const elementosBloqueoScrollConfigurados = new WeakSet();
   const botonesLogoutConfigurados = new WeakSet();
   const botonesMenuConfigurados = new WeakSet();
@@ -44,134 +35,6 @@
     const div = document.createElement('div');
     div.textContent = texto ?? '';
     return div.innerHTML;
-  }
-
-  function obtenerUsuarioSesion() {
-    try {
-      const u = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
-      return u && u.id ? u : null;
-    } catch (e) {
-      localStorage.removeItem(USER_KEY);
-      return null;
-    }
-  }
-
-  function obtenerToken() {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) return token;
-
-    try {
-      const usuario = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
-      return usuario && usuario.token ? usuario.token : null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function tieneDepartamentoAsignado(usuario) {
-    const departamentoId = usuario && usuario.departamento_id;
-    if (departamentoId === null || departamentoId === undefined || String(departamentoId).trim() === '') {
-      return false;
-    }
-
-    const idNumerico = Number(departamentoId);
-    return Number.isFinite(idNumerico) && idNumerico > 0;
-  }
-
-  function obtenerEtiquetaRolUsuario(usuario) {
-    if (!tieneDepartamentoAsignado(usuario) || typeof usuario.rol !== 'string') {
-      return 'Sin departamento';
-    }
-
-    const rol = usuario.rol.trim();
-    const rolesValidos = [
-      'docente', 'jefe', 'jefe de departamento', 'administrador',
-      'administrador general'
-    ];
-    return rolesValidos.includes(rol.toLocaleLowerCase('es-MX')) ||
-      usuario.rol_personalizado_valido === true
-      ? rol
-      : 'Sin departamento';
-  }
-
-  function guardarSesion(usuario, tokenJwt = null) {
-    localStorage.setItem(USER_KEY, JSON.stringify(usuario));
-    const tokenFinal = tokenJwt || usuario.token;
-    if (tokenFinal) {
-      localStorage.setItem(TOKEN_KEY, tokenFinal);
-    }
-  }
-
-  function limpiarSesion() {
-    localStorage.clear();
-    sessionStorage.clear();
-  }
-
-  async function sincronizarPerfil() {
-    const usuarioLocal = obtenerUsuarioSesion();
-    if (!usuarioLocal || !obtenerToken()) {
-      throw new Error('No hay una sesión válida para sincronizar.');
-    }
-
-    const datos = await apiFetch('/perfil');
-    if (!datos.success || !datos.usuario ||
-        Number(datos.usuario.id) !== Number(usuarioLocal.id)) {
-      throw new Error(datos.error || 'El servidor no devolvió un perfil válido.');
-    }
-
-    const usuarioActualizado = { ...usuarioLocal, ...datos.usuario };
-    guardarSesion(usuarioActualizado, datos.token);
-    return usuarioActualizado;
-  }
-
-  async function apiFetch(path, opciones = {}) {
-    const token = obtenerToken();
-    if (!token) throw new Error('Inicia sesión para continuar.');
-
-    const headers = new Headers(opciones.headers || {});
-    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-    headers.set('Authorization', `Bearer ${token}`);
-    
-    let respuesta;
-    try {
-      respuesta = await fetch(`${API_BASE}${path}`, { ...opciones, headers });
-    } catch (error) {
-      throw new Error('No se pudo conectar con el servidor.');
-    }
-
-    let datos;
-    const ct = respuesta.headers.get('content-type') || '';
-    if (ct.includes('application/json')) datos = await respuesta.json();
-    else { const t = await respuesta.text(); datos = t ? { message: t } : {}; }
-    
-    if (respuesta.status === 401 || respuesta.status === 403) {
-      limpiarSesion();
-      window.location.href = 'login.html';
-      throw new Error('Sesión expirada o no autorizada.');
-    }
-
-    if (!respuesta.ok) throw new Error(datos.error || datos.message || `Error HTTP ${respuesta.status}`);
-    return datos;
-  }
-
-  async function apiPublico(path, opciones = {}) {
-    const headers = new Headers(opciones.headers || {});
-    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-    const token = obtenerToken();
-    if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
-    let respuesta;
-    try {
-      respuesta = await fetch(`${API_BASE}${path}`, { ...opciones, headers });
-    } catch (error) {
-      throw new Error('No se pudo conectar con el servidor.');
-    }
-
-    let datos;
-    const ct = respuesta.headers.get('content-type') || '';
-    if (ct.includes('application/json')) datos = await respuesta.json();
-    else { const t = await respuesta.text(); datos = t ? { message: t } : {}; }
-    if (!respuesta.ok) throw new Error(datos.error || datos.message || `Error HTTP ${respuesta.status}`);
-    return datos;
   }
 
   function mostrarToast(texto, tipo = 'exito', duracion = 3500) {
@@ -300,20 +163,20 @@
       botonesLogoutConfigurados.add(btn);
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        limpiarSesion();
+        window.OCID.limpiarSesion();
         window.location.href = btn.getAttribute('href') || 'login.html';
       });
     });
   }
 
   function actualizarCabeceraUsuario() {
-    const usuario = obtenerUsuarioSesion();
+    const usuario = window.OCID.obtenerUsuarioSesion();
     const nombreEl = document.getElementById('nombreUsuario');
     const rolEl = document.getElementById('etiqueta_rol_usuario');
     const avatarEl = document.getElementById('avatar_usuario_circulo');
     if (usuario) {
       if (nombreEl) nombreEl.textContent = usuario.nombre || usuario.correo || 'Usuario';
-      if (rolEl) rolEl.textContent = obtenerEtiquetaRolUsuario(usuario);
+      if (rolEl) rolEl.textContent = window.OCID.obtenerEtiquetaRolUsuario(usuario);
       if (avatarEl && (usuario.nombre || usuario.correo)) {
         const iniciales = (usuario.nombre || usuario.correo).split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('').toUpperCase();
         avatarEl.textContent = iniciales;
@@ -388,8 +251,8 @@
     configurarCierreSesion();
     configurarMenuMovil();
     configurarBloqueoScrollModal();
-    const usuario = obtenerUsuarioSesion();
-    const tieneDepartamento = tieneDepartamentoAsignado(usuario);
+    const usuario = window.OCID.obtenerUsuarioSesion();
+    const tieneDepartamento = window.OCID.tieneDepartamentoAsignado(usuario);
     if (tieneDepartamento) {
       configurarCampanaGlobal();
       actualizarContadorNotificaciones();
@@ -412,7 +275,7 @@
   }
 
   function configurarCampanaGlobal() {
-    if (!tieneDepartamentoAsignado(obtenerUsuarioSesion())) return;
+    if (!window.OCID.tieneDepartamentoAsignado(window.OCID.obtenerUsuarioSesion())) return;
 
     const barraSuperior = obtenerBarraSuperiorAplicacion();
     if (!barraSuperior) return;
@@ -511,7 +374,7 @@
     panelesNotificacionesCargando.add(panel);
     if (mostrarCarga) lista.textContent = 'Cargando notificaciones...';
     try {
-      const datos = await apiFetch('/notificaciones');
+      const datos = await window.OCID.apiFetch('/notificaciones');
       const notificaciones = Array.isArray(datos)
         ? datos
         : (Array.isArray(datos.notificaciones) ? datos.notificaciones : []);
@@ -568,11 +431,11 @@
   }
 
   function actualizarContadorNotificaciones() {
-    const usuario = obtenerUsuarioSesion();
-    if (!obtenerBarraSuperiorAplicacion() || !tieneDepartamentoAsignado(usuario)) {
+    const usuario = window.OCID.obtenerUsuarioSesion();
+    if (!obtenerBarraSuperiorAplicacion() || !window.OCID.tieneDepartamentoAsignado(usuario)) {
       return Promise.resolve();
     }
-    if (!usuario || !usuario.id || !obtenerToken()) {
+    if (!usuario || !usuario.id || !window.OCID.obtenerToken()) {
       document.querySelectorAll('#indicador_notificaciones').forEach(indicador => {
         indicador.textContent = '0';
         indicador.classList.add('indicador_oculto');
@@ -581,7 +444,7 @@
     }
     if (solicitudNotificaciones) return solicitudNotificaciones;
 
-    solicitudNotificaciones = apiFetch('/notificaciones')
+    solicitudNotificaciones = window.OCID.apiFetch('/notificaciones')
       .then((datos) => {
         const lista = Array.isArray(datos)
           ? datos
@@ -625,24 +488,15 @@
     if (!DEFINICIONES_TIPOS_VISTO.has(tipo) || !Number.isSafeInteger(elementoId) || elementoId <= 0) {
       throw new Error('El elemento no es válido.');
     }
-    const resultado = await apiFetch(`/elementos/${tipo}/${elementoId}/visto`, { method: 'POST' });
+    const resultado = await window.OCID.apiFetch(`/elementos/${tipo}/${elementoId}/visto`, { method: 'POST' });
     await actualizarContadorNotificaciones();
     return resultado;
   }
 
   const DEFINICIONES_TIPOS_VISTO = new Set(['anuncio', 'archivo', 'tarea']);
 
-  window.OCID = {
-    API_BASE,
-    obtenerUsuarioSesion,
-    obtenerToken,
-    tieneDepartamentoAsignado,
-    obtenerEtiquetaRolUsuario,
-    guardarSesion,
-    sincronizarPerfil,
-    limpiarSesion,
-    apiFetch,
-    apiPublico,
+  window.OCID = window.OCID || {};
+  Object.assign(window.OCID, {
     mostrarToast,
     crearElemento,
     escaparHTML,
@@ -653,7 +507,7 @@
     actualizarContadorNotificaciones,
     marcarElementoVisto,
     confirmarAccion: mostrarModalConfirmacion,
-  };
+  });
 
   window.mostrarMensaje = (mensaje, esError = false) => mostrarToast(mensaje, esError);
 

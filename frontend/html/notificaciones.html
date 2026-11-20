@@ -2,11 +2,12 @@
 <html lang="es">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <!-- Codificación UTF-8 para textos en español -->
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Notificaciones</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 
     <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
@@ -153,8 +154,10 @@
     <!-- END: MainContentArea -->
 
     <!-- Script de Interactividad -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/notificaciones.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/notificaciones.js"></script>
 </body>
 
 </html>

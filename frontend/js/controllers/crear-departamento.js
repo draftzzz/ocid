@@ -1,3 +1,4 @@
+/* Controlador de la vista crear-departamento. */
 let usuario = null;
 try {
     usuario = JSON.parse(localStorage.getItem('usuario_ocid') || 'null');

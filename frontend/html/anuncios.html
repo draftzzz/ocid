@@ -3,12 +3,13 @@
 <html lang="es-MX">
 
 <head>
-    <!-- CodificaciÃ³n UTF-8 para textos en espaÃ±ol -->
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
+    <!-- Codificación UTF-8 para textos en español -->
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Anuncios</title>
-    <script src="../js/route-guard.js"></script>
-    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
+    <script src="../js/controllers/route-guard.js"></script>
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
 
@@ -31,7 +32,7 @@
             </div>
         </div>
 
-        <!-- MenÃº de Enlaces -->
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -81,7 +82,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesiÃ³n</span>
+                <span>Cerrar sesión</span>
             </a>
         </nav>
     </aside>
@@ -90,8 +91,8 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <!-- BotÃ³n de menÃº lateral visible en mÃ³vil -->
-                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral">
+                <!-- Botón de menú lateral visible en móvil -->
+                <button class="boton_menu_hamburguesa" title="Alternar menú lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -116,7 +117,7 @@
 
         <!-- Vista Principal de Anuncios -->
         <div class="cuerpo_contenido">
-            <!-- Encabezado de la SecciÃ³n -->
+            <!-- Encabezado de la Sección -->
             <div class="fila_encabezado_anuncios">
                 <div>
                     <h1 class="titulo_pantalla">Anuncios</h1>
@@ -134,16 +135,16 @@
                     <span class="icono_lupa_filtro">
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </span>
-                    <input class="input_filtro_busqueda" id="filtro_busqueda_titulo" placeholder="Buscar por tÃ­tulo..."
+                    <input class="input_filtro_busqueda" id="filtro_busqueda_titulo" placeholder="Buscar por título..."
                         type="text" />
                 </div>
                 <select class="filtro_selector" id="filtro_departamento">
                     <option value="">Todos los departamentos</option>
                     <option value="Servicios Escolares">Servicios Escolares</option>
                     <option value="Control Escolar">Control Escolar</option>
-                    <option value="AcadÃ©mico">AcadÃ©mico</option>
-                    <option value="VinculaciÃ³n">VinculaciÃ³n</option>
-                    <option value="OrientaciÃ³n">OrientaciÃ³n</option>
+                    <option value="Académico">Académico</option>
+                    <option value="Vinculación">Vinculación</option>
+                    <option value="Orientación">Orientación</option>
                 </select>
                 <select class="filtro_selector" id="filtro_tipo">
                     <option value="">Prioridad</option>
@@ -154,7 +155,7 @@
                 <button class="boton_limpiar_filtros" id="boton_limpiar">Limpiar</button>
             </div>
 
-            <!-- DistribuciÃ³n en 2 Columnas -->
+            <!-- Distribución en 2 Columnas -->
             <div class="contenedor_dos_columnas">
                 <!-- Columna Izquierda: Listado dinamico de tarjetas -->
                 <!-- Los anuncios propios se muestran como vistos desde JS -->
@@ -174,7 +175,7 @@
                     </div>
 
                     <div class="tarjeta_lateral_panel">
-                        <h2 class="titulo_bloque_lateral">Ãšltimos anuncios</h2>
+                        <h2 class="titulo_bloque_lateral">Últimos anuncios</h2>
                         <div class="lista_ultimos_anuncios" id="contenedor_ultimos_anuncios">
                             <!-- Se renderiza desde JS -->
                         </div>
@@ -189,13 +190,13 @@
         <div class="caja_modal">
             <div class="cabecera_modal">
                 <h3 class="titulo_modal">Nuevo Anuncio</h3>
-                <button class="boton_cerrar_modal" id="boton_cerrar_cruz">Ã—</button>
+                <button class="boton_cerrar_modal" id="boton_cerrar_cruz">×</button>
             </div>
             <form id="formulario_nuevo_anuncio">
                 <div class="cuerpo_modal">
                     <div class="grupo_campo_modal">
-                        <label class="etiqueta_campo" for="campo_titulo">TÃ­tulo del anuncio</label>
-                        <input class="input_campo_modal" id="campo_titulo" placeholder="Ej: ReuniÃ³n de jefes..."
+                        <label class="etiqueta_campo" for="campo_titulo">Título del anuncio</label>
+                        <input class="input_campo_modal" id="campo_titulo" placeholder="Ej: Reunión de jefes..."
                             required="" type="text" />
                     </div>
                     <div class="grupo_campo_modal">
@@ -207,21 +208,21 @@
                         </select>
                     </div>
                     <div class="grupo_campo_modal">
-                        <!-- Etiqueta clara de asignaciÃ³n -->
+                        <!-- Etiqueta clara de asignación -->
                         <label class="etiqueta_campo" for="campo_departamento">Asignar al departamento</label>
                         <select class="selector_campo_modal" id="campo_departamento" required="">
                             <option value="general">General (todos los departamentos)</option>
                             <option value="Servicios Escolares">Servicios Escolares</option>
                             <option value="Control Escolar">Control Escolar</option>
-                            <option value="AcadÃ©mico">AcadÃ©mico</option>
-                            <option value="VinculaciÃ³n">VinculaciÃ³n</option>
-                            <option value="OrientaciÃ³n">OrientaciÃ³n</option>
+                            <option value="Académico">Académico</option>
+                            <option value="Vinculación">Vinculación</option>
+                            <option value="Orientación">Orientación</option>
                         </select>
                     </div>
                     <div class="grupo_campo_modal">
-                        <label class="etiqueta_campo" for="campo_contenido">Contenido o descripciÃ³n</label>
+                        <label class="etiqueta_campo" for="campo_contenido">Contenido o descripción</label>
                         <textarea class="textarea_campo_modal" id="campo_contenido"
-                            placeholder="Escribe aquÃ­ los detalles del anuncio..." required=""></textarea>
+                            placeholder="Escribe aquí los detalles del anuncio..." required=""></textarea>
                     </div>
                 </div>
                 <div class="pie_modal">
@@ -235,15 +236,17 @@
         <div class="caja_modal modal_conteo_departamentos">
             <div class="cabecera_modal">
                 <h3 class="titulo_modal" id="titulo_modal_conteo_departamentos">Elementos por departamento</h3>
-                <button class="boton_cerrar_modal" id="cerrar_modal_conteo_departamentos" type="button">Ã—</button>
+                <button class="boton_cerrar_modal" id="cerrar_modal_conteo_departamentos" type="button">×</button>
             </div>
             <div class="cuerpo_modal cuerpo_conteo_departamentos" id="contenido_conteo_departamentos"></div>
         </div>
     </div>
     <!-- Contenedor global de Toasts -->
     <div class="contenedor_toast_flotante" id="contenedor_toast"></div>
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/anuncios.js"></script>
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/anuncios.js"></script>
 </body>
 
 </html>

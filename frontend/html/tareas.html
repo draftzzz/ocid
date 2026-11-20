@@ -3,13 +3,14 @@
 <html lang="es">
 
 <head>
-    <!-- CodificaciÃ³n UTF-8 para textos en espaÃ±ol -->
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
+    <!-- Codificación UTF-8 para textos en español -->
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Tareas</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 
-    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
     <!-- Hoja de Estilos -->
@@ -27,11 +28,11 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de ComunicaciÃ³n Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
             </div>
         </div>
 
-        <!-- MenÃº de Enlaces -->
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -81,7 +82,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesiÃ³n</span>
+                <span>Cerrar sesión</span>
             </a>
         </nav>
     </aside>
@@ -92,7 +93,7 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral">
+                <button class="boton_menu_hamburguesa" title="Alternar menú lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -117,7 +118,7 @@
 
         <!-- BEGIN: ContenidoPrincipalTareas -->
         <div class="cuerpo_contenido">
-            <!-- TÃ­tulo de la SecciÃ³n -->
+            <!-- Título de la Sección -->
             <div class="fila_encabezado_anuncios">
                 <div>
                     <h1 class="titulo_pantalla">Tareas</h1>
@@ -129,11 +130,11 @@
                 </button>
             </div>
 
-            <!-- Filtros de bÃºsqueda -->
+            <!-- Filtros de búsqueda -->
             <section class="barra_filtros">
                 <div class="filtro_busqueda_contenedor">
                     <i class="fa-solid fa-magnifying-glass icono_lupa_filtro"></i>
-                    <input class="input_filtro_busqueda" id="campo_filtro_texto" placeholder="Buscar por tÃ­tulo..."
+                    <input class="input_filtro_busqueda" id="campo_filtro_texto" placeholder="Buscar por título..."
                         type="text" />
                 </div>
                 <select class="filtro_selector" id="filtro_departamento">
@@ -147,9 +148,9 @@
                 </select>
             </section>
 
-            <!-- DistribuciÃ³n en 2 Columnas idÃ©ntica a Anuncios -->
+            <!-- Distribución en 2 Columnas idéntica a Anuncios -->
             <div class="contenedor_dos_columnas">
-                <!-- Columna Izquierda: Listado dinÃ¡mico de tarjetas de tareas -->
+                <!-- Columna Izquierda: Listado dinámico de tarjetas de tareas -->
                 <!-- Las tareas propias se muestran como vistas desde JS -->
                 <section class="columna_lista_anuncios" id="contenedor_tarjetas_tareas">
                     <!-- Se renderiza desde JS como tarjetas modernas -->
@@ -175,8 +176,8 @@
                 </aside>
             </div>
 
-            <!-- PaginaciÃ³n y Resumen -->
-            <!-- Contador y paginaciÃ³n compacta -->
+            <!-- Paginación y Resumen -->
+            <!-- Contador y paginación compacta -->
             <footer class="pie_tabla pie_tabla_tareas">
                 <span class="texto_conteo_filas" id="texto_resumen_conteo">Mostrando 0 de 4</span>
                 <div class="bloque_paginacion" id="contenedor_botones_paginacion"></div>
@@ -186,7 +187,7 @@
     </main>
     <!-- END: MainContentArea -->
 
-    <!-- Fondo Oscuro para MenÃº MÃ³vil -->
+    <!-- Fondo Oscuro para Menú Móvil -->
     <div class="fondo_menu_movil"></div>
 
     <!-- BEGIN: ModalNuevaTarea -->
@@ -194,34 +195,34 @@
         <div class="caja_modal">
             <div class="cabecera_modal">
                 <h3 class="titulo_modal" id="titulo_modal_texto">Nueva Tarea</h3>
-                <button class="boton_cerrar_modal" id="boton_cerrar_cruz" type="button">Ã—</button>
+                <button class="boton_cerrar_modal" id="boton_cerrar_cruz" type="button">×</button>
             </div>
             <form class="formulario_tarea" id="formulario_crear_tarea">
                 <div class="cuerpo_modal">
                     <div class="grupo_campo_modal">
-                        <label class="etiqueta_campo" for="campo_modal_titulo">TÃ­tulo</label>
+                        <label class="etiqueta_campo" for="campo_modal_titulo">Título</label>
                         <input class="input_campo_modal" id="campo_modal_titulo" placeholder="Ej. Revisar inventario"
                             required="" type="text" />
                     </div>
 
                     <div class="grupo_campo_modal">
-                        <label class="etiqueta_campo" for="campo_modal_descripcion">DescripciÃ³n</label>
+                        <label class="etiqueta_campo" for="campo_modal_descripcion">Descripción</label>
                         <textarea class="textarea_campo_modal" id="campo_modal_descripcion"
                             placeholder="Detalles de la tarea..." required=""></textarea>
                     </div>
 
-                    <!-- AsignaciÃ³n Ãºnica: bÃºsqueda con lista desplegable -->
+                    <!-- Asignación única: búsqueda con lista desplegable -->
                     <div class="grupo_campo_modal">
                         <label class="etiqueta_campo" for="buscador_personas_modal">Asignar a</label>
                         <input class="input_campo_modal" id="buscador_personas_modal" list="lista_personas_tarea"
                             placeholder="Buscar docente por nombre..." autocomplete="off" required="" type="text" />
                         <datalist id="lista_personas_tarea"></datalist>
-                        <p class="texto_ayuda_campo" id="depto_persona_seleccionada">Se asignarÃ¡ una sola persona.</p>
+                        <p class="texto_ayuda_campo" id="depto_persona_seleccionada">Se asignará una sola persona.</p>
                     </div>
 
                     <div class="fila_campos_modal">
                         <div class="grupo_campo_modal grupo_campo_modal_expandido">
-                            <label class="etiqueta_campo" for="campo_modal_fecha">Fecha lÃ­mite</label>
+                            <label class="etiqueta_campo" for="campo_modal_fecha">Fecha límite</label>
                             <input class="input_campo_modal" id="campo_modal_fecha" required="" type="date" />
                             <p class="texto_ayuda_campo">Desde hoy hasta 6 meses en adelante.</p>
                         </div>
@@ -251,7 +252,7 @@
         <div class="caja_modal caja_modal_detalle">
             <div class="cabecera_modal">
                 <h3 class="titulo_modal" id="detalle_titulo_tarea">Detalle de la Tarea</h3>
-                <button class="boton_cerrar_modal" id="cerrar_modal_detalle" type="button">Ã—</button>
+                <button class="boton_cerrar_modal" id="cerrar_modal_detalle" type="button">×</button>
             </div>
             <!-- Detalle de la tarea con estilos en tareas.css -->
             <div class="cuerpo_modal cuerpo_modal_detalle">
@@ -264,7 +265,7 @@
                     <p class="texto_detalle_tarea" id="detalle_asignado_tarea"></p>
                 </div>
                 <div>
-                    <label class="etiqueta_campo">Fecha lÃ­mite:</label>
+                    <label class="etiqueta_campo">Fecha límite:</label>
                     <p class="texto_detalle_tarea" id="detalle_fecha_tarea"></p>
                 </div>
                 <div>
@@ -272,7 +273,7 @@
                     <div id="detalle_estado_tarea"></div>
                 </div>
                 <div>
-                    <label class="etiqueta_campo">DescripciÃ³n Completa:</label>
+                    <label class="etiqueta_campo">Descripción Completa:</label>
                     <div class="detalle_descripcion_tarea" id="detalle_descripcion_tarea"></div>
                 </div>
             </div>
@@ -283,9 +284,11 @@
     </div>
     <!-- END: ModalVerTareaCompleta -->
 
-    <!-- Script del mÃ³dulo -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/tareas.js"></script>
+    <!-- Script del módulo -->
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/tareas.js"></script>
 </body>
 
 </html>

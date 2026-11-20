@@ -1,3 +1,4 @@
+/* Controlador de la vista calendario. */
 /* Lógica interactiva y de backend para calendario.html usando la tabla 'tareas' */
 (function () {
   function iniciarInterfaz() {

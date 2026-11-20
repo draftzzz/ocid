@@ -3,12 +3,13 @@
 <html lang="es">
 
 <head>
+    <!-- Vista desacoplada: controladores y modelo en carpetas propias -->
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Mi Perfil</title>
-    <script src="../js/route-guard.js"></script>
+    <script src="../js/controllers/route-guard.js"></script>
 
-    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
+    <!-- Iconografía FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
     <!-- Hoja de Estilos -->
@@ -26,11 +27,11 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de ComunicaciÃ³n Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
             </div>
         </div>
 
-        <!-- MenÃº de Enlaces -->
+        <!-- Menú de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -80,7 +81,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesiÃ³n</span>
+                <span>Cerrar sesión</span>
             </a>
         </nav>
     </aside>
@@ -91,7 +92,7 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral">
+                <button class="boton_menu_hamburguesa" title="Alternar menú lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -116,24 +117,24 @@
 
         <!-- BEGIN: ContenidoPrincipalPerfil -->
         <div class="contenido_principal">
-            <!-- TÃ­tulo de la SecciÃ³n -->
+            <!-- Título de la Sección -->
             <div class="cabecera_pagina">
-                <h1 class="titulo_pagina">Mi Perfil y ConfiguraciÃ³n</h1>
-                <p class="subtitulo_pagina">Administra tu cuenta, contraseÃ±a y preferencias del sistema.</p>
+                <h1 class="titulo_pagina">Mi Perfil y Configuración</h1>
+                <p class="subtitulo_pagina">Administra tu cuenta, contraseña y preferencias del sistema.</p>
             </div>
 
-            <!-- CuadrÃ­cula de 2 Columnas -->
+            <!-- Cuadrícula de 2 Columnas -->
             <div class="curicula_configuracion">
                 <!-- BEGIN: ColumnaIzquierdaInformacionPersonal -->
                 <section class="tarjeta_configuracion">
-                    <h2 class="tarjeta_titulo">InformaciÃ³n personal</h2>
+                    <h2 class="tarjeta_titulo">Información personal</h2>
                     <!-- Zona de Avatar -->
                     <div class="seccion_avatar_perfil">
                         <div class="avatar_grande" id="avatar_vista_previa">
                             <i class="fa-regular fa-user icono_avatar_perfil"></i>
                         </div>
                         <div>
-                            <p class="texto_avatar_aviso">La imagen de perfil se genera automÃ¡ticamente con tus
+                            <p class="texto_avatar_aviso">La imagen de perfil se genera automáticamente con tus
                                 iniciales.</p>
                         </div>
                     </div>
@@ -144,7 +145,7 @@
                             <input class="campo_input" id="campo_nombre_completo" required="" type="text" value="" />
                         </div>
                         <div class="grupo_formulario">
-                            <label class="etiqueta_formulario" for="campo_correo_electronico">Correo electrÃ³nico</label>
+                            <label class="etiqueta_formulario" for="campo_correo_electronico">Correo electrónico</label>
                             <input class="campo_input" id="campo_correo_electronico" required="" type="email"
                                 value="" />
                         </div>
@@ -167,28 +168,28 @@
 
                 <!-- BEGIN: ColumnaDerechaSeguridad -->
                 <div class="columna_seguridad_perfil">
-                    <!-- Tarjeta de ContraseÃ±a -->
+                    <!-- Tarjeta de Contraseña -->
                     <section class="tarjeta_configuracion">
-                        <h2 class="tarjeta_titulo">Cambiar contraseÃ±a</h2>
+                        <h2 class="tarjeta_titulo">Cambiar contraseña</h2>
                         <form id="formulario_contrasena">
                             <div class="grupo_formulario">
-                                <label class="etiqueta_formulario" for="campo_clave_actual">ContraseÃ±a actual</label>
-                                <input class="campo_input" id="campo_clave_actual" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required=""
+                                <label class="etiqueta_formulario" for="campo_clave_actual">Contraseña actual</label>
+                                <input class="campo_input" id="campo_clave_actual" placeholder="••••••••" required=""
                                     type="password" />
                             </div>
                             <div class="grupo_formulario">
-                                <label class="etiqueta_formulario" for="campo_clave_nueva">Nueva contraseÃ±a</label>
-                                <input class="campo_input" id="campo_clave_nueva" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required=""
+                                <label class="etiqueta_formulario" for="campo_clave_nueva">Nueva contraseña</label>
+                                <input class="campo_input" id="campo_clave_nueva" placeholder="••••••••" required=""
                                     type="password" />
                             </div>
                             <div class="grupo_formulario">
                                 <label class="etiqueta_formulario" for="campo_clave_confirmacion">Confirmar
-                                    contraseÃ±a</label>
-                                <input class="campo_input" id="campo_clave_confirmacion" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                                    contraseña</label>
+                                <input class="campo_input" id="campo_clave_confirmacion" placeholder="••••••••"
                                     required="" type="password" />
                             </div>
                             <button class="boton_primario_azul boton_primario_azul_ancho" type="submit">
-                                Cambiar contraseÃ±a
+                                Cambiar contraseña
                             </button>
                         </form>
                     </section>
@@ -206,26 +207,28 @@
             <header class="modal_salida_departamento_encabezado">
                 <h2 id="titulo_modal_salir_departamento">Salir del departamento</h2>
                 <button class="modal_salida_departamento_cerrar" id="cerrar_modal_salir_departamento"
-                    type="button">Ã—</button>
+                    type="button">×</button>
             </header>
             <div class="modal_salida_departamento_cuerpo">
-                <p id="texto_modal_salir_departamento">Â¿Deseas salir de tu departamento?</p>
+                <p id="texto_modal_salir_departamento">¿Deseas salir de tu departamento?</p>
             </div>
             <footer class="modal_salida_departamento_pie">
                 <button class="modal_salida_departamento_cancelar" id="cancelar_salir_departamento"
                     type="button">Cancelar</button>
                 <button class="boton_primario_azul" id="confirmar_salir_departamento"
-                    type="button">SÃ­</button>
+                    type="button">Sí</button>
             </footer>
         </section>
     </div>
 
-    <!-- Fondo Oscuro para MenÃº MÃ³vil -->
+    <!-- Fondo Oscuro para Menú Móvil -->
     <div class="fondo_menu_movil"></div>
 
-    <!-- Script de ConfiguraciÃ³n / Perfil -->
-    <script src="../js/ocid-core.js"></script>
-    <script src="../js/perfil.js"></script>
+    <!-- Script de Configuración / Perfil -->
+    <script src="../js/models/session.js"></script>
+    <script src="../js/models/api.js"></script>
+    <script src="../js/models/ui.js"></script>
+    <script src="../js/controllers/perfil.js"></script>
 </body>
 
 </html>

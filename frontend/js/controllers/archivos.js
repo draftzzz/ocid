@@ -1,3 +1,4 @@
+/* Controlador de la vista archivos. */
 /* Lógica propia de archivos.html */
 /* Limpieza aplicada: las acciones usan texto visible y título, sin atributos extra. */
 (function () {

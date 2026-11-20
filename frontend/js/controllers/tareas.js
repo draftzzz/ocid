@@ -1,3 +1,4 @@
+/* Controlador de la vista tareas. */
 /* ==========================================================================
    Lógica Módulo de Tareas - OCID (Sesión, Toast, Buscadores y Servidor)
    ========================================================================== */
@@ -365,20 +366,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!contenedorPaginacion) return;
     contenedorPaginacion.replaceChildren();
 
-    // Botones de paginación con título visible en lugar de atributos aria
-    const agregarBoton = (texto, pagina, deshabilitado = false, clase = '') => {
+    // Paginación siempre presionable; sin efecto cuando no hay página destino
+    const agregarBoton = (texto, pagina, sinCambio = false, clase = '') => {
       const boton = document.createElement('button');
       boton.type = 'button';
-      boton.className = `boton_pagina ${clase} ${pagina === paginaActual && !deshabilitado ? 'boton_pagina_activo' : ''}`.trim();
+      boton.className = `boton_pagina ${clase} ${!sinCambio && clase !== 'boton_pagina_flecha' && pagina === paginaActual ? 'boton_pagina_activo' : ''}`.trim();
       boton.textContent = texto;
       boton.title = texto === '<' ? 'Página anterior' : texto === '>' ? 'Página siguiente' : `Página ${texto}`;
-      boton.disabled = deshabilitado;
-      if (!deshabilitado) {
-        boton.addEventListener('click', () => {
-          paginaActual = pagina;
-          renderizarTabla();
-        });
-      }
+      boton.addEventListener('click', () => {
+        if (sinCambio || pagina === paginaActual) return;
+        paginaActual = pagina;
+        renderizarTabla();
+      });
       contenedorPaginacion.appendChild(boton);
     };
 
