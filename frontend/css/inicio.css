@@ -1317,32 +1317,4 @@ textarea {
 }
 
 
-/* Recuadro vacío con icono y texto centrado. */
-.tarjeta_estado_vacio {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    min-height: 180px;
-    padding: 36px 20px;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    background-color: #ffffff;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-    color: #64748b;
-    font-size: 13.5px;
-    text-align: center;
-}
-
-.icono_estado_vacio {
-    display: block;
-    color: #94a3b8;
-    font-size: 32px;
-}
-
-.texto_estado_vacio {
-    display: block;
-    line-height: 1.5;
-}
+/* El inicio no muestra tarjetas de estado vacío. */

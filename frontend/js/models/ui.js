@@ -9,6 +9,11 @@
   const botonesMenuConfigurados = new WeakSet();
   const botonesCampanaConfigurados = new WeakSet();
   const panelesNotificacionesCargando = new WeakSet();
+  const atajosModalesConfigurados = new WeakSet();
+  const selectorModales = [
+    '.modal_overlay', '.modal_fondo', '.fondo_modal', '.fondo_modal_oscuro',
+    '.fondo_oscuro_modal', '.modal_contacto', '.modal_unirse_fondo'
+  ].join(',');
 
   function crearElemento(tag, opciones = {}) {
     const el = document.createElement(tag);
@@ -144,10 +149,6 @@
     // Guard del body en WeakSet (sin data-*).
     if (!document.body || elementosBloqueoScrollConfigurados.has(document.body)) return;
     elementosBloqueoScrollConfigurados.add(document.body);
-    const selectorModales = [
-      '.modal_overlay', '.modal_fondo', '.fondo_modal', '.fondo_modal_oscuro',
-      '.fondo_oscuro_modal', '.modal_contacto', '.modal_unirse_fondo'
-    ].join(',');
     const sincronizarBloqueo = () => {
       const modalAbierto = Array.from(document.querySelectorAll(selectorModales)).some(modal => {
         const estilo = window.getComputedStyle(modal);
@@ -163,6 +164,55 @@
       subtree: true
     });
     sincronizarBloqueo();
+  }
+
+  // Detecta un modal abierto sea cual sea la convención usada en la página
+  function estaModalAbierto(modal) {
+    if (!modal || modal.hidden) return false;
+    const estilo = window.getComputedStyle(modal);
+    if (estilo.display === 'none' || estilo.visibility === 'hidden') return false;
+    if (modal.classList.contains('modal_activo') ||
+        modal.classList.contains('visible') ||
+        modal.classList.contains('modal_unirse_visible')) return true;
+    return estilo.opacity !== '0' && estilo.pointerEvents !== 'none';
+  }
+
+  // Cierra el modal quitando clases y atributos que lo mantienen visible
+  function cerrarModalAbierto(modal) {
+    modal.classList.remove('modal_activo', 'visible', 'modal_unirse_visible');
+    if (modal.hasAttribute('hidden')) modal.hidden = true;
+    if (modal.style.display) modal.style.display = 'none';
+    modal.querySelectorAll('form').forEach(formulario => {
+      if (typeof formulario.reset === 'function') formulario.reset();
+    });
+  }
+
+  // Enter guarda el formulario del modal; Escape cierra el modal activo
+  function configurarAtajosModales() {
+    if (atajosModalesConfigurados.has(document)) return;
+    atajosModalesConfigurados.add(document);
+    document.addEventListener('keydown', (evento) => {
+      const confirmacion = document.querySelector('.modal_confirmacion_overlay.modal_activo');
+      if (confirmacion) return;
+
+      if (evento.key === 'Escape') {
+        const abiertos = Array.from(document.querySelectorAll(selectorModales)).filter(estaModalAbierto);
+        if (!abiertos.length) return;
+        cerrarModalAbierto(abiertos[abiertos.length - 1]);
+        return;
+      }
+
+      if (evento.key !== 'Enter' || evento.isComposing) return;
+      const objetivo = evento.target;
+      if (!objetivo || !objetivo.closest || !objetivo.closest(selectorModales)) return;
+      if (objetivo.tagName === 'BUTTON' || objetivo.tagName === 'SELECT') return;
+      if (objetivo.tagName === 'TEXTAREA' && !evento.ctrlKey && !evento.metaKey) return;
+      const formulario = objetivo.closest('form');
+      if (!formulario) return;
+      evento.preventDefault();
+      if (typeof formulario.requestSubmit === 'function') formulario.requestSubmit();
+      else formulario.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    });
   }
 
   function configurarCierreSesion() {
@@ -260,6 +310,7 @@
     configurarCierreSesion();
     configurarMenuMovil();
     configurarBloqueoScrollModal();
+    configurarAtajosModales();
     const usuario = window.OCID.obtenerUsuarioSesion();
     const tieneDepartamento = window.OCID.tieneDepartamentoAsignado(usuario);
     if (tieneDepartamento) {

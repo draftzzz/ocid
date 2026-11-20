@@ -44,13 +44,7 @@
     if (!contenedor) return;
     contenedor.replaceChildren();
 
-    // Recuadro vacío con icono cuando no hay anuncios
-    if (!anuncios.length) {
-      contenedor.appendChild(window.OCID.crearEstadoVacio('Aún no has recibido anuncios.', 'fa-solid fa-bullhorn'));
-      return;
-    }
-
-    // Máximo cuatro anuncios en el inicio
+    // Máximo cuatro anuncios en el inicio; si no hay, la lista queda vacía
     anuncios.slice(0, 4).forEach(anuncio => {
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_item_anuncio';
@@ -173,11 +167,7 @@
       : tareasDelDepartamento.slice().sort((a, b) => (fechaTarea(b) ?? 0) - (fechaTarea(a) ?? 0))
     ).slice(0, 3);
 
-    if (!tareasVisibles.length) {
-      contenedor.appendChild(window.OCID.crearEstadoVacio('Aún no has recibido tareas.', 'fa-solid fa-list-check'));
-      return;
-    }
-
+    // Sin tareas visibles el inicio no muestra tarjeta ni icono
     tareasVisibles.forEach(tarea => {
       const tarjeta = document.createElement('article');
       tarjeta.className = 'tarjeta_item_tarea';

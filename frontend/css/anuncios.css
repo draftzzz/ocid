@@ -705,26 +705,35 @@ textarea {
 .lista_conteo_departamentos {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
+/* Fila de conteo con realce suave, igual que el panel "Por estado" de tareas */
 .fila_conteo_departamento {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 6px 8px;
+    border-radius: 6px;
     font-size: 13px;
+    transition: background-color 0.15s ease;
+}
+
+.fila_conteo_departamento:hover {
+    background-color: #f8fafc;
 }
 
 .indicador_con_nombre {
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 8px;
+    font-size: 13px;
     color: #334155;
 }
 
 .punto_departamento {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
 }
 
@@ -748,10 +757,14 @@ textarea {
     background-color: #8b5cf6;
 }
 
+/* Cifra en píldora gris, igual que el conteo de estados de tareas */
 .cifra_departamento {
-    font-weight: 700;
-    color: #0f172a;
     font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    background-color: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 10px;
 }
 
 .lista_ultimos_anuncios {
@@ -1029,26 +1042,26 @@ textarea {
     margin: 0;
 }
 
+/* Enlace "Ver todo" sin relleno, igual que en el panel de estados */
 .boton_ver_todo_conteo {
-    padding: 7px 12px;
-    border: none;
-    border-radius: 6px;
     background: transparent;
+    border: none;
     color: #2563eb;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
 }
 
 .boton_ver_todo_conteo:hover {
-    background-color: #eff6ff;
+    text-decoration: underline;
 }
 
-.punto_departamento_0 { background-color: #3b82f6; }
-.punto_departamento_1 { background-color: #f59e0b; }
-.punto_departamento_2 { background-color: #ef4444; }
-.punto_departamento_3 { background-color: #10b981; }
-.punto_departamento_4 { background-color: #8b5cf6; }
+/* Misma paleta de puntos que el conteo de estados de tareas */
+.punto_departamento_0 { background-color: #f59e0b; }
+.punto_departamento_1 { background-color: #3b82f6; }
+.punto_departamento_2 { background-color: #10b981; }
+.punto_departamento_3 { background-color: #8b5cf6; }
+.punto_departamento_4 { background-color: #ec4899; }
 
 .estado_conteo_vacio {
     color: #64748b;
