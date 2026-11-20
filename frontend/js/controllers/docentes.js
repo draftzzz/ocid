@@ -87,12 +87,26 @@ async function cargarDocentes(departamentoId) {
 
     cuerpo.replaceChildren();
     datos.forEach(agregarFilaDocente);
+    // Recuadro vacío con icono cuando no hay docentes
     if (datos.length === 0) {
-      cuerpo.innerHTML = '<tr><td class="celda_docente" colspan="4">No hay integrantes activos en este departamento.</td></tr>';
+      const fila = document.createElement('tr');
+      const celda = document.createElement('td');
+      celda.className = 'celda_docente';
+      celda.colSpan = 4;
+      celda.appendChild(window.OCID.crearEstadoVacio('No hay integrantes activos en este departamento.', 'fa-solid fa-users-gear'));
+      fila.appendChild(celda);
+      cuerpo.appendChild(fila);
     }
     filtrarTablaDocentes();
   } catch (error) {
-    cuerpo.innerHTML = '<tr><td class="celda_docente" colspan="4">No se pudo cargar. Intenta recargar.</td></tr>';
+    cuerpo.replaceChildren();
+    const fila = document.createElement('tr');
+    const celda = document.createElement('td');
+    celda.className = 'celda_docente';
+    celda.colSpan = 4;
+    celda.appendChild(window.OCID.crearEstadoVacio('No se pudo cargar. Intenta recargar.', 'fa-solid fa-triangle-exclamation'));
+    fila.appendChild(celda);
+    cuerpo.appendChild(fila);
     mostrarAvisoDocentes(error.message || 'No se pudieron cargar los docentes.', true);
     filtrarTablaDocentes();
   }

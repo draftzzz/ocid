@@ -55,6 +55,7 @@
   function renderizarNotificaciones() {
     const contenedor = document.getElementById('contenedor_notificaciones');
     const vacio = document.getElementById('vacio_notificaciones');
+    const textoVacio = document.getElementById('texto_vacio_notificaciones');
     if (!contenedor) return;
     contenedor.classList.remove('mensaje_estado_notificaciones');
 
@@ -66,10 +67,13 @@
 
     contenedor.replaceChildren();
     if (!visibles.length) {
+      // El recuadro mantiene su campana; solo cambia el texto
       if (vacio) {
-        vacio.textContent = filtroActual === 'todas'
-          ? 'Aún no has recibido notificaciones.'
-          : 'Aún no has recibido notificaciones en esta categoría.';
+        if (textoVacio) {
+          textoVacio.textContent = filtroActual === 'todas'
+            ? 'Aún no has recibido notificaciones.'
+            : 'Aún no has recibido notificaciones en esta categoría.';
+        }
         vacio.classList.remove('oculto');
       }
       return;

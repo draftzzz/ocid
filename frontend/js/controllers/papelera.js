@@ -18,6 +18,20 @@
     })[c]);
   }
 
+  // Recuadro vacío reutilizable dentro de la tabla de la papelera
+  function mostrarEstadoVacioPapelera(mensaje, icono) {
+    const tbody = document.getElementById('cuerpo_tabla_papelera');
+    if (!tbody) return;
+    tbody.replaceChildren();
+    const fila = document.createElement('tr');
+    const celda = document.createElement('td');
+    celda.colSpan = 4;
+    celda.className = 'celda_estado_vacio';
+    celda.appendChild(window.OCID.crearEstadoVacio(mensaje, icono));
+    fila.appendChild(celda);
+    tbody.appendChild(fila);
+  }
+
   function iniciarInterfaz() {
     window.OCID.actualizarCabeceraUsuario();
     window.OCID.configurarCierreSesion();
@@ -77,7 +91,7 @@
     </tr>`;
 
     if (!lista.length) {
-      tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No tienes archivos propios en la papelera.</td></tr>`;
+      mostrarEstadoVacioPapelera('No tienes archivos propios en la papelera.', 'fa-regular fa-folder-open');
       return;
     }
 
@@ -124,7 +138,7 @@
     </tr>`;
 
     if (!lista.length) {
-      tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No tienes anuncios propios en la papelera.</td></tr>`;
+      mostrarEstadoVacioPapelera('No tienes anuncios propios en la papelera.', 'fa-solid fa-bullhorn');
       return;
     }
 
@@ -174,7 +188,7 @@
       <th class="columna_centrada">Acciones</th>
     </tr>`;
     if (!lista.length) {
-      tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">No hay tareas en la papelera.</td></tr>`;
+      mostrarEstadoVacioPapelera('No hay tareas en la papelera.', 'fa-solid fa-list-check');
       return;
     }
     // Etiquetas de móvil con clases de celda, sin atributos personalizados
@@ -199,13 +213,13 @@
 
     if (!token) {
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">Tu sesión no tiene un token válido. Cierra sesión y vuelve a iniciar sesión para cargar tu papelera.</td></tr>`;
+        mostrarEstadoVacioPapelera('Tu sesión no tiene un token válido. Cierra sesión y vuelve a iniciar sesión para cargar tu papelera.', 'fa-solid fa-trash-arrow-up');
       }
       return;
     }
 
     if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="4" class="celda_estado_vacio">Cargando elementos eliminados...</td></tr>`;
+      mostrarEstadoVacioPapelera('Cargando elementos eliminados...', 'fa-solid fa-trash-arrow-up');
     }
 
     try {
@@ -227,6 +241,7 @@
       renderizarContenidoActual();
     } catch (error) {
       console.error(error);
+      mostrarEstadoVacioPapelera('No se pudo cargar la papelera. Intenta recargar.', 'fa-solid fa-triangle-exclamation');
       mostrarToast(error.message || 'No se pudo cargar la papelera.', true);
     }
   }

@@ -143,8 +143,10 @@
 
             <!-- Tarjeta Contenedora de Lista de Notificaciones Dinámicas -->
             <section class="tarjeta_contenedor_notificaciones">
-                <div id="vacio_notificaciones" class="estado_vacio_notificaciones">
-                    Aún no has recibido notificaciones.
+                <!-- Recuadro vacío con campana y texto que actualiza el controlador -->
+                <div id="vacio_notificaciones" class="tarjeta_estado_vacio">
+                    <i class="fa-regular fa-bell icono_estado_vacio"></i>
+                    <span id="texto_vacio_notificaciones" class="texto_estado_vacio">Aún no has recibido notificaciones.</span>
                 </div>
                 <!-- El script inyecta aquí las tarjetas de notificaciones -->
                 <div class="lista_notificaciones" id="contenedor_notificaciones"></div>

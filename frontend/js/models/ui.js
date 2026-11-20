@@ -37,6 +37,15 @@
     return div.innerHTML;
   }
 
+  // Recuadro vacío reutilizable con icono y texto centrado
+  function crearEstadoVacio(texto, icono) {
+    const tarjeta = crearElemento('div', { className: 'tarjeta_estado_vacio' });
+    const iconoElemento = crearElemento('i', { className: `${icono} icono_estado_vacio` });
+    const textoElemento = crearElemento('span', { className: 'texto_estado_vacio', textContent: texto });
+    tarjeta.append(iconoElemento, textoElemento);
+    return tarjeta;
+  }
+
   function mostrarToast(texto, tipo = 'exito', duracion = 3500) {
     const tipoToast = typeof tipo === 'boolean'
       ? (tipo ? 'error' : 'exito')
@@ -499,6 +508,7 @@
   Object.assign(window.OCID, {
     mostrarToast,
     crearElemento,
+    crearEstadoVacio,
     escaparHTML,
     configurarCierreSesion,
     actualizarCabeceraUsuario,

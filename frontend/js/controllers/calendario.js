@@ -307,13 +307,9 @@ async function cargarTareasDesdeDB() {
       listaEventos.appendChild(item);
     });
 
-    // Estado vacío del calendario con acento correcto
+    // Estado vacío del calendario con icono y acento correcto
     if (!ordenados.length) {
-      const vacio = document.createElement('p');
-      // Estado vacío con estilo en CSS
-      vacio.className = 'estado_vacio_calendario';
-      vacio.textContent = 'Aún no has recibido eventos.';
-      listaEventos.appendChild(vacio);
+      listaEventos.appendChild(window.OCID.crearEstadoVacio('Aún no has recibido eventos.', 'fa-regular fa-calendar-days'));
     }
   }
 

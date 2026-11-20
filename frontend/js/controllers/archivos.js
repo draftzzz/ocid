@@ -264,13 +264,13 @@ function dibujarArchivos() {
   });
 
   if (!visibles.length) {
-    // Fila de estado vacío con texto UTF-8 correcto
+    // Recuadro vacío con icono de carpeta y texto UTF-8 correcto
     const filaVacia = document.createElement('tr');
     const celda = document.createElement('td');
     celda.colSpan = 6;
     // Alineación y padding del estado vacío en archivos.css
     celda.className = 'celda_estado_vacio_archivos';
-    celda.textContent = 'Aún no has recibido archivos.';
+    celda.appendChild(window.OCID.crearEstadoVacio('Aún no has recibido archivos.', 'fa-regular fa-folder-open'));
     filaVacia.appendChild(celda);
     cuerpoArchivos.appendChild(filaVacia);
   }

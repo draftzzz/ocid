@@ -44,11 +44,9 @@
     if (!contenedor) return;
     contenedor.replaceChildren();
 
+    // Recuadro vacío con icono cuando no hay anuncios
     if (!anuncios.length) {
-      const vacio = document.createElement('p');
-      vacio.className = 'texto_vacio';
-      vacio.textContent = 'Aún no has recibido anuncios.';
-      contenedor.appendChild(vacio);
+      contenedor.appendChild(window.OCID.crearEstadoVacio('Aún no has recibido anuncios.', 'fa-solid fa-bullhorn'));
       return;
     }
 
@@ -176,10 +174,7 @@
     ).slice(0, 3);
 
     if (!tareasVisibles.length) {
-      const vacio = document.createElement('p');
-      vacio.className = 'texto_vacio';
-      vacio.textContent = 'Aún no has recibido tareas.';
-      contenedor.appendChild(vacio);
+      contenedor.appendChild(window.OCID.crearEstadoVacio('Aún no has recibido tareas.', 'fa-solid fa-list-check'));
       return;
     }
 
