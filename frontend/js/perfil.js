@@ -1,5 +1,6 @@
 /* ==========================================================================
    Lógica de Configuración y Perfil - OCID
+   Limpieza aplicada: estilos de iniciales definidos por clase, no en línea.
    ========================================================================== */
 
 
@@ -37,8 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('')
       .toUpperCase();
     avatar.textContent = iniciales;
-    avatar.style.fontSize = '14px';
-    avatar.style.fontWeight = '700';
+    avatar.classList.add('avatar_iniciales');
   }
 
   // Cerrar sesión

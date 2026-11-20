@@ -1,4 +1,5 @@
 /* Lógica propia de anuncios.html (Refactorizado con OCID Core) */
+/* Limpieza aplicada: las acciones usan texto visible y título, sin atributos extra. */
 (function () {
   'use strict';
 
@@ -183,7 +184,6 @@ function renderizar_interfaz() {
         btnOpciones.className = 'boton_opciones_anuncio';
         btnOpciones.type = 'button';
         btnOpciones.title = 'Más opciones';
-        btnOpciones.setAttribute('aria-label', 'Editar o eliminar anuncio');
         btnOpciones.innerHTML = '&#8942;';
         btnOpciones.addEventListener('click', (e) => toggleMenuOpciones(e, anuncio.id));
         contenedorOpciones.appendChild(btnOpciones);
@@ -247,8 +247,8 @@ function renderizar_interfaz() {
         ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
         : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(anuncio.visto);
-      botonVisto.setAttribute('aria-label', esPropio ? 'Anuncio propio, ya visto' :
-        (anuncio.visto ? 'Anuncio visto' : 'Marcar anuncio como visto'));
+      botonVisto.title = esPropio ? 'Anuncio propio, ya visto'
+        : (anuncio.visto ? 'Anuncio visto' : 'Marcar anuncio como visto');
       if (!esPropio) {
         botonVisto.addEventListener('click', async () => {
           botonVisto.disabled = true;

@@ -1,5 +1,6 @@
 /* ==========================================================================
    Lógica de login.html — Guarda correctamente el Token JWT y la Sesión
+   Limpieza aplicada: visibilidad de alertas controlada solo por clases.
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
   const $ = (id) => document.getElementById(id);
@@ -10,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (alerta) {
       alerta.className = 'mensaje_alerta exito';
       alerta.textContent = 'Cambio de contraseña exitoso, vuelve a iniciar sesión';
-      alerta.style.display = 'block';
     }
   }
 
@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const alerta = $('mensaje_estado');
       if (alerta) {
-        alerta.style.display = 'none';
         alerta.className = 'mensaje_alerta';
       }
 
@@ -65,8 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (alerta) {
             alerta.className = 'mensaje_alerta error';
             alerta.textContent = datos.error || 'Credenciales no válidas. Revisa tu correo y contraseña.';
-            alerta.style.display = 'block';
-          }
+                }
         }
       } catch (err) {
         console.error('Error al iniciar sesión:', err);
@@ -74,8 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
           alerta.className = 'mensaje_alerta error';
           // Extrae el mensaje exacto que lanza el backend (ej: "Correo o contraseña incorrectos")
           alerta.textContent = err.message || 'Credenciales no válidas. Revisa tu correo y contraseña.';
-          alerta.style.display = 'block';
-        }
+            }
       } finally {
         if (btn) btn.disabled = false;
       }

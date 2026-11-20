@@ -1,3 +1,4 @@
+/* Ajuste móvil y limpieza: anchos fluidos, sin estilos en línea ni variables. */
 /* ==========================================================================
    1. Estilos Globales y Reset (Sin variables, solo px)
    ========================================================================== */
@@ -693,6 +694,10 @@ textarea {
     vertical-align: middle;
 }
 
+.tabla_integrantes .celda_acciones_integrante {
+    text-align: center;
+}
+
 .tabla_integrantes tr:last-child td {
     border-bottom: none;
 }
@@ -901,9 +906,12 @@ textarea {
     cursor: not-allowed;
 }
 
+/* Menu anclado sin coordenadas calculadas en JavaScript */
 .menu_desplegable_opciones {
-    display: none;
     position: fixed;
+    top: 76px;
+    right: 12px;
+    left: auto;
     background: white;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
@@ -911,6 +919,15 @@ textarea {
     z-index: 70;
     width: 190px;
     padding: 4px 0;
+}
+
+.menu_desplegable_opciones[hidden] {
+    display: none;
+}
+
+.campo_copia_temporal {
+    position: fixed;
+    opacity: 0;
 }
 
 .boton_opcion_dropdown {
@@ -1078,10 +1095,12 @@ textarea {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
+/* Menu de integrantes fijo y anclado para evitar cortes por contenedores */
 .tarjeta_integrantes .menu_integrante {
     position: fixed;
-    top: 0;
-    right: auto;
+    top: 76px;
+    right: 12px;
+    left: auto;
     z-index: 1200;
 }
 
@@ -1481,42 +1500,64 @@ textarea {
 
 /* Barra superior siempre visible al desplazarse en movil */
 @media (max-width: 768px) {
-    /* Pagina al 100% sin desplazamiento horizontal ni cortes */
+    /* Contenedores al 100% sin recortes ni desplazamiento horizontal */
     html,
     body,
-    .area_principal,
+    body .area_principal,
     .contenido_principal {
+        box-sizing: border-box;
+        min-width: 0px;
         width: 100%;
         max-width: 100%;
         overflow-x: hidden;
     }
 
-    .area_principal {
-        height: calc(100vh - 64px) !important;
-        height: calc(100dvh - 64px) !important;
-        margin-top: 64px;
+    /* Sin margen superior: la cabecera sticky ya ocupa su propio espacio */
+    body .area_principal {
+        height: 100vh;
+        height: 100dvh;
+        margin-top: 0px;
+        margin-left: 0px;
         overflow: hidden;
     }
 
-    .barra_superior {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        right: 0;
+    /* Especificidad superior para ganar a navigation.css */
+    body .area_principal .barra_superior {
+        position: sticky !important;
+        top: 0px;
+        left: auto;
+        right: auto;
+        box-sizing: border-box;
+        min-width: 0px;
         width: 100%;
+        max-width: 100%;
         height: 64px;
         min-height: 64px;
+        padding-inline: 12px;
         z-index: 1050;
-        transform: translateZ(0);
-        opacity: 1 !important;
-        visibility: visible !important;
     }
 
+    /* Unico contenedor con scroll vertical en movil */
     .contenido_principal {
         flex: 1;
-        min-height: 0;
+        min-height: 0px;
+        box-sizing: border-box;
+        overflow-x: hidden;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+    }
+
+    /* Titulos, subtitulos y tarjetas fluyen dentro del ancho disponible */
+    .cabecera_modulo,
+    .titulo_pagina,
+    .subtitulo_pagina,
+    .cuadricula_superior,
+    .tarjeta_general,
+    .fila_metricas {
+        min-width: 0px;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-wrap: anywhere;
     }
 
     /* Integrantes en tarjetas verticales (movil) */

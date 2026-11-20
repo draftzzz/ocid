@@ -1,3 +1,4 @@
+/* Ajuste de limpieza: utilidades por clase y alertas sin estilos en línea. */
 /* ==========================================================================
    1. Estilos Globales y Reset (Sin variables, solo px)
    ========================================================================== */
@@ -7,6 +8,11 @@
     padding: 0px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
+}
+
+/* Utilidad exclusiva para ocultar indicadores sin estilos en línea */
+.indicador_oculto {
+  display: none !important;
 }
 
 html {
@@ -949,6 +955,12 @@ table.tabla_tareas tbody tr:hover {
   background: #f0fdf4;
   color: #166534;
   border-color: #bbf7d0;
+}
+
+/* La variante de alerta define su propia visibilidad */
+.mensaje_alerta.error,
+.mensaje_alerta.exito {
+  display: block;
 }
 
 .mensaje_aviso,

@@ -1,6 +1,7 @@
 /* ==========================================================================
    OCID — Core Module Compartido (Auth, API, UI helpers, Toast)
    Se carga en TODAS las páginas del sistema. Sin innerHTML.
+   Limpieza aplicada: etiquetas visibles y clases en lugar de estilos en línea.
    ========================================================================== */
 
 (function () {
@@ -222,7 +223,7 @@
       const capa = crearElemento('div', { className: 'modal_confirmacion_overlay' });
       const caja = crearElemento('div', {
         className: 'modal_confirmacion_caja',
-        attributes: { role: 'dialog', 'aria-modal': 'true', 'aria-label': titulo }
+        attributes: { role: 'dialog', 'aria-modal': 'true' }
       });
       const cabecera = crearElemento('div', { className: 'modal_confirmacion_cabecera' });
       const tituloEl = crearElemento('h3', {
@@ -232,8 +233,7 @@
       const cerrar = crearElemento('button', {
         className: 'modal_confirmacion_cerrar',
         type: 'button',
-        textContent: '×',
-        attributes: { 'aria-label': 'Cerrar' }
+        textContent: '×'
       });
       cabecera.append(tituloEl, cerrar);
       const cuerpo = crearElemento('div', { className: 'modal_confirmacion_cuerpo' });
@@ -330,6 +330,7 @@
     ) || null;
   }
 
+  // Botones y overlays usan título y texto visible como única etiqueta
   function configurarMenuMovil() {
     const barraSuperior = obtenerBarraSuperiorAplicacion();
     const barraLateral = document.querySelector('.barra_lateral');
@@ -338,7 +339,7 @@
     if (!btnMenu) {
       btnMenu = crearElemento('button', {
         type: 'button', className: 'boton_menu_hamburguesa',
-        attributes: { 'aria-label': 'Abrir menú de navegación', 'aria-expanded': 'false' },
+        attributes: { 'aria-expanded': 'false' },
         textContent: '',
       });
       btnMenu.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>';
@@ -349,7 +350,6 @@
     if (botonesMenuConfigurados.has(btnMenu)) return;
     botonesMenuConfigurados.add(btnMenu);
     btnMenu.type = 'button';
-    btnMenu.setAttribute('aria-label', 'Abrir menú de navegación');
     btnMenu.setAttribute('aria-expanded', 'false');
     btnMenu.title = 'Abrir menú de navegación';
     btnMenu.innerHTML = '<svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
@@ -358,19 +358,17 @@
 
     let fondo = document.querySelector('.fondo_menu_movil');
     if (!fondo) {
-      fondo = crearElemento('button', { type: 'button', className: 'fondo_menu_movil', attributes: { 'aria-label': 'Cerrar menú de navegación' } });
+      fondo = crearElemento('button', { type: 'button', className: 'fondo_menu_movil' });
       document.body.appendChild(fondo);
     } else if (fondo.tagName !== 'BUTTON') {
       const botonFondo = crearElemento('button', {
         type: 'button',
-        className: 'fondo_menu_movil',
-        attributes: { 'aria-label': 'Cerrar menú de navegación' },
+        className: 'fondo_menu_movil'
       });
       fondo.replaceWith(botonFondo);
       fondo = botonFondo;
     }
     fondo.type = 'button';
-    fondo.setAttribute('aria-label', 'Cerrar menú de navegación');
     function alternar(abierto) {
       document.body.classList.toggle('menu_movil_abierto', abierto);
       barraLateral.classList.toggle('activo', abierto);
@@ -429,7 +427,6 @@
     boton.classList.add('boton_campana');
     boton.type = 'button';
     boton.title = 'Notificaciones';
-    boton.setAttribute('aria-label', 'Abrir notificaciones');
     if (!boton.querySelector('i')) {
       boton.prepend(crearElemento('i', {
         className: 'fa-regular fa-bell',
@@ -441,7 +438,7 @@
     if (!panel) {
       panel = crearElemento('section', {
         className: 'panel_notificaciones_global',
-        attributes: { 'aria-label': 'Notificaciones recientes', role: 'region' }
+        attributes: { role: 'region' }
       });
       panel.hidden = true;
       const encabezado = crearElemento('div', { className: 'panel_notificaciones_encabezado' });
@@ -449,8 +446,7 @@
       const cerrarPanel = crearElemento('button', {
         className: 'panel_notificaciones_cerrar',
         type: 'button',
-        textContent: '×',
-        attributes: { 'aria-label': 'Cerrar notificaciones' }
+        textContent: '×'
       });
       encabezado.appendChild(cerrarPanel);
       panel.appendChild(encabezado);
@@ -479,7 +475,7 @@
     indicador.classList.add('punto_notificacion');
     indicador.setAttribute('aria-live', 'polite');
     indicador.textContent = '0';
-    indicador.style.display = 'none';
+    indicador.classList.add('indicador_oculto');
     if (indicador.parentElement !== boton) boton.appendChild(indicador);
 
     // Guard por campana en WeakSet (sin data-*).
@@ -579,7 +575,7 @@
     if (!usuario || !usuario.id || !obtenerToken()) {
       document.querySelectorAll('#indicador_notificaciones').forEach(indicador => {
         indicador.textContent = '0';
-        indicador.style.display = 'none';
+        indicador.classList.add('indicador_oculto');
       });
       return Promise.resolve();
     }
@@ -597,7 +593,7 @@
         }, {});
         document.querySelectorAll('#indicador_notificaciones, .badge_campana').forEach((indicador) => {
           indicador.textContent = String(noLeidas);
-          indicador.style.display = noLeidas === 0 ? 'none' : '';
+          indicador.classList.toggle('indicador_oculto', noLeidas === 0);
         });
         document.querySelectorAll('.enlace_navegacion[href]').forEach(enlace => {
           const ruta = enlace.getAttribute('href').split('/').pop();
@@ -614,12 +610,6 @@
           const cantidad = tipo === 'notificacion' ? noLeidas : (porTipo[tipo] || 0);
           insignia.textContent = String(cantidad);
           insignia.classList.toggle('visible', cantidad > 0);
-          const etiqueta = tipo === 'notificacion' ? 'notificaciones'
-            : tipo === 'anuncio' ? 'anuncios' : tipo === 'archivo' ? 'archivos' : 'tareas';
-          insignia.setAttribute('aria-label', `${cantidad} ${etiqueta} sin ver`);
-        });
-        document.querySelectorAll('.boton_campana').forEach((boton) => {
-          boton.setAttribute('aria-label', `Notificaciones, ${noLeidas} sin leer`);
         });
       })
       .catch((error) => {

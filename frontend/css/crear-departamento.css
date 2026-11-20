@@ -1,3 +1,4 @@
+/* Ajuste de limpieza: estilos de barra definidos por clase, no en línea. */
 /* ==========================================================================
    1. Estilos Globales y Reset
    ========================================================================== */
@@ -83,6 +84,12 @@ button, input, select, textarea {
     font-weight: 700;
     letter-spacing: 0.2px;
     line-height: 20px;
+}
+
+.texto_logo_titulo_barra {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f8fafc;
 }
 
 .texto_logo_subtitulo {

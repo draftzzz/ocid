@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Ajuste de limpieza: se usan id y clases sin estilos en línea. -->
 <html lang="es">
 
 <head>
@@ -7,7 +8,7 @@
     <title>OCID - Crear Departamento</title>
     <script src="../js/route-guard.js"></script>
 
-    <!-- Iconografía FontAwesome y Fuente Inter -->
+    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="../css/crear-departamento.css" />
     <link rel="stylesheet" href="../css/navigation.css" />
@@ -24,7 +25,7 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de Coordinación Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de CoordinaciÃ³n Escolar</div>
             </div>
         </div>
 
@@ -40,7 +41,7 @@
             <div class="separador_menu"></div>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesión</span>
+                <span>Cerrar sesiÃ³n</span>
             </a>
         </nav>
     </aside>
@@ -49,11 +50,11 @@
     <main class="area_principal">
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button aria-label="Menu" class="boton_menu_hamburguesa" id="btn_hamburguesa"
-                    title="Alternar menú lateral">
+                <button class="boton_menu_hamburguesa" id="btn_hamburguesa"
+                    title="Alternar menÃº lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
-                <div class="texto_logo_titulo" style="font-size: 15px; font-weight: 600; color: #f8fafc;">Creación de
+                <div class="texto_logo_titulo texto_logo_titulo_barra">CreaciÃ³n de
                     Departamento</div>
             </div>
             <div class="seccion_superior_derecha">
@@ -62,8 +63,7 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario"
-                            style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Administrador (Nuevo)</span>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                     </div>
                     <div>
                         <h2>Registrar nuevo departamento</h2>
-                        <p>Se generará automáticamente un código único de 7 caracteres y obtendrás el rol de
+                        <p>Se generarÃ¡ automÃ¡ticamente un cÃ³digo Ãºnico de 7 caracteres y obtendrÃ¡s el rol de
                             Jefe/Administrador con control total.</p>
                     </div>
                 </div>
@@ -91,7 +91,7 @@
                     </div>
 
                     <div class="grupo_formulario">
-                        <label for="descripcion_depto">Descripción o funciones generales</label>
+                        <label for="descripcion_depto">DescripciÃ³n o funciones generales</label>
                         <textarea id="descripcion_depto"
                             placeholder="Describe brevemente las responsabilidades del departamento..."></textarea>
                     </div>
@@ -108,9 +108,9 @@
                 <section class="resultado_codigo" id="resultado_creacion_departamento" role="status" aria-live="polite"
                     hidden>
                     <h3>Departamento creado correctamente</h3>
-                    <p>Comparte este código de acceso con los docentes que deban unirse:</p>
+                    <p>Comparte este cÃ³digo de acceso con los docentes que deban unirse:</p>
                     <output class="codigo_departamento_generado" id="codigo_departamento_generado"></output>
-                    <p class="ayuda_codigo">También podrás consultarlo después en Mi Departamento.</p>
+                    <p class="ayuda_codigo">TambiÃ©n podrÃ¡s consultarlo despuÃ©s en Mi Departamento.</p>
                     <a class="btn_primario" href="inicio.html">Ir a mi panel</a>
                 </section>
             </div>

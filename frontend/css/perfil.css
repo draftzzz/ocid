@@ -1,3 +1,4 @@
+/* Ajuste de limpieza: avatar y columnas definidas por clases, no en línea. */
 /* ==========================================================================
    1. Estilos Globales y Reset (Sin variables, solo px)
    ========================================================================== */
@@ -420,6 +421,13 @@ textarea {
     align-items: start;
 }
 
+.columna_seguridad_perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0px;
+}
+
 .tarjeta_configuracion {
     background-color: #ffffff;
     border-radius: 10px;
@@ -456,6 +464,15 @@ textarea {
     font-size: 22px;
     font-weight: 700;
     flex-shrink: 0;
+}
+
+.avatar_iniciales {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.icono_avatar_perfil {
+    font-size: 28px;
 }
 
 .texto_avatar_aviso {

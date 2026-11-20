@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  // Limpieza aplicada: botones con título visible y sin estilos en línea.
   let notificaciones = [];
   let filtroActual = 'todas';
   let cargaNotificacionesActiva = false;
@@ -43,10 +44,6 @@
       }
     });
 
-    document.querySelectorAll('.boton_campana').forEach(boton => {
-      boton.setAttribute('aria-label', `Notificaciones, ${sinLeer} sin leer`);
-    });
-
     const botonTodas = document.getElementById('boton_marcar_leidas');
     if (botonTodas) {
       botonTodas.disabled = !notificaciones.some(item => !item.visto);
@@ -85,10 +82,10 @@
       const elementoId = Number(item.elemento_id);
       const acciones = [
         !item.visto && Number.isSafeInteger(elementoId) && elementoId > 0
-          ? `<button class="boton_marcar_leido" type="button" onclick="marcarElementoComoVisto('${escaparHTML(item.tipo)}', ${elementoId})" title="Marcar como visto" aria-label="Marcar como visto"><i class="fa-regular fa-circle-check"></i></button>`
+          ? `<button class="boton_marcar_leido" type="button" onclick="marcarElementoComoVisto('${escaparHTML(item.tipo)}', ${elementoId})" title="Marcar como visto"><i class="fa-regular fa-circle-check"></i></button>`
           : '',
         esAnuncio && Number.isSafeInteger(id) && id > 0
-          ? `<button class="boton_borrar" type="button" onclick="borrarNotificacion(${id})" title="Eliminar notificación" aria-label="Eliminar notificación"><i class="fa-regular fa-trash-can"></i></button>`
+          ? `<button class="boton_borrar" type="button" onclick="borrarNotificacion(${id})" title="Eliminar notificación"><i class="fa-regular fa-trash-can"></i></button>`
           : ''
       ].join('');
       const fecha = item.fecha ? new Date(item.fecha) : null;

@@ -1,8 +1,13 @@
 /* Shared application shell and mobile navigation */
 /* Medidas fijas de barra lateral y cabecera sin variables CSS */
 /* Scrollbar nativo del navegador en todas las páginas */
+/* Limpieza aplicada: indicadores ocultos por clase compartida. */
 textarea {
   resize: none;
+}
+
+.indicador_oculto {
+  display: none !important;
 }
 
 .barra_lateral {

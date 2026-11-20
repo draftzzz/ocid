@@ -365,12 +365,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!contenedorPaginacion) return;
     contenedorPaginacion.replaceChildren();
 
-    const agregarBoton = (texto, pagina, etiqueta, deshabilitado = false, clase = '') => {
+    // Botones de paginación con título visible en lugar de atributos aria
+    const agregarBoton = (texto, pagina, deshabilitado = false, clase = '') => {
       const boton = document.createElement('button');
       boton.type = 'button';
       boton.className = `boton_pagina ${clase} ${pagina === paginaActual && !deshabilitado ? 'boton_pagina_activo' : ''}`.trim();
       boton.textContent = texto;
-      boton.setAttribute('aria-label', etiqueta);
+      boton.title = texto === '<' ? 'Página anterior' : texto === '>' ? 'Página siguiente' : `Página ${texto}`;
       boton.disabled = deshabilitado;
       if (!deshabilitado) {
         boton.addEventListener('click', () => {
@@ -382,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Flecha izquierda siempre visible
-    agregarBoton('<', Math.max(1, paginaActual - 1), 'Página anterior', paginaActual === 1, 'boton_pagina_flecha');
+    agregarBoton('<', Math.max(1, paginaActual - 1), paginaActual === 1, 'boton_pagina_flecha');
 
     // Números y puntos suspensivos
     obtenerPaginasVisibles(paginaActual, totalPaginas).forEach(valor => {
@@ -392,12 +393,12 @@ document.addEventListener('DOMContentLoaded', () => {
         puntos.textContent = '…';
         contenedorPaginacion.appendChild(puntos);
       } else {
-        agregarBoton(String(valor), valor, `Página ${valor}`);
+        agregarBoton(String(valor), valor);
       }
     });
 
     // Flecha derecha siempre visible
-    agregarBoton('>', Math.min(totalPaginas, paginaActual + 1), 'Página siguiente', paginaActual === totalPaginas, 'boton_pagina_flecha');
+    agregarBoton('>', Math.min(totalPaginas, paginaActual + 1), paginaActual === totalPaginas, 'boton_pagina_flecha');
   }
 
   // Abre o cierra el menú de opciones de una tarea
@@ -680,7 +681,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnOpciones.className = 'boton_opciones_anuncio';
         btnOpciones.type = 'button';
         btnOpciones.title = 'Más opciones';
-        btnOpciones.setAttribute('aria-label', 'Opciones de tarea');
         btnOpciones.innerHTML = '&#8942;';
         btnOpciones.addEventListener('click', (e) => toggleMenuOpcionesTarea(e, tarea.id));
         contenedorOpciones.appendChild(btnOpciones);
@@ -795,8 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ? '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg><span>Visto</span>'
         : '<svg class="icono_check_visto" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="4 10 8 14 16 6"></polyline></svg><span>Marcar como visto</span>';
       botonVisto.disabled = Boolean(tarea.visto);
-      botonVisto.setAttribute('aria-label', esPropio ? 'Tarea propia, ya vista' :
-        (tarea.visto ? 'Tarea vista' : 'Marcar tarea como vista'));
       if (!esPropio) {
         botonVisto.addEventListener('click', async (e) => {
           e.stopPropagation();

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- Ajuste de limpieza: se usan id y clases sin estilos en línea. -->
 <html lang="es">
 
 <head>
@@ -7,7 +8,7 @@
     <title>OCID - Mi Perfil</title>
     <script src="../js/route-guard.js"></script>
 
-    <!-- Iconografía FontAwesome y Fuente Inter -->
+    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
     <!-- Hoja de Estilos -->
@@ -25,11 +26,11 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de ComunicaciÃ³n Escolar</div>
             </div>
         </div>
 
-        <!-- Menú de Enlaces -->
+        <!-- MenÃº de Enlaces -->
         <nav class="navegacion_lateral">
             <a class="enlace_navegacion" href="inicio.html" id="nav_inicio">
                 <i class="fa-solid fa-house icono_nav"></i>
@@ -79,7 +80,7 @@
             </a>
             <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html">
                 <i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i>
-                <span>Cerrar sesión</span>
+                <span>Cerrar sesiÃ³n</span>
             </a>
         </nav>
     </aside>
@@ -90,7 +91,7 @@
         <!-- Barra Superior Global -->
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral">
+                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral">
                     <i class="fa-solid fa-bars"></i>
                 </button>
             </div>
@@ -105,8 +106,7 @@
                         <i class="fa-regular fa-user"></i>
                     </div>
                     <div class="detalles_usuario">
-                        <strong class="nombre_usuario_texto" id="nombreUsuario"
-                            style="color: #ffffff;">Cargando...</strong>
+                        <strong class="nombre_usuario_texto" id="nombreUsuario">Cargando...</strong>
                         <span class="rol_usuario_texto" id="etiqueta_rol_usuario">Jefe de Departamento</span>
                     </div>
                     <i class="fa-solid fa-chevron-down icono_dropdown"></i>
@@ -116,24 +116,24 @@
 
         <!-- BEGIN: ContenidoPrincipalPerfil -->
         <div class="contenido_principal">
-            <!-- Título de la Sección -->
+            <!-- TÃ­tulo de la SecciÃ³n -->
             <div class="cabecera_pagina">
-                <h1 class="titulo_pagina">Mi Perfil y Configuración</h1>
-                <p class="subtitulo_pagina">Administra tu cuenta, contraseña y preferencias del sistema.</p>
+                <h1 class="titulo_pagina">Mi Perfil y ConfiguraciÃ³n</h1>
+                <p class="subtitulo_pagina">Administra tu cuenta, contraseÃ±a y preferencias del sistema.</p>
             </div>
 
-            <!-- Cuadrícula de 2 Columnas -->
+            <!-- CuadrÃ­cula de 2 Columnas -->
             <div class="curicula_configuracion">
                 <!-- BEGIN: ColumnaIzquierdaInformacionPersonal -->
                 <section class="tarjeta_configuracion">
-                    <h2 class="tarjeta_titulo">Información personal</h2>
+                    <h2 class="tarjeta_titulo">InformaciÃ³n personal</h2>
                     <!-- Zona de Avatar -->
                     <div class="seccion_avatar_perfil">
                         <div class="avatar_grande" id="avatar_vista_previa">
-                            <i class="fa-regular fa-user" style="font-size: 28px;"></i>
+                            <i class="fa-regular fa-user icono_avatar_perfil"></i>
                         </div>
                         <div>
-                            <p class="texto_avatar_aviso">La imagen de perfil se genera automáticamente con tus
+                            <p class="texto_avatar_aviso">La imagen de perfil se genera automÃ¡ticamente con tus
                                 iniciales.</p>
                         </div>
                     </div>
@@ -144,7 +144,7 @@
                             <input class="campo_input" id="campo_nombre_completo" required="" type="text" value="" />
                         </div>
                         <div class="grupo_formulario">
-                            <label class="etiqueta_formulario" for="campo_correo_electronico">Correo electrónico</label>
+                            <label class="etiqueta_formulario" for="campo_correo_electronico">Correo electrÃ³nico</label>
                             <input class="campo_input" id="campo_correo_electronico" required="" type="email"
                                 value="" />
                         </div>
@@ -166,30 +166,29 @@
                 <!-- END: ColumnaIzquierdaInformacionPersonal -->
 
                 <!-- BEGIN: ColumnaDerechaSeguridad -->
-                <div class="flex flex-col gap-6"
-                    style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- Tarjeta de Contraseña -->
+                <div class="columna_seguridad_perfil">
+                    <!-- Tarjeta de ContraseÃ±a -->
                     <section class="tarjeta_configuracion">
-                        <h2 class="tarjeta_titulo">Cambiar contraseña</h2>
+                        <h2 class="tarjeta_titulo">Cambiar contraseÃ±a</h2>
                         <form id="formulario_contrasena">
                             <div class="grupo_formulario">
-                                <label class="etiqueta_formulario" for="campo_clave_actual">Contraseña actual</label>
-                                <input class="campo_input" id="campo_clave_actual" placeholder="••••••••" required=""
+                                <label class="etiqueta_formulario" for="campo_clave_actual">ContraseÃ±a actual</label>
+                                <input class="campo_input" id="campo_clave_actual" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required=""
                                     type="password" />
                             </div>
                             <div class="grupo_formulario">
-                                <label class="etiqueta_formulario" for="campo_clave_nueva">Nueva contraseña</label>
-                                <input class="campo_input" id="campo_clave_nueva" placeholder="••••••••" required=""
+                                <label class="etiqueta_formulario" for="campo_clave_nueva">Nueva contraseÃ±a</label>
+                                <input class="campo_input" id="campo_clave_nueva" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required=""
                                     type="password" />
                             </div>
                             <div class="grupo_formulario">
                                 <label class="etiqueta_formulario" for="campo_clave_confirmacion">Confirmar
-                                    contraseña</label>
-                                <input class="campo_input" id="campo_clave_confirmacion" placeholder="••••••••"
+                                    contraseÃ±a</label>
+                                <input class="campo_input" id="campo_clave_confirmacion" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                                     required="" type="password" />
                             </div>
                             <button class="boton_primario_azul boton_primario_azul_ancho" type="submit">
-                                Cambiar contraseña
+                                Cambiar contraseÃ±a
                             </button>
                         </form>
                     </section>
@@ -202,31 +201,29 @@
     </main>
     <!-- END: MainContentArea -->
 
-    <div class="modal_overlay" id="modal_salir_departamento" role="dialog" aria-modal="true"
-        aria-labelledby="titulo_modal_salir_departamento" aria-describedby="texto_modal_salir_departamento"
-        hidden>
+    <div class="modal_overlay" id="modal_salir_departamento" role="dialog" aria-modal="true" hidden>
         <section class="modal_salida_departamento_caja">
             <header class="modal_salida_departamento_encabezado">
                 <h2 id="titulo_modal_salir_departamento">Salir del departamento</h2>
                 <button class="modal_salida_departamento_cerrar" id="cerrar_modal_salir_departamento"
-                    type="button" aria-label="Cerrar">×</button>
+                    type="button">Ã—</button>
             </header>
             <div class="modal_salida_departamento_cuerpo">
-                <p id="texto_modal_salir_departamento">¿Deseas salir de tu departamento?</p>
+                <p id="texto_modal_salir_departamento">Â¿Deseas salir de tu departamento?</p>
             </div>
             <footer class="modal_salida_departamento_pie">
                 <button class="modal_salida_departamento_cancelar" id="cancelar_salir_departamento"
                     type="button">Cancelar</button>
                 <button class="boton_primario_azul" id="confirmar_salir_departamento"
-                    type="button">Sí</button>
+                    type="button">SÃ­</button>
             </footer>
         </section>
     </div>
 
-    <!-- Fondo Oscuro para Menú Móvil -->
+    <!-- Fondo Oscuro para MenÃº MÃ³vil -->
     <div class="fondo_menu_movil"></div>
 
-    <!-- Script de Configuración / Perfil -->
+    <!-- Script de ConfiguraciÃ³n / Perfil -->
     <script src="../js/ocid-core.js"></script>
     <script src="../js/perfil.js"></script>
 </body>

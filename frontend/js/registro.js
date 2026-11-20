@@ -1,4 +1,5 @@
 /* Lógica de registro.html — usa OCID Core compartido */
+/* Limpieza aplicada: alertas y visibilidad gestionadas únicamente por clases. */
 document.addEventListener('DOMContentLoaded', () => {
   const $ = (id) => document.getElementById(id);
 
@@ -13,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
 
     const alerta = $('mensaje_estado');
-    alerta.style.display = 'none';
     alerta.className = 'mensaje_alerta';
 
     const btn = $('registerBtn');
@@ -49,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       alerta.className = 'mensaje_alerta error';
       alerta.textContent = err.message || 'No se pudo conectar con el servidor.';
-      alerta.style.display = 'block';
     } finally {
       btn.disabled = false;
     }

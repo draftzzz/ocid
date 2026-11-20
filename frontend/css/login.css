@@ -1,4 +1,4 @@
-/* Estilos propios de login.html */
+/* Estilos propios de login.html con ancho fluido en movil */
 
 * {
     box-sizing: border-box;
@@ -7,21 +7,31 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* La pagina nunca genera desplazamiento horizontal */
 body {
     background-color: #f8faff;
     color: #0f172a;
+    box-sizing: border-box;
+    min-width: 0px;
+    width: 100%;
+    max-width: 100%;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     padding: 24px 16px;
+    overflow-x: hidden;
 }
 
+/* Tarjeta centrada que siempre cabe en el viewport */
 .contenedor_login {
     background-color: #ffffff;
+    box-sizing: border-box;
+    min-width: 0px;
     width: 100%;
-    max-width: 440px;
+    max-width: 420px;
+    margin: 0 auto;
     border-radius: 20px;
     box-shadow: 0 10px 25px -5px rgba(23, 54, 93, 0.08), 0 8px 10px -6px rgba(23, 54, 93, 0.04);
     border: 1px solid #e2e8f0;
@@ -105,7 +115,10 @@ body {
 }
 
 .campo_texto {
+    box-sizing: border-box;
+    min-width: 0px;
     width: 100%;
+    max-width: 100%;
     padding: 12.48px 41.6px 12.48px 41.6px;
     border: 1.5px solid #cbd5e1;
     border-radius: 10.4px;
@@ -164,7 +177,10 @@ body {
 }
 
 .boton_enviar {
+    box-sizing: border-box;
+    min-width: 0px;
     width: 100%;
+    max-width: 100%;
     padding: 13.6px;
     background-color: #17365d;
     color: #ffffff;
@@ -212,11 +228,30 @@ body {
     text-decoration: underline;
 }
 
+/* Pie centrado con el mismo ancho que la tarjeta */
 .pie_global {
-    margin-top: 24px;
+    box-sizing: border-box;
+    min-width: 0px;
+    width: 100%;
+    max-width: 420px;
+    margin: 24px auto 0;
+    padding: 16px 12px;
+    overflow-wrap: anywhere;
     font-size: 12.48px;
     color: #94a3b8;
     text-align: center;
+}
+
+/* Bloques internos limitados al ancho de la tarjeta */
+.cabecera_login,
+.cuerpo_formulario,
+.pie_formulario,
+.grupo_campo,
+.contenedor_entrada,
+#formulario_login {
+    box-sizing: border-box;
+    min-width: 0px;
+    max-width: 100%;
 }
 
 @media (max-width: 480px) {
@@ -238,5 +273,32 @@ body {
 
     .pie_formulario {
         padding: 18.4px 20px 28px;
+    }
+}
+
+/* Pantallas muy estrechas: menos padding sin cortar el contenido */
+@media (max-width: 360px) {
+    body {
+        padding: 12px 8px;
+    }
+
+    .cabecera_login {
+        padding: 22px 14px 14px;
+    }
+
+    .cuerpo_formulario {
+        padding: 0 14px 16px;
+    }
+
+    .pie_formulario {
+        padding: 16px 14px 22px;
+    }
+
+    .titulo_login {
+        font-size: 22px;
+    }
+
+    .pie_global {
+        padding: 14px 8px;
     }
 }

@@ -1,14 +1,15 @@
 <!DOCTYPE html>
+<!-- Ajuste de limpieza: se usan id y clases sin estilos en línea. -->
 <html lang="es">
 
 <head>
-    <!-- Codificación UTF-8 para textos en español -->
+    <!-- CodificaciÃ³n UTF-8 para textos en espaÃ±ol -->
     <meta charset="UTF-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>OCID - Papelera de Reciclaje</title>
     <script src="../js/route-guard.js"></script>
 
-    <!-- Iconografía FontAwesome y Fuente Inter -->
+    <!-- IconografÃ­a FontAwesome y Fuente Inter -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
     <!-- Hoja de Estilos (puedes reutilizar tu archivo de estilos base o de perfil) -->
@@ -26,7 +27,7 @@
             </div>
             <div>
                 <div class="texto_logo_titulo">OCID</div>
-                <div class="texto_logo_subtitulo">Plataforma de Comunicación Escolar</div>
+                <div class="texto_logo_subtitulo">Plataforma de ComunicaciÃ³n Escolar</div>
             </div>
         </div>
 
@@ -42,7 +43,7 @@
             <a class="enlace_navegacion activo" href="papelera.html"><i class="fa-solid fa-trash-arrow-up icono_nav"></i><span>Papelera</span></a>
             <div class="separador_menu"></div>
             <a class="enlace_navegacion" href="mi-perfil.html"><i class="fa-solid fa-user icono_nav"></i><span>Mi perfil</span></a>
-            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html"><i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i><span>Cerrar sesión</span></a>
+            <a class="boton_cerrar_sesion" id="boton_cerrar_sesion" href="login.html"><i class="fa-solid fa-arrow-right-from-bracket icono_nav"></i><span>Cerrar sesiÃ³n</span></a>
         </nav>
     </aside>
     <!-- END: Sidebar -->
@@ -51,7 +52,7 @@
     <main class="area_principal">
         <header class="barra_superior">
             <div class="seccion_superior_izquierda">
-                <button aria-label="Menu" class="boton_menu_hamburguesa" title="Alternar menú lateral"><i class="fa-solid fa-bars"></i></button>
+                <button class="boton_menu_hamburguesa" title="Alternar menÃº lateral"><i class="fa-solid fa-bars"></i></button>
             </div>
             <div class="seccion_superior_derecha">
                 <button class="boton_notificaciones boton_campana" type="button" title="Notificaciones">
@@ -74,12 +75,12 @@
             <div class="fila_encabezado_anuncios">
                 <div>
                     <h1 class="titulo_pantalla">Papelera de Reciclaje</h1>
-                    <p class="subtitulo_pantalla">Recupera documentos eliminados o elimínalos permanentemente.</p>
+                    <p class="subtitulo_pantalla">Recupera documentos eliminados o elimÃ­nalos permanentemente.</p>
                 </div>
             </div>
 
             <div class="controles_papelera">
-                <div class="pestanas_papelera" aria-label="Tipo de elementos eliminados">
+                <div class="pestanas_papelera">
                     <button id="btn_pestana_archivos" class="boton_pestana_papelera activa" type="button"
                         aria-pressed="true" onclick="cambiarSeccionPapelera('archivos')">
                         <i class="fa-regular fa-folder-open" aria-hidden="true"></i> Archivos
@@ -104,7 +105,7 @@
                             <tr>
                                 <th>Nombre del Documento</th>
                                 <th>Departamento</th>
-                                <th>Fecha de Eliminación</th>
+                                <th>Fecha de EliminaciÃ³n</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -121,7 +122,7 @@
 
     <div class="fondo_menu_movil"></div>
 
-    <!-- Script de lógica -->
+    <!-- Script de lÃ³gica -->
     <script src="../js/ocid-core.js"></script>
     <script src="../js/papelera.js"></script>
 </body>

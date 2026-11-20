@@ -1,6 +1,7 @@
 (function () {
   'use strict';
 
+  // Limpieza aplicada: menús por clases y atributos nativos, sin estilos en línea.
   let departamentoActual = null;
   let miembrosActuales = [];
   let rolesDepartamento = [];
@@ -75,7 +76,7 @@
     if (botonOpciones) botonOpciones.hidden = !puedeEditar;
     if (opcionEditar) opcionEditar.hidden = !puedeEditar;
     if (!puedeEditar && menu) {
-      menu.style.display = 'none';
+      menu.hidden = true;
       botonOpciones?.setAttribute('aria-expanded', 'false');
     }
     if (panelGestion) panelGestion.hidden = !puedeEditar;
@@ -181,7 +182,6 @@
         botonEliminar.className = 'boton_eliminar_rol';
         botonEliminar.type = 'button';
         botonEliminar.textContent = 'Eliminar rol';
-        botonEliminar.setAttribute('aria-label', `Eliminar rol ${rol.nombre}`);
         botonEliminar.addEventListener('click', () => eliminarRolDepartamento(rol, botonEliminar));
         cabecera.appendChild(botonEliminar);
       }
@@ -291,13 +291,12 @@
       celdaEstado.appendChild(indicadorEstado);
 
       const celdaAcciones = document.createElement('td');
-      celdaAcciones.style.textAlign = 'center';
-      celdaAcciones.style.position = 'relative';
+      celdaAcciones.className = 'celda_acciones_integrante';
       if (esJefeActual) {
         const botonMenu = document.createElement('button');
         botonMenu.type = 'button';
         botonMenu.className = 'boton_acciones boton_menu_integrante';
-        botonMenu.setAttribute('aria-label', `Acciones para ${miembro.nombre || 'integrante'}`);
+        botonMenu.title = `Acciones para ${miembro.nombre || 'integrante'}`;
         botonMenu.setAttribute('aria-haspopup', 'true');
         botonMenu.setAttribute('aria-expanded', 'false');
         botonMenu.textContent = '⋮';
@@ -387,23 +386,7 @@
               otroMenu.parentElement.querySelector('.boton_menu_integrante')?.setAttribute('aria-expanded', 'false');
             }
           });
-          if (menu.hidden) {
-            menu.hidden = false;
-            const botonRect = botonMenu.getBoundingClientRect();
-            const menuRect = menu.getBoundingClientRect();
-            const margen = 8;
-            const left = Math.max(margen, Math.min(
-              botonRect.right - menuRect.width,
-              window.innerWidth - menuRect.width - margen
-            ));
-            const top = botonRect.bottom + menuRect.height + margen <= window.innerHeight
-              ? botonRect.bottom + margen
-              : Math.max(margen, botonRect.top - menuRect.height - margen);
-            menu.style.left = `${left}px`;
-            menu.style.top = `${top}px`;
-          } else {
-            menu.hidden = true;
-          }
+          menu.hidden = !menu.hidden;
           botonMenu.setAttribute('aria-expanded', String(!menu.hidden));
         });
         celdaAcciones.append(botonMenu, menu);
@@ -587,7 +570,7 @@
     if (botonCerrarRoles) botonCerrarRoles.addEventListener('click', cerrarModalRoles);
 
     const cerrarMenuDepartamento = () => {
-      if (menuDepartamento) menuDepartamento.style.display = 'none';
+      if (menuDepartamento) menuDepartamento.hidden = true;
       if (botonOpciones) botonOpciones.setAttribute('aria-expanded', 'false');
     };
 
@@ -598,25 +581,12 @@
         if (!puedeEditarDepartamento()) return;
         evento.stopPropagation();
         document.querySelectorAll('.menu_integrante').forEach(menu => { menu.hidden = true; });
-        if (menuDepartamento.style.display === 'block') {
+        if (!menuDepartamento.hidden) {
           cerrarMenuDepartamento();
           return;
         }
 
-        menuDepartamento.style.display = 'block';
-        const botonRect = botonOpciones.getBoundingClientRect();
-        const margen = 8;
-        const menuWidth = menuDepartamento.offsetWidth;
-        const menuHeight = menuDepartamento.offsetHeight;
-        const left = Math.max(margen, Math.min(
-          botonRect.right - menuWidth,
-          window.innerWidth - menuWidth - margen
-        ));
-        const top = botonRect.bottom + menuHeight + margen <= window.innerHeight
-          ? botonRect.bottom + margen
-          : Math.max(margen, botonRect.top - menuHeight - margen);
-        menuDepartamento.style.left = `${left}px`;
-        menuDepartamento.style.top = `${top}px`;
+        menuDepartamento.hidden = false;
         botonOpciones.setAttribute('aria-expanded', 'true');
       });
     }
@@ -699,7 +669,7 @@
       }
     });
     window.addEventListener('keydown', evento => {
-      if (evento.key === 'Escape' && menuDepartamento?.style.display === 'block') {
+      if (evento.key === 'Escape' && menuDepartamento && !menuDepartamento.hidden) {
         cerrarMenuDepartamento();
         botonOpciones?.focus();
       }
@@ -721,9 +691,8 @@
           } else {
             const campoTemporal = document.createElement('textarea');
             campoTemporal.value = codigo;
+            campoTemporal.className = 'campo_copia_temporal';
             campoTemporal.setAttribute('readonly', '');
-            campoTemporal.style.position = 'fixed';
-            campoTemporal.style.opacity = '0';
             document.body.appendChild(campoTemporal);
             campoTemporal.select();
             const copiado = document.execCommand('copy');
